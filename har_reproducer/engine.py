@@ -1,7 +1,7 @@
 import httpx
 import json
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from .models import Step, StepRequest, StepResponse, SessionState, Extractor, Patch, StepAnalysis
 from .session import SessionStore
 from .tracker import TokenTracker
@@ -17,6 +17,8 @@ class Engine:
         self.output_dir = output_dir
         self.real_responses_dir = output_dir / "real_responses"
         self.real_responses_dir.mkdir(parents=True, exist_ok=True)
+        self.real_requests_dir = output_dir / "real_requests"
+        self.real_requests_dir.mkdir(parents=True, exist_ok=True)
         
         self.session_store = SessionStore()
         self.tracker = TokenTracker(self.real_responses_dir, self.session_store)
@@ -57,11 +59,14 @@ class Engine:
                 continue
                 
             # Execute the step
-            response = self.execute_step(step)
+            final_request, response = self.execute_step(step)
             step.response = response
             last_response = response
             
-            # Save real response
+            # Save real request and response
+            req_file = self.real_requests_dir / f"req_{i:04d}.json"
+            req_file.write_text(final_request.model_dump_json(indent=2), encoding="utf-8")
+            
             res_file = self.real_responses_dir / f"res_{i:04d}.json"
             res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
             
@@ -238,7 +243,7 @@ if __name__ == "__main__":
         agent = DiagnoseAgent(self, ctx)
         return agent.diagnose()
 
-    def execute_step(self, step: Step) -> StepResponse:
+    def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         """
         Executes a single HTTP request using httpx with deterministic recovery.
         """
@@ -251,13 +256,23 @@ if __name__ == "__main__":
             cookies = self.session_store.render_dict(req.cookies)
             body = self.session_store.render(req.body) if req.body else None
             
+            # Create the final request object that was actually sent
+            final_request = StepRequest(
+                url=req.url,
+                method=req.method,
+                headers=headers,
+                cookies=cookies,
+                body=body,
+                is_skippable=req.is_skippable
+            )
+            
             with httpx.Client(follow_redirects=False) as client:
                 resp = client.request(
-                    method=req.method,
-                    url=req.url,
-                    headers=headers,
-                    cookies=cookies,
-                    content=body.encode("utf-8") if body else None
+                    method=final_request.method,
+                    url=final_request.url,
+                    headers=final_request.headers,
+                    cookies=final_request.cookies,
+                    content=final_request.body.encode("utf-8") if final_request.body else None
                 )
                 
                 # Force status_code to be int in case of weird mock behavior
@@ -285,4 +300,4 @@ if __name__ == "__main__":
                 print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
                 continue
                 
-            return response
+            return final_request, response
