@@ -1,3 +1,5 @@
+from typing import Optional
+
 class BaseAgent:
     """
     Base class for all Token Extraction Agents.

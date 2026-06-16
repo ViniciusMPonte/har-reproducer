@@ -18,7 +18,7 @@ class TokenTracker:
         self.responses_dir = responses_dir
         self.session_store = session_store
 
-    def analyze_step(self, step: Step, baseline_step: Step) -> StepAnalysis:
+    def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         """
         Runs the 8-stage pipeline to analyze a step.
         """
@@ -48,11 +48,23 @@ class TokenTracker:
                 resolved_tokens.append(candidate)
                 
                 # 5. Extractor Generation
+                # In dry-run, we might skip actual LLM generation and just mark as "Potentially Resolved"
+                # but for now, we'll try to generate it if we have a sample.
                 response_sample = self._load_response(candidate.origin_step)
                 if response_sample:
-                    extractor = self._generate_extractor(candidate, response_sample)
-                    if extractor:
-                        self.session_store.state.registry[candidate.token_id] = extractor
+                    if not is_dry_run:
+                        extractor = self._generate_extractor(candidate, response_sample)
+                        if extractor:
+                            self.session_store.state.registry[candidate.token_id] = extractor
+                    else:
+                        # In dry-run, we just register it as Pending
+                        from .models import Extractor
+                        self.session_store.state.registry[candidate.token_id] = Extractor(
+                            token_id=candidate.token_id,
+                            code="",
+                            verified=False,
+                            agent_type="Pending"
+                        )
             else:
                 # Mark as Unresolved if grep fails
                 candidate.status = "Unresolved"

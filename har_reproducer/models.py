@@ -27,9 +27,12 @@ class ExtractorMetadata(BaseModel):
     agent_type: str
     verified: bool = False
 
-class SessionState(BaseModel):
-    tokens: Dict[str, str] = Field(default_factory=dict)
-    registry: Dict[str, Extractor] = Field(default_factory=dict)
+class Extractor(BaseModel):
+    token_id: str
+    code: str
+    verified: bool = False
+    agent_type: Literal["CookieAgent", "HeaderAgent", "JSONPathAgent", "CSSAgent", "RegexAgent"]
+    origin_step: Optional[int] = None
 
 TokenLocation = Literal["Header", "Cookie", "BodyJSON", "BodyHTML", "Script"]
 
@@ -41,12 +44,9 @@ class DynamicToken(BaseModel):
     origin_step: int
     status: Literal["Resolved", "Unresolved"]
 
-class Extractor(BaseModel):
-    token_id: str
-    code: str
-    verified: bool = False
-    agent_type: Literal["CookieAgent", "HeaderAgent", "JSONPathAgent", "CSSAgent", "RegexAgent"]
-    origin_step: Optional[int] = None
+class SessionState(BaseModel):
+    tokens: Dict[str, str] = Field(default_factory=dict)
+    registry: Dict[str, Extractor] = Field(default_factory=dict)
 
 class StepAnalysis(BaseModel):
     step_index: int

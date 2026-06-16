@@ -114,16 +114,16 @@ description: "Task list template for feature implementation"
 **Independent Test**: Simulate a 401 error and verify the tool injects a session JWT and retries successfully.
 
 ### Tests for User Story 4
-- [ ] T042 [P] [US4] Test deterministic recovery rules (401, 400) in `tests/engine/test_recovery.py`
-- [ ] T043 [P] [US4] Test `diagnose` agent patch application in `tests/agent/test_apply_patch.py`
-- [ ] T044 [P] [US4] Test diagnostic agent with `jwt_in_html.har` fixture in `tests/agent/test_diagnose_jwt_html.py`
+- [X] T042 [P] [US4] Test deterministic recovery rules (401, 400) in `tests/engine/test_recovery.py`
+- [X] T043 [P] [US4] Test `diagnose` agent patch application in `tests/agent/test_apply_patch.py`
+- [X] T044 [P] [US4] Test diagnostic agent with `jwt_in_html.har` fixture in `tests/agent/test_diagnose_jwt_html.py`
 
 ### Implementation for User Story 4
-- [ ] T045 [US4] Implement deterministic recovery logic in `har_reproducer/engine.py`
-- [ ] T046 [US4] Implement `FailureContext` and `Patch` models in `har_reproducer/models.py`
-- [ ] T047 [US4] Implement `diagnose` agent with tool-use in `har_reproducer/agents/diagnose_agent.py` (or within agents package)
-- [ ] T048 [US4] Implement `diagnose` subcommand in `har_reproducer/cli.py`
-- [ ] T049 [US4] Integrate recovery flow into `execute_step` in `har_reproducer/engine.py`
+- [X] T045 [US4] Implement deterministic recovery logic in `har_reproducer/engine.py`
+- [X] T046 [US4] Implement `FailureContext` and `Patch` models in `har_reproducer/models.py`
+- [X] T047 [US4] Implement `diagnose` agent with tool-use in `har_reproducer/agents/diagnose_agent.py` (or within agents package)
+- [X] T048 [US4] Implement `diagnose` subcommand in `har_reproducer/cli.py`
+- [X] T049 [US4] Integrate recovery flow into `execute_step` in `har_reproducer/engine.py`
 
 ---
 
@@ -133,8 +133,8 @@ description: "Task list template for feature implementation"
 **Independent Test**: Run `run --dry-run` and verify the generated report of dynamic candidates and origins.
 
 ### Implementation for User Story 5
-- [ ] T050 [US5] Implement dry-run report generation in `har_reproducer/engine.py`
-- [ ] T051 [US5] Implement simulation of `analyze_step` using HAR responses in `har_reproducer/tracker.py`
+- [X] T050 [US5] Implement dry-run report generation in `har_reproducer/engine.py`
+- [X] T051 [US5] Implement simulation of `analyze_step` using HAR responses in `har_reproducer/tracker.py`
 
 ---
 
@@ -142,11 +142,11 @@ description: "Task list template for feature implementation"
 
 **Purpose**: Cross-cutting concerns and final validation
 
-- [ ] T052 [P] Implement success validation logic in `har_reproducer/validator.py`
-- [ ] T053 [P] Implement final success check in `har_reproducer/engine.py`
-- [ ] T054 [P] Implement final output of results to stdout in `har_reproducer/cli.py`
-- [ ] T055 [P] Add docstrings to all public functions per constitution
-- [ ] T056 [P] Run final linting and type checking
+- [X] T052 [P] Implement success validation logic in `har_reproducer/validator.py`
+- [X] T053 [P] Implement final success check in `har_reproducer/engine.py`
+- [X] T054 [P] Implement final output of results to stdout in `har_reproducer/cli.py`
+- [X] T055 [P] Add docstrings to all public functions per constitution
+- [X] T056 [P] Run final linting and type checking
 
 ---
 
