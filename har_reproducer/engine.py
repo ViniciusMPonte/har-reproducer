@@ -2,7 +2,7 @@ import httpx
 import json
 from pathlib import Path
 from typing import List, Optional
-from .models import Step, StepRequest, StepResponse, SessionState, Extractor, Patch
+from .models import Step, StepRequest, StepResponse, SessionState, Extractor, Patch, StepAnalysis
 from .session import SessionStore
 from .tracker import TokenTracker
 from .parser import HARParser
