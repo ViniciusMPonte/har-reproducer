@@ -31,8 +31,7 @@ class SessionState(BaseModel):
     tokens: Dict[str, str] = Field(default_factory=dict)
     registry: Dict[str, ExtractorMetadata] = Field(default_factory=dict)
 
-class TokenLocation(str, Literal["Header", "Cookie", "BodyJSON", "BodyHTML", "Script"]):
-    pass
+TokenLocation = Literal["Header", "Cookie", "BodyJSON", "BodyHTML", "Script"]
 
 class DynamicToken(BaseModel):
     token_id: str
@@ -66,8 +65,7 @@ class FailureContext(BaseModel):
     session_snapshot: SessionState
     active_extractors: List[Extractor]
 
-class PatchAction(str, Literal["FIX_EXTRACTOR", "INJECT_VALUE", "REPLACE_EXTRACTOR"]):
-    pass
+PatchAction = Literal["FIX_EXTRACTOR", "INJECT_VALUE", "REPLACE_EXTRACTOR"]
 
 class Patch(BaseModel):
     action: PatchAction

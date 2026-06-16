@@ -24,7 +24,7 @@ def load_fixture():
         if not fixture_path.exists():
             raise FileNotFoundError(f"Fixture not found: {fixture_path}")
         
-        if fixture_path.suffix == ".json":
+        if fixture_path.suffix in [".json", ".har"]:
             with open(fixture_path, "r", encoding="utf-8") as f:
                 return json.load(f)
         

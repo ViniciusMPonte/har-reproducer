@@ -40,12 +40,12 @@ class HARParser:
         res_data = entry["response"]
         
         # Parse Request
-        req_headers = {k: v["value"] for k, v in req_data.get("headers", [])}
+        req_headers = {v["name"]: v["value"] for v in req_data.get("headers", [])}
         req_cookies = {c["name"]: c["value"] for c in req_data.get("cookies", [])}
         
         req_body = None
-        if "postData" in req_data:
-            post_data = req_data["postData"]
+        post_data = req_data.get("postData")
+        if post_data:
             req_body = post_data.get("text")
             
         # Handle OPTIONS skipping
@@ -61,7 +61,7 @@ class HARParser:
         )
         
         # Parse Response
-        res_headers = {k: v["value"] for k, v in res_data.get("headers", [])}
+        res_headers = {v["name"]: v["value"] for v in res_data.get("headers", [])}
         res_cookies = {c["name"]: c["value"] for c in res_data.get("cookies", [])}
         
         res_content = res_data.get("content", {})

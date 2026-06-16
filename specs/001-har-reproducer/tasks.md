@@ -52,15 +52,15 @@ description: "Task list template for feature implementation"
 **Independent Test**: Verify `parse` command generates `req_NNNN.json` and `res_NNNN.json` with decoded bodies.
 
 ### Tests for User Story 1
-- [ ] T013 [P] [US1] Test `load_har` and `parse_entry` in `tests/parser/test_parse_entry.py`
-- [ ] T014 [P] [US1] Test `decode_body` with base64 content in `tests/parser/test_decode_body.py`
-- [ ] T015 [P] [US1] Test `split_har` output structure in `tests/parser/test_split_har.py`
-- [ ] T016 [P] [US1] Test `OPTIONS` request skipping in `tests/parser/test_options_skip.py`
+- [X] T013 [P] [US1] Test `load_har` and `parse_entry` in `tests/parser/test_parse_entry.py`
+- [X] T014 [P] [US1] Test `decode_body` with base64 content in `tests/parser/test_decode_body.py`
+- [X] T015 [P] [US1] Test `split_har` output structure in `tests/parser/test_split_har.py`
+- [X] T016 [P] [US1] Test `OPTIONS` request skipping in `tests/parser/test_options_skip.py`
 
 ### Implementation for User Story 1
-- [ ] T017 [US1] Implement `split_har` in `har_reproducer/parser.py`
-- [ ] T018 [US1] Implement `decode_body` in `har_reproducer/parser.py`
-- [ ] T019 [US1] Implement `parse` subcommand in `har_reproducer/cli.py`
+- [X] T017 [US1] Implement `split_har` in `har_reproducer/parser.py`
+- [X] T018 [US1] Implement `decode_body` in `har_reproducer/parser.py`
+- [X] T019 [US1] Implement `parse` subcommand in `har_reproducer/cli.py`
 
 ---
 
