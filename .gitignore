@@ -1,1 +1,16 @@
 .idea
+.vscode/
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+dist/
+build/
+*.egg-info/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
