@@ -29,7 +29,7 @@ class ExtractorMetadata(BaseModel):
 
 class SessionState(BaseModel):
     tokens: Dict[str, str] = Field(default_factory=dict)
-    registry: Dict[str, ExtractorMetadata] = Field(default_factory=dict)
+    registry: Dict[str, Extractor] = Field(default_factory=dict)
 
 TokenLocation = Literal["Header", "Cookie", "BodyJSON", "BodyHTML", "Script"]
 
@@ -46,6 +46,7 @@ class Extractor(BaseModel):
     code: str
     verified: bool = False
     agent_type: Literal["CookieAgent", "HeaderAgent", "JSONPathAgent", "CSSAgent", "RegexAgent"]
+    origin_step: Optional[int] = None
 
 class StepAnalysis(BaseModel):
     step_index: int

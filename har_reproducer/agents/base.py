@@ -17,7 +17,7 @@ class BaseAgent:
         """
         raise NotImplementedError("Subclasses must implement generate_code")
 
-    def run_tdd_loop(self, max_attempts: int = 5):
+    def run_tdd_loop(self, max_attempts: int = 5, origin_step: Optional[int] = None):
         """
         Runs the TDD loop: generate -> test -> fix -> repeat.
         """
@@ -30,7 +30,8 @@ class BaseAgent:
                     token_id=self.token_id,
                     code=code,
                     verified=True,
-                    agent_type=self.__class__.__name__
+                    agent_type=self.__class__.__name__,
+                    origin_step=origin_step
                 )
             
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")

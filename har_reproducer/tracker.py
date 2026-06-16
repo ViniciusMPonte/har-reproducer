@@ -1,8 +1,14 @@
 from typing import Dict, List, Any, Optional
+import json
 from pathlib import Path
-from .models import Step, StepRequest, StepResponse, DynamicToken, TokenLocation, StepAnalysis, ExtractorMetadata
+from .models import Step, StepRequest, StepResponse, DynamicToken, TokenLocation, StepAnalysis, Extractor, ExtractorMetadata
 from .grep_utils import grep_in_real_responses, try_decode
 from .session import SessionStore
+from .agents.cookie_agent import CookieAgent
+from .agents.header_agent import HeaderAgent
+from .agents.jsonpath_agent import JSONPathAgent
+from .agents.css_agent import CSSAgent
+from .agents.regex_agent import RegexAgent
 
 class TokenTracker:
     """
@@ -26,29 +32,29 @@ class TokenTracker:
         resolved_tokens = []
         for candidate in candidates:
             # 4. Extractor Identification / Reuse
-            # Check if we already have an extractor for this token_id
+            # Check if we already have a verified extractor for this token_id
             if candidate.token_id in self.session_store.state.registry:
-                # Reuse existing
-                candidate.status = "Resolved"
-                resolved_tokens.append(candidate)
-                continue
-                
+                extractor = self.session_store.state.registry[candidate.token_id]
+                if extractor.verified:
+                    candidate.status = "Resolved"
+                    resolved_tokens.append(candidate)
+                    continue
+                    
             # Try to find origin in real responses
             origin = grep_in_real_responses(self.responses_dir, candidate.current_value)
             if origin:
                 candidate.origin_step = origin[0]
                 candidate.status = "Resolved"
-                # Note: Here we would typically trigger Extractor Generation (Stage 5)
-                # For now, we register the intent to extract.
-                self.session_store.state.registry[candidate.token_id] = ExtractorMetadata(
-                    token_id=candidate.token_id,
-                    agent_type="Pending",
-                    verified=False
-                )
                 resolved_tokens.append(candidate)
+                
+                # 5. Extractor Generation
+                response_sample = self._load_response(candidate.origin_step)
+                if response_sample:
+                    extractor = self._generate_extractor(candidate, response_sample)
+                    if extractor:
+                        self.session_store.state.registry[candidate.token_id] = extractor
             else:
-                # Stage 5: TDD Extractor Generation would happen here if we had LLM integration
-                # For this foundational phase, we mark as Unresolved if grep fails.
+                # Mark as Unresolved if grep fails
                 candidate.status = "Unresolved"
                 resolved_tokens.append(candidate)
 
@@ -64,6 +70,34 @@ class TokenTracker:
             dynamic_tokens=resolved_tokens,
             curl_template=template
         )
+
+    def _load_response(self, step_index: int) -> Optional[dict]:
+        """Loads a response JSON file from the responses directory."""
+        res_file = self.responses_dir / f"res_{step_index:04d}.json"
+        if res_file.exists():
+            try:
+                return json.loads(res_file.read_text(encoding="utf-8"))
+            except Exception:
+                return None
+        return None
+
+    def _generate_extractor(self, candidate: DynamicToken, response_sample: dict) -> Optional[Extractor]:
+        """Tries to generate a verified extractor using the appropriate agent."""
+        location_map = {
+            "Cookie": CookieAgent,
+            "Header": HeaderAgent,
+            "BodyJSON": JSONPathAgent,
+            "BodyHTML": CSSAgent,
+            "Script": RegexAgent,
+        }
+        agent_cls = location_map.get(candidate.location, RegexAgent)
+        
+        agent = agent_cls(
+            token_id=candidate.token_id,
+            response_sample=response_sample,
+            expected_value=candidate.current_value
+        )
+        return agent.run_tdd_loop(origin_step=candidate.origin_step)
 
     def _compare_to_baseline(self, step: Step, baseline: Step) -> Dict[str, Any]:
         """Detects values that differ from the baseline."""

@@ -103,8 +103,8 @@ description: "Task list template for feature implementation"
 - [X] T037 [P] [US3] Implement `JSONPathAgent` in `har_reproducer/agents/jsonpath_agent.py`
 - [X] T038 [P] [US3] Implement `CSSAgent` in `har_reproducer/agents/css_agent.py`
 - [X] T039 [P] [US3] Implement `RegexAgent` in `har_reproducer/agents/regex_agent.py`
-- [ ] T040 [US3] Integrate extractor generation into `analyze_step` in `har_reproducer/tracker.py`
-- [ ] T041 [US3] Implement extractor registry and reuse logic in `har_reproducer/engine.py`
+- [X] T040 [US3] Integrate extractor generation into `analyze_step` in `har_reproducer/tracker.py`
+- [X] T041 [US3] Implement extractor registry and reuse logic in `har_reproducer/engine.py`
 
 ---
 
