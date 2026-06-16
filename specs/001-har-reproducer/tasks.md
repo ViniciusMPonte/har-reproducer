@@ -90,19 +90,19 @@ description: "Task list template for feature implementation"
 **Independent Test**: Verify a generated extractor passes its test and correctly retrieves a token from a live response.
 
 ### Tests for User Story 3
-- [ ] T029 [P] [US3] Test `BaseAgent` TDD loop in `tests/agents/test_base.py`
-- [ ] T030 [P] [US3] Test `CookieAgent` in `tests/agents/test_cookie_agent.py`
-- [ ] T031 [P] [US3] Test `JSONPathAgent` in `tests/agents/test_jsonpath_agent.py`
-- [ ] T032 [P] [US3] Test `CSSAgent` in `tests/agents/test_css_agent.py`
-- [ ] T033 [P] [US3] Test `RegexAgent` in `tests/agents/test_regex_agent.py`
+- [X] T029 [P] [US3] Test `BaseAgent` TDD loop in `tests/agents/test_base.py`
+- [X] T030 [P] [US3] Test `CookieAgent` in `tests/agents/test_cookie_agent.py`
+- [X] T031 [P] [US3] Test `JSONPathAgent` in `tests/agents/test_jsonpath_agent.py`
+- [X] T032 [P] [US3] Test `CSSAgent` in `tests/agents/test_css_agent.py`
+- [X] T033 [P] [US3] Test `RegexAgent` in `tests/agents/test_regex_agent.py`
 
 ### Implementation for User Story 3
-- [ ] T034 [US3] Implement `BaseAgent` and `run_tdd_loop` in `har_reproducer/agents/base.py`
-- [ ] T035 [P] [US3] Implement `CookieAgent` in `har_reproducer/agents/cookie_agent.py`
-- [ ] T036 [P] [US3] Implement `HeaderAgent` in `har_reproducer/agents/header_agent.py`
-- [ ] T037 [P] [US3] Implement `JSONPathAgent` in `har_reproducer/agents/jsonpath_agent.py`
-- [ ] T038 [P] [US3] Implement `CSSAgent` in `har_reproducer/agents/css_agent.py`
-- [ ] T039 [P] [US3] Implement `RegexAgent` in `har_reproducer/agents/regex_agent.py`
+- [X] T034 [US3] Implement `BaseAgent` and `run_tdd_loop` in `har_reproducer/agents/base.py`
+- [X] T035 [P] [US3] Implement `CookieAgent` in `har_reproducer/agents/cookie_agent.py`
+- [X] T036 [P] [US3] Implement `HeaderAgent` in `har_reproducer/agents/header_agent.py`
+- [X] T037 [P] [US3] Implement `JSONPathAgent` in `har_reproducer/agents/jsonpath_agent.py`
+- [X] T038 [P] [US3] Implement `CSSAgent` in `har_reproducer/agents/css_agent.py`
+- [X] T039 [P] [US3] Implement `RegexAgent` in `har_reproducer/agents/regex_agent.py`
 - [ ] T040 [US3] Integrate extractor generation into `analyze_step` in `har_reproducer/tracker.py`
 - [ ] T041 [US3] Implement extractor registry and reuse logic in `har_reproducer/engine.py`
 
