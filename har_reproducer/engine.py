@@ -253,6 +253,8 @@ if __name__ == "__main__":
             
             # Interpolate tokens from session store
             headers = self.session_store.render_dict(req.headers)
+            # Filter out HTTP/2 pseudo-headers (those starting with ':')
+            headers = {k: v for k, v in headers.items() if not k.startswith(':')}
             cookies = self.session_store.render_dict(req.cookies)
             body = self.session_store.render(req.body) if req.body else None
             
