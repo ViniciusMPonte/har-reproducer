@@ -107,9 +107,9 @@ class TokenTracker:
         return candidates
 
     def _determine_location(self, path: str) -> TokenLocation:
-        if path.startswith("header:"): return TokenLocation.Header
-        if path.startswith("cookie:"): return TokenLocation.Cookie
-        return TokenLocation.BodyJSON # Default for this demo
+        if path.startswith("header:"): return "Header"
+        if path.startswith("cookie:"): return "Cookie"
+        return "BodyJSON" # Default for this demo
 
     def _generate_curl_template(self, request: StepRequest) -> str:
         """Creates a curl command with {{token}} placeholders."""

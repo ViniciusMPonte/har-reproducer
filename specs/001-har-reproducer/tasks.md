@@ -70,17 +70,17 @@ description: "Task list template for feature implementation"
 **Independent Test**: Reproduce a login flow; verify second request uses token from live response.
 
 ### Tests for User Story 2
-- [ ] T020 [P] [US2] Test baseline comparison logic in `tests/tracker/test_compare_baseline.py`
-- [ ] T021 [P] [US2] Test `find_origin` using grep in `tests/tracker/test_find_origin.py`
-- [ ] T022 [P] [US2] Test `CurlTemplate` generation in `tests/tracker/test_curl_template.py`
-- [ ] T023 [P] [US2] Test `dry_run` simulation in `tests/tracker/test_dry_run.py`
+- [X] T020 [P] [US2] Test baseline comparison logic in `tests/tracker/test_compare_baseline.py`
+- [X] T021 [P] [US2] Test `find_origin` using grep in `tests/tracker/test_find_origin.py`
+- [X] T022 [P] [US2] Test `CurlTemplate` generation in `tests/tracker/test_curl_template.py`
+- [X] T023 [P] [US2] Test `dry_run` simulation in `tests/tracker/test_dry_run.py`
 
 ### Implementation for User Story 2
-- [ ] T024 [US2] Implement baseline comparison in `har_reproducer/tracker.py`
-- [ ] T025 [US2] Implement dynamic token candidate detection in `har_reproducer/tracker.py`
-- [ ] T026 [US2] Implement `CurlTemplate` logic in `har_reproducer/tracker.py`
-- [ ] T027 [US2] Implement `run` loop in `har_reproducer/engine.py` (execute $\rightarrow$ save $\rightarrow$ analyze $\rightarrow$ repeat)
-- [ ] T028 [US2] Implement `--dry-run` mode in `har_reproducer/engine.py`
+- [X] T024 [US2] Implement baseline comparison in `har_reproducer/tracker.py`
+- [X] T025 [US2] Implement dynamic token candidate detection in `har_reproducer/tracker.py`
+- [X] T026 [US2] Implement `CurlTemplate` logic in `har_reproducer/tracker.py`
+- [X] T027 [US2] Implement `run` loop in `har_reproducer/engine.py` (execute $\rightarrow$ save $\rightarrow$ analyze $\rightarrow$ repeat)
+- [X] T028 [US2] Implement `--dry-run` mode in `har_reproducer/engine.py`
 
 ---
 
