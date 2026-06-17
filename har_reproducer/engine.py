@@ -1,4 +1,8 @@
 import httpx
+from typing import Tuple
+from .models import Step, StepRequest, StepResponse
+from src.models.request_record import RecordedRequest
+from src.services.curl_generator import CurlGenerator
 import json
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -268,6 +272,27 @@ if __name__ == "__main__":
                 is_skippable=req.is_skippable
             )
             
+            # --- Recording Start ---
+            # Create a RecordedRequest for the current interaction
+            recorded_req = RecordedRequest(
+                step_index=step.index,
+                url=final_request.url,
+                method=final_request.method,
+                headers=final_request.headers,
+                cookies=final_request.cookies,
+                body=final_request.body
+            )
+            # Generate the curl command
+            curl_cmd = CurlGenerator().generate(recorded_req)
+            
+            # Save to file as per constitution: curls/req_NNNN.curl.sh
+            import os
+            os.makedirs("curls", exist_ok=True)
+            filename = f"curls/req_{step.index:04d}.curl.sh"
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(f"#!/bin/bash\n{curl_cmd}\n")
+            # --- Recording End ---
+            
             with httpx.Client(follow_redirects=False) as client:
                 resp = client.request(
                     method=final_request.method,
@@ -276,6 +301,7 @@ if __name__ == "__main__":
                     cookies=final_request.cookies,
                     content=final_request.body.encode("utf-8") if final_request.body else None
                 )
+
                 
                 # Force status_code to be int in case of weird mock behavior
                 status_code = resp.status_code

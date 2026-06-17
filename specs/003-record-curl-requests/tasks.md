@@ -24,8 +24,8 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Create directory structure for the feature if missing (src/models, src/services, src/cli)
-- [ ] T002 [P] Verify `httpx` and `pydantic` versions in pyproject.toml
+- [x] T001 Create directory structure for the feature if missing (src/models, src/services, src/cli)
+- [x] T002 [P] Verify `httpx` and `pydantic` versions in pyproject.toml
 
 ---
 
@@ -33,9 +33,9 @@
 
 **Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
-- [ ] T003 Create `RecordedRequest` and `TokenTrace` models in src/models/request_record.py (based on data-model.md)
-- [ ] T004 Create `CurlGenerator` class in src/services/curl_generator.py with basic structure
-- [ ] T005 [P] Implement basic HTTP to curl conversion in src/services/curl_generator.py (method, URL, basic headers)
+- [x] T003 Create `RecordedRequest` and `TokenTrace` models in src/models/request_record.py (based on data-model.md)
+- [x] T004 Create `CurlGenerator` class in src/services/curl_generator.py with basic structure
+- [x] T005 [P] Implement basic HTTP to curl conversion in src/services/curl_generator.py (method, URL, basic headers)
 
 **Checkpoint**: Foundation ready - user story implementation can begin
 
@@ -49,11 +49,11 @@
 
 ### Implementation for User Story 1
 
-- [ ] T006 [US1] Implement full header and cookie conversion in src/services/curl_generator.py
-- [ ] T007 [US1] Implement request body conversion (JSON/Form) in src/services/curl_generator.py
-- [ ] T008 [US1] Integrate `CurlGenerator` into `har_reproducer/engine.py` in the `execute_step` method
-- [ ] T009 [US1] Implement output logic to save curls to `curls/req_NNNN.curl.sh` (as per constitution)
-- [ ] T010 [US1] Verify a simple flow generates valid, executable `curl` commands
+- [x] T006 [US1] Implement full header and cookie conversion in src/services/curl_generator.py
+- [x] T007 [US1] Implement request body conversion (JSON/Form) in src/services/curl_generator.py
+- [x] T008 [US1] Integrate `CurlGenerator` into `har_reproducer/engine.py` in the `execute_step` method
+- [x] T009 [US1] Implement output logic to save curls to `curls/req_NNNN.curl.sh` (as per constitution)
+- [x] T010 [US1] Verify a simple flow generates valid, executable `curl` commands
 
 **Checkpoint**: User Story 1 is fully functional and testable independently
 
