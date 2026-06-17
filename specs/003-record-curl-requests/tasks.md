@@ -81,9 +81,9 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T016 [P] Run `quickstart.md` validation and ensure documentation matches implementation
-- [ ] T017 [P] Refactor `curl_generator.py` for better maintainability if needed
-- [ ] T018 [P] Ensure no secrets are leaked in the `curl` output beyond what is explicitly recorded (per FR-006)
+- [x] T016 [P] Run `quickstart.md` validation and ensure documentation matches implementation
+- [x] T017 [P] Refactor `curl_generator.py` for better maintainability if needed
+- [x] T018 [P] Ensure no secrets are leaked in the `curl` output beyond what is explicitly recorded (per FR-006)
 
 ---
 
