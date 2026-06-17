@@ -282,8 +282,8 @@ if __name__ == "__main__":
                 cookies=final_request.cookies,
                 body=final_request.body
             )
-            # Generate the curl command
-            curl_cmd = CurlGenerator().generate(recorded_req)
+            # Generate the curl command with session context for token tracing
+            curl_cmd = CurlGenerator().generate(recorded_req, session_store=self.session_store)
             
             # Save to file as per constitution: curls/req_NNNN.curl.sh
             import os
@@ -292,6 +292,7 @@ if __name__ == "__main__":
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(f"#!/bin/bash\n{curl_cmd}\n")
             # --- Recording End ---
+
             
             with httpx.Client(follow_redirects=False) as client:
                 resp = client.request(

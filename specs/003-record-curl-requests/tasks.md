@@ -67,11 +67,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T011 [US2] Implement token detection logic in src/services/curl_generator.py (comparing final request values vs session state)
-- [ ] T012 [US2] Implement token trace resolution in src/services/curl_generator.py (mapping tokens to `DynamicToken.origin_step`)
-- [ ] T013 [US2] Implement comment generation for tokens in src/services/curl_generator.py (formatting as `# Token {id} comes from response of step {index}`)
-- [ ] T014 [US2] Integrate trace comments into the final `curl` output in src/services/curl_generator.py
-- [ ] T015 [US2] Verify traceability comments are correctly added for multiple dynamic tokens in a single request
+- [x] T011 [US2] Implement token detection logic in src/services/curl_generator.py (comparing final request values vs session state)
+- [x] T012 [US2] Implement token trace resolution in src/services/curl_generator.py (mapping tokens to `DynamicToken.origin_step`)
+- [x] T013 [US2] Implement comment generation for tokens in src/services/curl_generator.py (formatting as `# Token {id} comes from response of step {index}`)
+- [x] T014 [US2] Integrate trace comments into the final `curl` output in src/services/curl_generator.py
+- [x] T015 [US2] Verify traceability comments are correctly added for multiple dynamic tokens in a single request
 
 **Checkpoint**: User Story 2 is fully functional and testable independently
 
