@@ -51,7 +51,7 @@ def test_recovery_401_retry(httpx_mock, mock_har, tmp_path, status_code):
         )
     )
     
-    response = engine.execute_step(step)
+    _, response = engine.execute_step(step)
     
     # If recovery is implemented, it should eventually return 200
     assert response.status_code == 200
@@ -74,5 +74,5 @@ def test_recovery_400_handling(httpx_mock, tmp_path):
         )
     )
     
-    response = engine.execute_step(step)
+    _, response = engine.execute_step(step)
     assert response.status_code == 400
