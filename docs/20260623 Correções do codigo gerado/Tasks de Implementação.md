@@ -190,7 +190,7 @@ SuccessCriterion = Annotated[
 
 ### TASK-06 — Mover lógica de entries do HAR para `HARParser` (engine.py)
 
-**Arquivos:** `har_reproducer/engine.py`, `har_reproducer/har_parser.py`
+**Arquivos:** `har_reproducer/engine.py`, `har_reproducer/parser.py`
 **Depende de:** nenhuma
 
 **Contexto:**
@@ -213,8 +213,8 @@ entries = HARParser.get_entries(self.har_path)
 ```
 
 **Critério de conclusão:**
-- [ ] `Engine` não faz mais `json.load` do HAR nem acessa `.get("log")`
-- [ ] `HARParser.get_entries` existe e está tipado
+- [X] `Engine` não faz mais `json.load` do HAR nem acessa `.get("log")`
+- [X] `HARParser.get_entries` existe e está tipado
 
 ---
 
@@ -349,7 +349,7 @@ Os métodos `read_step`, `grep_responses` e `get_session_state` existem como pla
 
 ### TASK-13 — Corrigir falhas silenciosas em `except Exception` (todos os arquivos)
 
-**Arquivos:** `har_reproducer/har_parser.py`, `har_reproducer/tracker.py`, `har_reproducer/grep_utils.py`, `har_reproducer/agents/base.py`
+**Arquivos:** `har_reproducer/parser.py`, `har_reproducer/tracker.py`, `har_reproducer/grep_utils.py`, `har_reproducer/agents/base.py`
 **Depende de:** nenhuma
 
 **Contexto:**
@@ -357,7 +357,7 @@ Padrão recorrente de `except Exception: pass` sem log, engolindo erros e imposs
 
 **O que fazer — por arquivo:**
 
-`har_parser.py` — método `decode_body`:
+`parser.py` — método `decode_body`:
 ```python
 except Exception as e:
     print(f"[AVISO] Falha ao decodificar body base64: {e}. Retornando conteúdo original.")
@@ -446,7 +446,7 @@ Anotações de tipo parciais ou ausentes em todo o projeto. Casos recorrentes: m
 
 **O que fazer — prioridade por arquivo:**
 
-`har_parser.py`:
+`parser.py`:
 ```python
 @classmethod
 def split_har(cls, har_path: Path, output_dir: Path) -> int: ...
@@ -594,9 +594,9 @@ patch = engine.diagnose(step_index=args.step)
 
 ---
 
-### TASK-19 — Corrigir `har_parser.py`: limpar output e extrair constante `SKIPPABLE_METHODS`
+### TASK-19 — Corrigir `parser.py`: limpar output e extrair constante `SKIPPABLE_METHODS`
 
-**Arquivo:** `har_reproducer/har_parser.py`
+**Arquivo:** `har_reproducer/parser.py`
 **Depende de:** nenhuma
 
 **Contexto:**

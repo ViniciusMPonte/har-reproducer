@@ -47,8 +47,7 @@ class Engine:
         """
         Main loop to reproduce the HAR flow.
         """
-        har_data = HARParser.load_har(self.har_path)
-        entries = har_data.get("log", {}).get("entries", [])
+        entries = HARParser.get_entries(self.har_path)
 
         # We need a baseline. Usually req[0].
         first_entry = HARParser.parse_entry(entries[0], 0)
