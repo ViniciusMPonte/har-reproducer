@@ -31,9 +31,9 @@ curl_cmd = CurlGenerator().generate(step.index, final_request, session_store=sel
 ```
 
 **Critério de conclusão:**
-- [ ] `RecordedRequest` não existe mais em nenhum arquivo
-- [ ] `CurlGenerator.generate` recebe `StepRequest` diretamente
-- [ ] Nenhum import quebrado no projeto
+- [X] `RecordedRequest` não existe mais em nenhum arquivo
+- [X] `CurlGenerator.generate` recebe `StepRequest` diretamente
+- [X] Nenhum import quebrado no projeto
 
 ---
 
@@ -50,8 +50,8 @@ curl_cmd = CurlGenerator().generate(step.index, final_request, session_store=sel
 2. Atualizar todos os imports do projeto para o novo caminho
 
 **Critério de conclusão:**
-- [ ] `CurlGenerator` está em `har_reproducer/curl_generator.py`
-- [ ] Nenhum import aponta para `src.services.curl_generator`
+- [X] `CurlGenerator` está em `har_reproducer/curl_generator.py`
+- [X] Nenhum import aponta para `src.services.curl_generator`
 
 ---
 

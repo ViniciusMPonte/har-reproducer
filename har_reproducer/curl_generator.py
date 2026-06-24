@@ -2,7 +2,7 @@ from typing import Dict, Optional, List, Any
 
 from pydantic import BaseModel
 
-from har_reproducer.models import StepRequest
+from .models import StepRequest
 
 
 class TokenTrace(BaseModel):

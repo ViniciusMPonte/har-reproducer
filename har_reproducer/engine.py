@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 import httpx
 
-from src.services.curl_generator import CurlGenerator
+from .curl_generator import CurlGenerator
 from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis
 from .parser import HARParser
 from .session import SessionStore
