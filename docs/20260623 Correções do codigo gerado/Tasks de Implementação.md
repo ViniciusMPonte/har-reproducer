@@ -93,9 +93,9 @@ class TokenLocation(str, Enum):
 ```
 
 **Critério de conclusão:**
-- [ ] Os três Enums existem em `models.py`
-- [ ] Nenhum arquivo usa strings soltas para esses valores
-- [ ] `TokenTrace.location` (se mantido) usa `TokenLocation`
+- [X] Os três Enums existem em `models.py`
+- [X] Nenhum arquivo usa strings soltas para esses valores
+- [X] `TokenTrace.location` (se mantido) usa `TokenLocation`
 
 ---
 

@@ -1,19 +1,6 @@
 from typing import Dict, Optional, List, Any
 
-from pydantic import BaseModel
-
-from .models import StepRequest
-
-
-class TokenTrace(BaseModel):
-    """
-    Maps a specific value in the request to its token source.
-    """
-    token_id: str
-    value: str
-    origin_step: int
-    location: str  # "Header", "Cookie", or "Body"
-    key: str  # The header/cookie name where the token was used
+from .models import StepRequest, TokenTrace
 
 
 class CurlGenerator:
