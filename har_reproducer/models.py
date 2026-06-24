@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, List, Optional, Union, Any, Literal
+from typing import Annotated, Dict, List, Optional, Union, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -107,9 +107,28 @@ class FailureContext(BaseModel):
     active_extractors: List[Extractor]
 
 
-class Patch(BaseModel):
-    action: PatchAction
-    target_token_id: Optional[str] = None
-    new_value: Optional[str] = None
-    new_code: Optional[str] = None
+class InjectValuePatch(BaseModel):
+    action: Literal[PatchAction.INJECT_VALUE]
+    target_token_id: str
+    new_value: str
     rationale: str
+
+
+class FixExtractorPatch(BaseModel):
+    action: Literal[PatchAction.FIX_EXTRACTOR]
+    target_token_id: str
+    new_code: str
+    rationale: str
+
+
+class ReplaceExtractorPatch(BaseModel):
+    action: Literal[PatchAction.REPLACE_EXTRACTOR]
+    target_token_id: str
+    new_code: str
+    rationale: str
+
+
+Patch = Annotated[
+    Union[InjectValuePatch, FixExtractorPatch, ReplaceExtractorPatch],
+    Field(discriminator="action"),
+]

@@ -1,12 +1,13 @@
-from typing import List, Dict, Any, Optional
-from pathlib import Path
-from .base import BaseAgent
-from ..models import Patch, FailureContext
+from typing import List, Optional
+
+from ..models import Patch, FailureContext, FixExtractorPatch
+
 
 class DiagnoseAgent:
     """
     Diagnostic Agent: Uses tool-use to analyze failures and propose patches.
     """
+
     def __init__(self, engine, failure_context: FailureContext):
         self.engine = engine
         self.context = failure_context
@@ -22,7 +23,7 @@ class DiagnoseAgent:
         # 2. Look at the response.
         # 3. Search for the required token in previous responses.
         # 4. Propose a patch.
-        
+
         return self._simulate_diagnosis()
 
     def _simulate_diagnosis(self) -> Optional[Patch]:
@@ -35,8 +36,8 @@ class DiagnoseAgent:
         for res_file in glob.glob(str(responses_dir / "res_*.json")):
             with open(res_file, 'r') as f:
                 content = f.read()
-                if "eyJ" in content: # JWT start
-                    return Patch(
+                if "eyJ" in content:  # JWT start
+                    return FixExtractorPatch(
                         action="FIX_EXTRACTOR",
                         target_token_id="auth_token",
                         new_code="def extract_auth_token(response): import re; m = re.search(r'eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+', response['body']); return m.group(0) if m else None",

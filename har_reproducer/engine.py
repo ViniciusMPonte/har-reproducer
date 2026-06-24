@@ -5,7 +5,8 @@ from typing import List, Optional, Tuple
 import httpx
 
 from .curl_generator import CurlGenerator
-from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis
+from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis, \
+    InjectValuePatch, FixExtractorPatch, ReplaceExtractorPatch
 from .parser import HARParser
 from .session import SessionStore
 from .tracker import TokenTracker
@@ -197,36 +198,31 @@ if __name__ == "__main__":
         """
         Applies a patch provided by the Diagnostic Agent to the session or registry.
         """
-        if patch.action == "INJECT_VALUE":
-            if patch.target_token_id and patch.new_value:
-                self.session_store.set_token(patch.target_token_id, patch.new_value)
+        if isinstance(patch, InjectValuePatch):
+            self.session_store.set_token(patch.target_token_id, patch.new_value)
 
-        elif patch.action == "FIX_EXTRACTOR":
-            if patch.target_token_id and patch.new_code:
-                # Create a new extractor with updated code and mark as unverified
-                from .models import Extractor
-                current_extractor = self.session_store.state.registry.get(patch.target_token_id)
-                agent_type = current_extractor.agent_type if current_extractor else "RegexAgent"
+        elif isinstance(patch, FixExtractorPatch):
+            # Create a new extractor with updated code and mark as unverified
+            current_extractor = self.session_store.state.registry.get(patch.target_token_id)
+            agent_type = current_extractor.agent_type if current_extractor else "RegexAgent"
 
-                self.session_store.state.registry[patch.target_token_id] = Extractor(
-                    token_id=patch.target_token_id,
-                    code=patch.new_code,
-                    verified=False,
-                    agent_type=agent_type,
-                    origin_step=current_extractor.origin_step if current_extractor else None
-                )
+            self.session_store.state.registry[patch.target_token_id] = Extractor(
+                token_id=patch.target_token_id,
+                code=patch.new_code,
+                verified=False,
+                agent_type=agent_type,
+                origin_step=current_extractor.origin_step if current_extractor else None
+            )
 
-        elif patch.action == "REPLACE_EXTRACTOR":
-            # Similar to FIX_EXTRACTOR but might change agent_type
-            if patch.target_token_id and patch.new_code:
-                from .models import Extractor
-                self.session_store.state.registry[patch.target_token_id] = Extractor(
-                    token_id=patch.target_token_id,
-                    code=patch.new_code,
-                    verified=False,
-                    agent_type="RegexAgent",  # Default or from a suggested agent_type
-                    origin_step=None
-                )
+        elif isinstance(patch, ReplaceExtractorPatch):
+            # Similar to FixExtractorPatch but always resets agent_type to default
+            self.session_store.state.registry[patch.target_token_id] = Extractor(
+                token_id=patch.target_token_id,
+                code=patch.new_code,
+                verified=False,
+                agent_type="RegexAgent",  # Default or from a suggested agent_type
+                origin_step=None
+            )
 
     def diagnose(self, step_index: int) -> Optional[Patch]:
         """

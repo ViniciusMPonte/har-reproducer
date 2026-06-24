@@ -135,9 +135,9 @@ Patch = Annotated[Union[InjectValuePatch, FixExtractorPatch, ReplaceExtractorPat
 ```
 
 **Critério de conclusão:**
-- [ ] `Patch` genérico removido de `models.py`
-- [ ] Criação de `Patch` inválido levanta erro do Pydantic
-- [ ] `diagnose_agent.py` e `engine.py` criam os subtipos corretos
+- [X] `Patch` genérico removido de `models.py`
+- [X] Criação de `Patch` inválido levanta erro do Pydantic
+- [X] `diagnose_agent.py` e `engine.py` criam os subtipos corretos
 
 ---
 
