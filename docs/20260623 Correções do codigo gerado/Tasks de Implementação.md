@@ -182,9 +182,9 @@ SuccessCriterion = Annotated[
 ```
 
 **Critério de conclusão:**
-- [ ] `SuccessCriterion` genérico removido
-- [ ] `validator.py` não faz mais checagem manual de tipo no critério `composite`
-- [ ] Todos os lugares que criam `SuccessCriterion` usam o subtipo correto
+- [X] `SuccessCriterion` genérico removido
+- [X] `validator.py` não faz mais checagem manual de tipo no critério `composite`
+- [X] Todos os lugares que criam `SuccessCriterion` usam o subtipo correto
 
 ---
 

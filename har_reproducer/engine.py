@@ -35,8 +35,11 @@ class Engine:
             try:
                 with open(config_path, "r") as f:
                     config = json.load(f)
+                    from pydantic import TypeAdapter
                     from .models import SuccessCriterion
-                    self.success_criteria = [SuccessCriterion(**c) for c in config.get("success_criteria", [])]
+                    _criterion_adapter = TypeAdapter(SuccessCriterion)
+                    self.success_criteria = [_criterion_adapter.validate_python(c) for c in
+                                             config.get("success_criteria", [])]
             except Exception as e:
                 print(f"Error loading config: {e}")
 
