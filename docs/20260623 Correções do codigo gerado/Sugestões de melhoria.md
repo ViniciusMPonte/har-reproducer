@@ -111,7 +111,7 @@ except Exception as e:
     print(f"[AVISO] <contexto do que estava sendo feito>: {e}")
 ```
 
-Ocorrências identificadas: `har_parser.py` (`decode_body`), `tracker.py` (`_load_response`), `grep_utils.py` (`try_decode`), `base.py` (timeout de subprocess).
+Ocorrências identificadas: `har_parser.py` (`decode_body`) e `base.py` (timeout de subprocess) — **pendentes**. `tracker.py` (`_load_response`) e `grep_utils.py` (`try_decode`) — ✅ resolvidos.
 
 ---
 
@@ -262,11 +262,13 @@ Está definido mas não é usado em lugar nenhum relevante do código. O `Extrac
 
 ---
 
-### 3.4 `try_decode` não é usado em lugar nenhum (grep_utils.py)
+### 3.4 `try_decode` não é usado em lugar nenhum (grep_utils.py) ✅
 
-Foi importado no `tracker.py` mas nunca chamado. É código morto.
+**Resolvido.** A função `try_decode` foi integrada ao fluxo de busca por uma abordagem mais ampla: em vez de só decodificar o padrão antes de buscar, a `grep_in_real_responses` agora tenta múltiplas variantes do padrão (literal, decodificado via `try_decode`, URL-encoded e Base64-encoded), parando no primeiro match. Isso cobre tanto o caso em que a response armazena o valor decodificado quanto o caso inverso.
 
-**Sugestão:** ou remover, ou usar no `grep_in_real_responses` para tentar decodificar o padrão antes de buscar, aumentando as chances de encontrar tokens que estejam codificados nas responses.
+A lógica foi distribuída em duas funções privadas:
+- `_build_pattern_variants(pattern)` — gera as variantes deduplicas, reutilizando `try_decode`
+- `_grep_single_pattern(responses_dir, pattern)` — executa o grep para um padrão único
 
 ---
 

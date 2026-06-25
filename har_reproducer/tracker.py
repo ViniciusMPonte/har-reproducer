@@ -92,7 +92,8 @@ class TokenTracker:
         if res_file.exists():
             try:
                 return json.loads(res_file.read_text(encoding="utf-8"))
-            except Exception:
+            except Exception as e:
+                print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
                 return None
         return None
 

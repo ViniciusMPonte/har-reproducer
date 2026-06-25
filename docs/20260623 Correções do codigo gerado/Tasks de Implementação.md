@@ -239,25 +239,26 @@ entries = HARParser.get_entries(self.har_path)
 
 ---
 
-### TASK-08 — Remover ou ativar `try_decode` (grep_utils.py)
+### TASK-08 — Ativar `try_decode` e buscar todas as variantes encode/decode (grep_utils.py) ✅
 
 **Arquivos:** `har_reproducer/grep_utils.py`, `har_reproducer/tracker.py`
 **Depende de:** nenhuma
 
 **Contexto:**
-`try_decode` está definido em `grep_utils.py` e importado em `tracker.py`, mas nunca é chamado. É código morto.
+`try_decode` estava definido em `grep_utils.py` mas nunca chamado. Além disso, a busca original só tentava o padrão literal — tokens podem estar armazenados nas responses em encoding diferente do usado na requisição (ex: requisição envia Base64, response armazena o valor bruto, ou vice-versa).
 
-**O que fazer — opção A (remover):**
-1. Remover `try_decode` de `grep_utils.py`
-2. Remover o import em `tracker.py`
-
-**O que fazer — opção B (ativar):**
-1. Usar `try_decode` dentro de `grep_in_real_responses` para tentar decodificar o padrão antes de buscar (aumenta chance de encontrar tokens base64)
-2. Adicionar log no `except` conforme padrão global (ver TASK-13)
+**O que fazer:**
+1. `grep_in_real_responses` refatorar para tentar todas as variantes do padrão antes de desistir, via nova função privada `_build_pattern_variants`
+2. `_build_pattern_variants` gera variantes deduplicas na ordem: literal → decodificado (via `try_decode`) → URL-encoded → Base64-encoded
+3. Extrair lógica de execução do grep para `_grep_single_pattern` (responsabilidade única)
+4. Reaproveitar `try_decode` por `_build_pattern_variants` sem duplicação de lógica
+5. Adicionado log no `except` do `try_decode` conforme padrão global (TASK-13)
 
 **Critério de conclusão:**
-- [ ] `try_decode` está removido ou sendo chamado em pelo menos um lugar
-- [ ] Nenhum import de `try_decode` sem uso
+- [X] `try_decode` é chamado em pelo menos um lugar (`_build_pattern_variants`)
+- [X] Nenhum import de `try_decode` sem uso
+- [X] Busca tenta literal, decodificado, URL-encoded e Base64-encoded antes de retornar `None`
+- [X] `except Exception` no `try_decode` tem `print` de aviso com contexto
 
 ---
 
@@ -370,12 +371,14 @@ except Exception as e:
     print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
     return None
 ```
+✅ Implementado.
 
 `grep_utils.py` — método `try_decode`:
 ```python
 except Exception as e:
     print(f"[AVISO] Falha ao decodificar base64: {e}")
 ```
+✅ Implementado (junto com TASK-08).
 
 `base.py` — timeout de subprocess:
 ```python
