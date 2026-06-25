@@ -235,7 +235,7 @@ entries = HARParser.get_entries(self.har_path)
 2. Remover a classe de `models.py`
 
 **Critério de conclusão:**
-- [ ] `ExtractorMetadata` não existe mais em nenhum arquivo
+- [X] `ExtractorMetadata` não existe mais em nenhum arquivo
 
 ---
 

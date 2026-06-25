@@ -58,12 +58,6 @@ class TokenTrace(BaseModel):
     key: str
 
 
-class ExtractorMetadata(BaseModel):
-    token_id: str
-    agent_type: AgentType
-    verified: bool = False
-
-
 class Extractor(BaseModel):
     token_id: str
     code: str

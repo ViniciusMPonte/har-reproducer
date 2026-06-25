@@ -1,19 +1,22 @@
-from typing import Dict, List, Any, Optional
 import json
 from pathlib import Path
-from .models import Step, StepRequest, StepResponse, DynamicToken, TokenLocation, StepAnalysis, Extractor, ExtractorMetadata
-from .grep_utils import grep_in_real_responses, try_decode
-from .session import SessionStore
+from typing import Dict, List, Any, Optional
+
 from .agents.cookie_agent import CookieAgent
+from .agents.css_agent import CSSAgent
 from .agents.header_agent import HeaderAgent
 from .agents.jsonpath_agent import JSONPathAgent
-from .agents.css_agent import CSSAgent
 from .agents.regex_agent import RegexAgent
+from .grep_utils import grep_in_real_responses
+from .models import Step, StepRequest, DynamicToken, TokenLocation, StepAnalysis, Extractor
+from .session import SessionStore
+
 
 class TokenTracker:
     """
     The Analysis Pipeline: Detects dynamic tokens and determines how to extract them.
     """
+
     def __init__(self, responses_dir: Path, session_store: SessionStore):
         self.responses_dir = responses_dir
         self.session_store = session_store
@@ -24,10 +27,10 @@ class TokenTracker:
         """
         # 1. Baseline Comparison
         diffs = self._compare_to_baseline(step, baseline_step)
-        
+
         # 2. Dynamic Candidate Detection
         candidates = self._detect_candidates(diffs)
-        
+
         # 3. Origin Search (Grep)
         resolved_tokens = []
         for candidate in candidates:
@@ -39,14 +42,14 @@ class TokenTracker:
                     candidate.status = "Resolved"
                     resolved_tokens.append(candidate)
                     continue
-                    
+
             # Try to find origin in real responses
             origin = grep_in_real_responses(self.responses_dir, candidate.current_value)
             if origin:
                 candidate.origin_step = origin[0]
                 candidate.status = "Resolved"
                 resolved_tokens.append(candidate)
-                
+
                 # 5. Extractor Generation
                 # In dry-run, we might skip actual LLM generation and just mark as "Potentially Resolved"
                 # but for now, we'll try to generate it if we have a sample.
@@ -72,9 +75,9 @@ class TokenTracker:
 
         # 6. Curl Template Generation
         template = self._generate_curl_template(step.request)
-        
+
         # 7. Validation (Skipped in this basic implementation, assumed by pipeline)
-        
+
         # 8. StepAnalysis construction
         return StepAnalysis(
             step_index=step.index,
@@ -103,7 +106,7 @@ class TokenTracker:
             "Script": RegexAgent,
         }
         agent_cls = location_map.get(candidate.location, RegexAgent)
-        
+
         agent = agent_cls(
             token_id=candidate.token_id,
             response_sample=response_sample,
@@ -114,22 +117,22 @@ class TokenTracker:
     def _compare_to_baseline(self, step: Step, baseline: Step) -> Dict[str, Any]:
         """Detects values that differ from the baseline."""
         diffs = {}
-        
+
         # Compare headers
         for k, v in step.request.headers.items():
             if baseline.request.headers.get(k) != v:
                 diffs[f"header:{k}"] = v
-                
+
         # Compare cookies
         for k, v in step.request.cookies.items():
             if baseline.request.cookies.get(k) != v:
                 diffs[f"cookie:{k}"] = v
-                
+
         # Compare body (simplified)
         if step.request.body and baseline.request.body:
             if step.request.body != baseline.request.body:
                 diffs["body"] = step.request.body
-                
+
         return diffs
 
     def _detect_candidates(self, diffs: Dict[str, Any]) -> List[DynamicToken]:
@@ -137,10 +140,10 @@ class TokenTracker:
         candidates = []
         for path, value in diffs.items():
             token_id = path.split(":", 1)[-1] if ":" in path else "body_token"
-            
+
             # Heuristic: token-like names
             is_token_name = any(x in token_id.lower() for x in ["token", "jwt", "auth", "csrf", "session"])
-            
+
             if is_token_name:
                 location = self._determine_location(path)
                 candidates.append(DynamicToken(
@@ -155,7 +158,7 @@ class TokenTracker:
     def _determine_location(self, path: str) -> TokenLocation:
         if path.startswith("header:"): return "Header"
         if path.startswith("cookie:"): return "Cookie"
-        return "BodyJSON" # Default for this demo
+        return "BodyJSON"  # Default for this demo
 
     def _generate_curl_template(self, request: StepRequest) -> str:
         """Creates a curl command with {{token}} placeholders."""
