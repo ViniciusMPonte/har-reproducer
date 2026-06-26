@@ -1,8 +1,9 @@
 import argparse
-import sys
 from pathlib import Path
-from .parser import HARParser
+
 from .engine import Engine
+from .parser import HARParser
+
 
 def handle_parse(args):
     """Handles the 'parse' subcommand to split a HAR file into steps."""
@@ -10,6 +11,7 @@ def handle_parse(args):
     output_dir = Path(args.output)
     count = HARParser.split_har(har_path, output_dir)
     print(f"Parsed HAR into {count} steps.")
+
 
 def handle_run(args):
     """Handles the 'run' subcommand to execute the reproduction flow."""
@@ -26,28 +28,35 @@ def handle_run(args):
     else:
         print("\nDry-run analysis completed.")
 
+
 def handle_diagnose(args):
     """Handles the 'diagnose' subcommand to suggest fixes for failed steps."""
     steps_dir = Path(args.steps)
     res_dir = Path(args.real_responses)
-    
+
     # We use a dummy HAR path since we are only diagnosing from disk
     engine = Engine(Path("dummy.har"), steps_dir)
     engine.real_responses_dir = res_dir
-    
+
     # For the CLI, we might want to diagnose a specific step or all failed ones.
     # For now, we diagnose step 1 as an example.
     print("Analyzing failures...")
     patch = engine.diagnose(step_index=1)
-    
+
     if patch:
         print(f"Proposed Patch: {patch.action}")
         print(f"Target: {patch.target_token_id}")
         print(f"Rationale: {patch.rationale}")
-        if patch.new_code:
+        if hasattr(patch, "new_code"):
             print(f"Suggested Code:\n{patch.new_code}")
+
+        # TODO (TASK-10): Applying the patch is not yet implemented.
+        #   When the diagnose → apply → re-execute → verify loop is production-ready,
+        #   call engine.apply_patch(patch) here and re-run the failed step to confirm
+        #   the fix. Until then, the patch is only printed for manual inspection.
     else:
         print("No deterministic fix found.")
+
 
 def main():
     """Entry point for the har-reproducer CLI."""
@@ -75,6 +84,7 @@ def main():
 
     args = parser.parse_args()
     args.func(args)
+
 
 if __name__ == "__main__":
     main()

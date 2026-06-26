@@ -5,8 +5,7 @@ from typing import List, Optional, Tuple
 import httpx
 
 from .curl_generator import CurlGenerator
-from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis, \
-    InjectValuePatch, FixExtractorPatch, ReplaceExtractorPatch
+from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis
 from .parser import HARParser
 from .session import SessionStore
 from .tracker import TokenTracker
@@ -196,39 +195,20 @@ if __name__ == "__main__":
 
         return False
 
-    def apply_patch(self, patch: Patch):
-        """
-        Applies a patch provided by the Diagnostic Agent to the session or registry.
-        """
-        if isinstance(patch, InjectValuePatch):
-            self.session_store.set_token(patch.target_token_id, patch.new_value)
-
-        elif isinstance(patch, FixExtractorPatch):
-            # Create a new extractor with updated code and mark as unverified
-            current_extractor = self.session_store.state.registry.get(patch.target_token_id)
-            agent_type = current_extractor.agent_type if current_extractor else "RegexAgent"
-
-            self.session_store.state.registry[patch.target_token_id] = Extractor(
-                token_id=patch.target_token_id,
-                code=patch.new_code,
-                verified=False,
-                agent_type=agent_type,
-                origin_step=current_extractor.origin_step if current_extractor else None
-            )
-
-        elif isinstance(patch, ReplaceExtractorPatch):
-            # Similar to FixExtractorPatch but always resets agent_type to default
-            self.session_store.state.registry[patch.target_token_id] = Extractor(
-                token_id=patch.target_token_id,
-                code=patch.new_code,
-                verified=False,
-                agent_type="RegexAgent",  # Default or from a suggested agent_type
-                origin_step=None
-            )
-
     def diagnose(self, step_index: int) -> Optional[Patch]:
         """
         Launches the Diagnostic Agent to find a fix for a failed step.
+
+        Returns a Patch describing the proposed fix, or None if no fix was found.
+        The caller is responsible for deciding whether and how to apply the patch.
+
+        # TODO (TASK-10): The diagnose → apply flow is not production-ready.
+        #   - FailureContext is constructed with a hardcoded dummy request/response
+        #     instead of the actual failed request and response from this run.
+        #   - apply_patch has been removed until the full loop (diagnose → apply →
+        #     re-execute → verify) is implemented end-to-end.
+        #   Tracked in TASK-10. When the loop is ready, wire apply_patch back here
+        #   or in the CLI handler and drive it from the real failure context.
         """
         from .agents.diagnose_agent import DiagnoseAgent
         from .models import FailureContext

@@ -280,7 +280,7 @@ from typing import List
 ```
 
 **Critério de conclusão:**
-- [ ] `Any` não aparece em `from typing import` no `validator.py`
+- [X] `Any` não aparece em `from typing import` no `validator.py`
 
 ---
 
@@ -297,8 +297,8 @@ O método `apply_patch` existe no `Engine` mas nunca é chamado. O `diagnose` do
 - Se o fluxo deve ser conectado agora: após o `diagnose` retornar um `Patch`, chamar `engine.apply_patch(patch)` dentro do `handle_diagnose` da CLI
 
 **Critério de conclusão:**
-- [ ] Ou `apply_patch` é chamado no fluxo real, ou está removido com TODO documentado
-- [ ] Nenhum método público "fantasma" sem chamador e sem aviso
+- [X] Ou `apply_patch` é chamado no fluxo real, ou está removido com TODO documentado
+- [X] Nenhum método público "fantasma" sem chamador e sem aviso
 
 ---
 
