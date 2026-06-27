@@ -8,7 +8,7 @@ from .agents.header_agent import HeaderAgent
 from .agents.jsonpath_agent import JSONPathAgent
 from .agents.regex_agent import RegexAgent
 from .grep_utils import grep_in_real_responses
-from .models import Step, StepRequest, DynamicToken, TokenLocation, StepAnalysis, Extractor
+from .models import Extractor, Step, StepRequest, DynamicToken, TokenLocation, StepAnalysis
 from .session import SessionStore
 
 
@@ -61,7 +61,6 @@ class TokenTracker:
                             self.session_store.state.registry[candidate.token_id] = extractor
                     else:
                         # In dry-run, we just register it as Pending
-                        from .models import Extractor
                         self.session_store.state.registry[candidate.token_id] = Extractor(
                             token_id=candidate.token_id,
                             code="",

@@ -387,8 +387,8 @@ except subprocess.TimeoutExpired:
 ```
 
 **Critério de conclusão:**
-- [ ] Nenhum `except Exception: pass` no projeto
-- [ ] Nenhum `except Exception` sem `print` de aviso com contexto
+- [X] Nenhum `except Exception: pass` no projeto
+- [X] Nenhum `except Exception` sem `print` de aviso com contexto
 
 ---
 
@@ -435,7 +435,7 @@ import glob
 ```
 
 **Critério de conclusão:**
-- [ ] Nenhum `import` dentro de método, `if` ou loop em nenhum arquivo do projeto
+- [X] Nenhum `import` dentro de método, `if` ou loop em nenhum arquivo do projeto
 
 ---
 

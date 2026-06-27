@@ -1,4 +1,9 @@
+import subprocess
+import sys
+from pathlib import Path
 from typing import Optional
+
+from har_reproducer.models import Extractor
 
 
 class BaseAgent:
@@ -29,7 +34,6 @@ class BaseAgent:
             code = self.generate_code()
 
             if self._verify_code(code):
-                from har_reproducer.models import Extractor
                 return Extractor(
                     token_id=self.token_id,
                     code=code,
@@ -46,10 +50,6 @@ class BaseAgent:
         """
         Verifies the generated code by executing it against the response sample.
         """
-        import subprocess
-        import sys
-        from pathlib import Path
-
         temp_file = Path(f"temp_extractor_{self.token_id}.py")
 
         wrapped_code = f"""

@@ -1,3 +1,4 @@
+import glob
 from typing import List, Optional
 
 from ..models import Patch, FailureContext, FixExtractorPatch
@@ -31,7 +32,6 @@ class DiagnoseAgent:
         Simulates the diagnostic process for tests.
         """
         # Search for common JWT patterns in real responses
-        import glob
         responses_dir = self.engine.real_responses_dir
         for res_file in glob.glob(str(responses_dir / "res_*.json")):
             with open(res_file, 'r') as f:

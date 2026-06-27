@@ -1,11 +1,16 @@
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
 import httpx
+from pydantic import TypeAdapter
 
+from .agents.diagnose_agent import DiagnoseAgent
 from .curl_generator import CurlGenerator
-from .models import Step, StepRequest, StepResponse, Extractor, Patch, StepAnalysis
+from .models import Extractor, FailureContext, Patch, Step, StepAnalysis, StepRequest, StepResponse, SuccessCriterion
 from .parser import HARParser
 from .session import SessionStore
 from .tracker import TokenTracker
@@ -34,8 +39,6 @@ class Engine:
             try:
                 with open(config_path, "r") as f:
                     config = json.load(f)
-                    from pydantic import TypeAdapter
-                    from .models import SuccessCriterion
                     _criterion_adapter = TypeAdapter(SuccessCriterion)
                     self.success_criteria = [_criterion_adapter.validate_python(c) for c in
                                              config.get("success_criteria", [])]
@@ -135,10 +138,6 @@ class Engine:
 
     def _run_extractor(self, extractor: Extractor, response: dict) -> Optional[str]:
         """Executes the extractor code against a response and returns the result."""
-        import sys
-        import subprocess
-        from pathlib import Path
-
         temp_file = Path(f"run_extractor_{extractor.token_id}.py")
         safe_token_id = extractor.token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
 
@@ -210,9 +209,6 @@ if __name__ == "__main__":
         #   Tracked in TASK-10. When the loop is ready, wire apply_patch back here
         #   or in the CLI handler and drive it from the real failure context.
         """
-        from .agents.diagnose_agent import DiagnoseAgent
-        from .models import FailureContext
-
         # Construct failure context
         # In a real scenario, we'd use the actual failed response
         ctx = FailureContext(
@@ -255,7 +251,6 @@ if __name__ == "__main__":
             curl_cmd = CurlGenerator().generate(step.index, final_request, session_store=self.session_store)
 
             # Save to file as per constitution: curls/req_NNNN.curl.sh
-            import os
             os.makedirs("curls", exist_ok=True)
             filename = f"curls/req_{step.index:04d}.curl.sh"
             with open(filename, "w", encoding="utf-8") as f:
