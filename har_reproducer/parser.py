@@ -35,7 +35,8 @@ class HARParser:
         if encoding == "base64":
             try:
                 return base64.b64decode(body_content).decode("utf-8", errors="replace")
-            except Exception:
+            except Exception as e:
+                print(f"[AVISO] Falha ao decodificar body base64: {e}. Retornando conteúdo original.")
                 return body_content
 
         return body_content

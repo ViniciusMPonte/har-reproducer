@@ -1,10 +1,12 @@
 from typing import Optional
 
+
 class BaseAgent:
     """
     Base class for all Token Extraction Agents.
     Implements the TDD loop for verified extractor generation.
     """
+
     def __init__(self, token_id: str, response_sample: dict, expected_value: str):
         # Normalize token_id to be a valid Python identifier for the function name
         self.token_id = token_id
@@ -14,7 +16,7 @@ class BaseAgent:
 
     def generate_code(self) -> str:
         """
-        To be implemented by subclasses. 
+        To be implemented by subclasses.
         Should return the Python source code for the extractor function.
         """
         raise NotImplementedError("Subclasses must implement generate_code")
@@ -25,7 +27,7 @@ class BaseAgent:
         """
         for attempt in range(max_attempts):
             code = self.generate_code()
-            
+
             if self._verify_code(code):
                 from har_reproducer.models import Extractor
                 return Extractor(
@@ -35,9 +37,9 @@ class BaseAgent:
                     agent_type=self.__class__.__name__,
                     origin_step=origin_step
                 )
-            
+
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
-            
+
         return None
 
     def _verify_code(self, code: str) -> bool:
@@ -47,9 +49,9 @@ class BaseAgent:
         import subprocess
         import sys
         from pathlib import Path
-        
+
         temp_file = Path(f"temp_extractor_{self.token_id}.py")
-        
+
         wrapped_code = f"""
 import sys
 import json
@@ -69,7 +71,7 @@ if __name__ == "__main__":
         sys.exit(1)
 """
         temp_file.write_text(wrapped_code)
-        
+
         try:
             result = subprocess.run(
                 [sys.executable, str(temp_file)],
@@ -77,13 +79,13 @@ if __name__ == "__main__":
                 text=True,
                 timeout=5
             )
-            
+
             if result.returncode == 0 and result.stdout.strip() == self.expected_value:
                 return True
         except subprocess.TimeoutExpired:
-            pass
+            print(f"[AVISO] Timeout ao verificar extrator para {self.token_id}")
         finally:
             if temp_file.exists():
                 temp_file.unlink()
-                
+
         return False

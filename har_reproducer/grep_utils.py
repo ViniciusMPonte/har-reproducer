@@ -4,6 +4,7 @@ import base64
 from pathlib import Path
 from typing import Optional, Tuple
 
+
 def try_decode(value: str) -> str:
     """
     Attempts to decode a value through a sequence: Literal -> URL-decoded -> Base64-decoded.
@@ -75,12 +76,16 @@ def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[in
         try:
             index_str = filename.split("_")[1].split(".")[0]
             step_index = int(index_str)
-        except (IndexError, ValueError):
+        except (IndexError, ValueError) as e:
+            print(f"[AVISO] Falha ao extrair step index do arquivo '{filename}': {e}")
             return None
 
         return step_index, filename
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        if e.returncode != 1:
+            # Exit code 1 means grep found no matches — expected. Anything else is a real error.
+            print(f"[AVISO] grep falhou com código {e.returncode} ao buscar padrão '{pattern}': {e.stderr.strip()}")
         return None
 
 
