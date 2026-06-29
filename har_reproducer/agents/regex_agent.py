@@ -1,11 +1,14 @@
+from typing import Optional
+
 from .base import BaseAgent
-import re
+
 
 class RegexAgent(BaseAgent):
     """
     Agent specialized in extracting tokens using Regular Expressions.
     """
-    def generate_code(self) -> str:
+
+    def generate_code(self, last_error: Optional[str] = None) -> str:
         return f"""
 import re
 

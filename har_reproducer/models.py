@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Dict, List, Optional, Union, Any, Literal
+from typing import Annotated, Dict, List, Optional, Union, Literal
 
 from pydantic import BaseModel, Field
 
@@ -71,7 +71,7 @@ class DynamicToken(BaseModel):
     baseline_value: Optional[str] = None
     current_value: str
     location: TokenLocation
-    origin_step: int
+    origin_step: Optional[int] = None
     status: Literal["Resolved", "Unresolved"]
 
 
@@ -82,7 +82,7 @@ class SessionState(BaseModel):
 
 class StepAnalysis(BaseModel):
     step_index: int
-    static_values: Dict[str, Any] = Field(default_factory=dict)
+    static_values: Dict[str, str] = Field(default_factory=dict)
     dynamic_tokens: List[DynamicToken] = Field(default_factory=list)
     curl_template: str
 

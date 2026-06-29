@@ -1,10 +1,14 @@
+from typing import Optional
+
 from .base import BaseAgent
+
 
 class CSSAgent(BaseAgent):
     """
     Agent specialized in extracting tokens from HTML bodies using CSS selectors.
     """
-    def generate_code(self) -> str:
+
+    def generate_code(self, last_error: Optional[str] = None) -> str:
         return f"""
 from bs4 import BeautifulSoup
 

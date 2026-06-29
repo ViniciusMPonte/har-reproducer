@@ -1,15 +1,18 @@
-from typing import Dict, Any
+from typing import Any, Dict, List, Union
+
 from .models import SessionState
+
 
 class SessionStore:
     """
     Manages the global state of a reproduction session, providing
     mechanisms to store, retrieve, and interpolate dynamic tokens.
     """
-    def __init__(self):
+
+    def __init__(self) -> None:
         self.state = SessionState()
 
-    def set_token(self, token_id: str, value: str):
+    def set_token(self, token_id: str, value: str) -> None:
         """Updates a token value in the session state."""
         self.state.tokens[token_id] = value
 
@@ -27,7 +30,7 @@ class SessionStore:
             result = result.replace(f"{{{{{token_id}}}}}", value)
         return result
 
-    def render_dict(self, data: Dict[str, Any]) -> Dict[str, Any]:
+    def render_dict(self, data: Union[Dict[str, Any], List[Any], str, Any]) -> Any:
         """
         Recursively interpolates tokens within a dictionary.
         """

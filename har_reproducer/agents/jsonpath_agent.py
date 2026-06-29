@@ -1,10 +1,14 @@
+from typing import Optional
+
 from .base import BaseAgent
+
 
 class JSONPathAgent(BaseAgent):
     """
     Agent specialized in extracting tokens from JSON bodies using jsonpath.
     """
-    def generate_code(self) -> str:
+
+    def generate_code(self, last_error: Optional[str] = None) -> str:
         return f"""
 import json
 

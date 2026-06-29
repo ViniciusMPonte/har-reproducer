@@ -1,6 +1,6 @@
-from typing import Dict, Optional, List, Any
+from typing import Any, Dict, List, Optional
 
-from .models import StepRequest, TokenTrace
+from .models import StepRequest, TokenLocation, TokenTrace
 
 
 class CurlGenerator:
@@ -14,9 +14,9 @@ class CurlGenerator:
         Converts a StepRequest into a curl command string.
         If session_store is provided, adds traceability comments for dynamic tokens.
         """
-        traces = self._find_token_traces(request, session_store) if session_store else []
+        traces: List[TokenTrace] = self._find_token_traces(request, session_store) if session_store else []
 
-        parts = [f"curl -X {request.method}", f"'{request.url}'"]
+        parts: List[str] = [f"curl -X {request.method}", f"'{request.url}'"]
 
         # Headers
         for header, value in request.headers.items():
@@ -32,36 +32,52 @@ class CurlGenerator:
 
         # Body
         if request.body:
-            body_traces = [t for t in traces if t.location == "Body"]
+            body_str: str = (
+                request.body if isinstance(request.body, str)
+                else request.body.decode("utf-8", errors="replace")
+            )
+            body_traces: List[TokenTrace] = [t for t in traces if t.location == TokenLocation.BODY_JSON]
             for trace in body_traces:
                 parts.append(f"# Token {trace.token_id} comes from response of step {trace.origin_step}")
-            parts.append(f"--data-binary '{request.body}'")
+            parts.append(f"--data-binary '{body_str}'")
 
         return " \\\n     ".join(parts)
 
     def _find_token_traces(self, request: StepRequest, session_store: Any) -> List[TokenTrace]:
-        traces = []
-        tokens = session_store.state.tokens
-        registry = session_store.state.registry
+        traces: List[TokenTrace] = []
+        tokens: Dict[str, str] = session_store.state.tokens
+        registry: Dict[str, Any] = session_store.state.registry
 
         # Check headers and cookies
         for key, value in {**request.headers, **request.cookies}.items():
             if tid := self._find_token_id_by_value(value, tokens):
                 if ext := registry.get(tid):
-                    location = "Header" if key in request.headers else "Cookie"
+                    location: TokenLocation = (
+                        TokenLocation.HEADER if key in request.headers else TokenLocation.COOKIE
+                    )
                     traces.append(TokenTrace(
-                        token_id=tid, value=value, origin_step=ext.origin_step or 0,
-                        location=location, key=key
+                        token_id=tid,
+                        value=value,
+                        origin_step=ext.origin_step or 0,
+                        location=location,
+                        key=key,
                     ))
 
         # Check body
         if request.body:
+            body_str = (
+                request.body if isinstance(request.body, str)
+                else request.body.decode("utf-8", errors="replace")
+            )
             for tid, val in tokens.items():
-                if val in request.body:
+                if val in body_str:
                     if ext := registry.get(tid):
                         traces.append(TokenTrace(
-                            token_id=tid, value=val, origin_step=ext.origin_step or 0,
-                            location="Body", key="body"
+                            token_id=tid,
+                            value=val,
+                            origin_step=ext.origin_step or 0,
+                            location=TokenLocation.BODY_JSON,
+                            key="body",
                         ))
         return traces
 

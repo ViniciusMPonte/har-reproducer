@@ -1,27 +1,29 @@
 import argparse
+from argparse import Namespace
 from pathlib import Path
+from typing import Optional
 
 from .engine import Engine
 from .parser import HARParser
 
 
-def handle_parse(args):
+def handle_parse(args: Namespace) -> None:
     """Handles the 'parse' subcommand to split a HAR file into steps."""
-    har_path = Path(args.har)
-    output_dir = Path(args.output)
-    count = HARParser.split_har(har_path, output_dir)
+    har_path: Path = Path(args.har)
+    output_dir: Path = Path(args.output)
+    count: int = HARParser.split_har(har_path, output_dir)
     print(f"Parsed HAR into {count} steps.")
 
 
-def handle_run(args):
+def handle_run(args: Namespace) -> None:
     """Handles the 'run' subcommand to execute the reproduction flow."""
-    har_path = Path(args.har)
-    output_dir = Path("reproduction_results")
-    config_path = Path(args.config) if args.config else None
+    har_path: Path = Path(args.har)
+    output_dir: Path = Path("reproduction_results")
+    config_path: Optional[Path] = Path(args.config) if args.config else None
     engine = Engine(har_path, output_dir, config_path=config_path)
-    success = engine.run(dry_run=args.dry_run)
+    result: Optional[bool] = engine.run(dry_run=args.dry_run)
     if not args.dry_run:
-        if success:
+        if result:
             print("\nReproduction SUCCESSFUL: Target state reached.")
         else:
             print("\nReproduction FAILED: Target state not reached.")
@@ -29,10 +31,10 @@ def handle_run(args):
         print("\nDry-run analysis completed.")
 
 
-def handle_diagnose(args):
+def handle_diagnose(args: Namespace) -> None:
     """Handles the 'diagnose' subcommand to suggest fixes for failed steps."""
-    steps_dir = Path(args.steps)
-    res_dir = Path(args.real_responses)
+    steps_dir: Path = Path(args.steps)
+    res_dir: Path = Path(args.real_responses)
 
     # We use a dummy HAR path since we are only diagnosing from disk
     engine = Engine(Path("dummy.har"), steps_dir)
@@ -58,7 +60,7 @@ def handle_diagnose(args):
         print("No deterministic fix found.")
 
 
-def main():
+def main() -> None:
     """Entry point for the har-reproducer CLI."""
     parser = argparse.ArgumentParser(prog="har-reproducer")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -82,7 +84,7 @@ def main():
     diag_parser.add_argument("--real-responses", required=True, help="Responses directory")
     diag_parser.set_defaults(func=handle_diagnose)
 
-    args = parser.parse_args()
+    args: Namespace = parser.parse_args()
     args.func(args)
 
 

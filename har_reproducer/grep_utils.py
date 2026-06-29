@@ -1,8 +1,8 @@
+import base64
 import subprocess
 import urllib.parse
-import base64
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 
 def try_decode(value: str) -> str:
@@ -10,11 +10,11 @@ def try_decode(value: str) -> str:
     Attempts to decode a value through a sequence: Literal -> URL-decoded -> Base64-decoded.
     Returns the most 'decoded' version that looks like a string.
     """
-    # 1. Literal
-    current = value
+    # 1. Start with the literal value
+    current: str = value
 
     # 2. URL-decoded
-    decoded_url = urllib.parse.unquote(current)
+    decoded_url: str = urllib.parse.unquote(current)
     if decoded_url != current:
         current = decoded_url
 
@@ -22,8 +22,8 @@ def try_decode(value: str) -> str:
     try:
         # Try to decode as base64. We only accept it if it results in valid UTF-8.
         # Base64 strings usually have specific chars; we check if it's possible.
-        b64_bytes = base64.b64decode(current, validate=True)
-        decoded_b64 = b64_bytes.decode("utf-8")
+        b64_bytes: bytes = base64.b64decode(current, validate=True)
+        decoded_b64: str = b64_bytes.decode("utf-8")
         # Basic heuristic: if it contains non-printable chars, it might not be a token string.
         if decoded_b64.isprintable():
             current = decoded_b64
@@ -33,12 +33,12 @@ def try_decode(value: str) -> str:
     return current
 
 
-def _build_pattern_variants(pattern: str) -> list[str]:
+def _build_pattern_variants(pattern: str) -> List[str]:
     """
     Returns a deduplicated list of encode/decode variants of pattern to search against.
     Order: literal → decoded (via try_decode) → URL-encoded → Base64-encoded.
     """
-    variants: list[str] = []
+    variants: List[str] = []
     seen: set[str] = set()
 
     def add(v: str) -> None:
@@ -70,12 +70,12 @@ def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[in
         if not result.stdout:
             return None
 
-        first_match_file = result.stdout.splitlines()[0]
+        first_match_file: str = result.stdout.splitlines()[0]
         file_path = Path(first_match_file)
-        filename = file_path.name
+        filename: str = file_path.name
         try:
-            index_str = filename.split("_")[1].split(".")[0]
-            step_index = int(index_str)
+            index_str: str = filename.split("_")[1].split(".")[0]
+            step_index: int = int(index_str)
         except (IndexError, ValueError) as e:
             print(f"[AVISO] Falha ao extrair step index do arquivo '{filename}': {e}")
             return None

@@ -33,6 +33,10 @@ class Validator:
 
     @staticmethod
     def _check_criterion(response: StepResponse, criterion: SuccessCriterion) -> bool:
+        """
+        Dispatches criterion checking to the appropriate branch.
+        Each branch handles a concrete SuccessCriterion subtype.
+        """
         if isinstance(criterion, StatusCodeCriterion):
             return response.status_code == criterion.expected
 
@@ -40,11 +44,11 @@ class Validator:
             # Note: the response model doesn't have the final URL,
             # but in a real scenario, we'd check the redirect_url or the last request URL.
             # For now, we check redirect_url if it exists.
-            url = response.redirect_url or ""
+            url: str = response.redirect_url or ""
             return bool(re.search(criterion.expected, url))
 
         elif isinstance(criterion, BodyContainsCriterion):
-            body = response.body if isinstance(response.body, str) else ""
+            body: str = response.body if isinstance(response.body, str) else ""
             return criterion.expected in body
 
         elif isinstance(criterion, HtmlElementPresentCriterion):
