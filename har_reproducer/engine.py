@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,6 +36,8 @@ class Engine:
     def __init__(self, har_path: Path, output_dir: Path, config_path: Optional[Path] = None) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
+        self.curls_dir: Path = output_dir / "curls"
+        self.curls_dir.mkdir(parents=True, exist_ok=True)
         self.real_responses_dir: Path = output_dir / "real_responses"
         self.real_responses_dir.mkdir(parents=True, exist_ok=True)
         self.real_requests_dir: Path = output_dir / "real_requests"
@@ -255,10 +256,8 @@ if __name__ == "__main__":
                 step.index, final_request, session_store=self.session_store
             )
 
-            os.makedirs("curls", exist_ok=True)
-            curl_file: str = f"curls/req_{step.index:04d}.curl.sh"
-            with open(curl_file, "w", encoding="utf-8") as f:
-                f.write(f"#!/bin/bash\n{curl_cmd}\n")
+            curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
+            curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
 
             with httpx.Client(follow_redirects=False) as client:
                 resp: Response = client.request(

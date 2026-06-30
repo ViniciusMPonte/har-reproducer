@@ -4,15 +4,15 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Optional
 
-from .models import Patch
 from .engine import Engine
+from .models import Patch
 from .parser import HARParser
 
 
 def handle_parse(args: Namespace) -> None:
     """Handles the 'parse' subcommand to split a HAR file into steps."""
     har_path: Path = Path(args.har)
-    output_dir: Path = Path(args.output)
+    output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     count: int = HARParser.split_har(har_path, output_dir)
     print(f"Parsed HAR into {count} steps.")
 
@@ -20,7 +20,7 @@ def handle_parse(args: Namespace) -> None:
 def handle_run(args: Namespace) -> None:
     """Handles the 'run' subcommand to execute the reproduction flow."""
     har_path: Path = Path(args.har)
-    output_dir: Path = Path("reproduction_results")
+    output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     config_path: Optional[Path] = Path(args.config) if args.config else None
     engine: Engine = Engine(har_path, output_dir, config_path=config_path)
     result: Optional[bool] = engine.run(dry_run=args.dry_run)
@@ -38,14 +38,10 @@ def handle_diagnose(args: Namespace) -> None:
     steps_dir: Path = Path(args.steps)
     res_dir: Path = Path(args.real_responses)
 
-    # We use a dummy HAR path since we are only diagnosing from disk
-    engine: Engine = Engine(Path("dummy.har"), steps_dir)
-    engine.real_responses_dir = res_dir
+    engine: Engine = Engine.from_disk(steps_dir=steps_dir, real_responses_dir=res_dir)
 
-    # For the CLI, we might want to diagnose a specific step or all failed ones.
-    # For now, we diagnose step 1 as an example.
     print("Analyzing failures...")
-    patch: Optional[Patch] = engine.diagnose(step_index=1)
+    patch: Optional[Patch] = engine.diagnose(step_index=args.step)
 
     if patch:
         print(f"Proposed Patch: {patch.action}")
@@ -70,12 +66,13 @@ def main() -> None:
     # Parse
     parse_parser: ArgumentParser = subparsers.add_parser("parse")
     parse_parser.add_argument("--har", required=True, help="Path to HAR file")
-    parse_parser.add_argument("--output", required=True, help="Output directory")
+    parse_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
     parse_parser.set_defaults(func=handle_parse)
 
     # Run
     run_parser: ArgumentParser = subparsers.add_parser("run")
     run_parser.add_argument("--har", required=True, help="Path to HAR file")
+    run_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
     run_parser.add_argument("--dry-run", action="store_true", help="Simulate without network calls")
     run_parser.add_argument("--config", help="Path to success criteria config")
     run_parser.set_defaults(func=handle_run)
@@ -84,6 +81,7 @@ def main() -> None:
     diag_parser: ArgumentParser = subparsers.add_parser("diagnose")
     diag_parser.add_argument("--steps", required=True, help="Steps directory")
     diag_parser.add_argument("--real-responses", required=True, help="Responses directory")
+    diag_parser.add_argument("--step", type=int, required=True, help="Index of the step to diagnose")
     diag_parser.set_defaults(func=handle_diagnose)
 
     args: Namespace = parser.parse_args()

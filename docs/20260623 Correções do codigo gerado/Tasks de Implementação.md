@@ -590,10 +590,10 @@ patch = engine.diagnose(step_index=args.step)
 ```
 
 **Critério de conclusão:**
-- [ ] `output_dir` usa pasta do HAR como base por padrão
-- [ ] `run` aceita `--output`
-- [ ] `diagnose` aceita `--step` obrigatório
-- [ ] Nenhum `Engine(Path("dummy.har"), ...)` no código
+- [X] `output_dir` usa pasta do HAR como base por padrão
+- [X] `run` aceita `--output`
+- [X] `diagnose` aceita `--step` obrigatório
+- [X] Nenhum `Engine(Path("dummy.har"), ...)` no código
 
 ---
 

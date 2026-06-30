@@ -98,6 +98,7 @@ class HARParser:
         Decomposes a HAR file into indexed req_NNNN.json and res_NNNN.json files.
         Returns the number of entries parsed.
         """
+        output_dir = output_dir / "parse"
         output_dir.mkdir(parents=True, exist_ok=True)
         har_data: Dict[str, Any] = cls.load_har(har_path)
         entries: List[Dict[str, Any]] = har_data.get("log", {}).get("entries", [])
