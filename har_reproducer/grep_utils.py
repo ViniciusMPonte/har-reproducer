@@ -71,7 +71,7 @@ def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[in
         if not result.stdout:
             return None
 
-        first_match_file: str = result.stdout.splitlines()[0]
+        first_match_file: str = sorted(result.stdout.splitlines())[0]
         file_path: Path = Path(first_match_file)
         filename: str = file_path.name
         try:
@@ -84,10 +84,9 @@ def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[in
         return step_index, filename
 
     except subprocess.CalledProcessError as e:
-        if e.returncode != 1:
-            # Exit code 1 means grep found no matches — expected. Anything else is a real error.
-            print(f"[AVISO] grep falhou com código {e.returncode} ao buscar padrão '{pattern}': {e.stderr.strip()}")
-        return None
+        if e.returncode == 1:  # grep: no matches found — expected, not an error
+            return None
+        raise  # real error (permission denied, directory missing, etc.)
 
 
 def grep_in_real_responses(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:

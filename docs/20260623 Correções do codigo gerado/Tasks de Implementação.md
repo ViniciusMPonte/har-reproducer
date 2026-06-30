@@ -840,9 +840,9 @@ except subprocess.CalledProcessError as e:
 ```
 
 **Critério de conclusão:**
-- [ ] O arquivo com menor índice numérico é sempre retornado (independente da ordem do filesystem)
-- [ ] Erros reais do grep são propagados em vez de engolidos
-- [ ] Docstring corrigida
+- [X] O arquivo com menor índice numérico é sempre retornado (independente da ordem do filesystem)
+- [X] Erros reais do grep são propagados em vez de engolidos
+- [X] Docstring corrigida
 
 ---
 
