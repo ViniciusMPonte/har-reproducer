@@ -1,1 +1,2 @@
 - O grep_utils.py são funções soltas. COlocar tudo em um método.
+- os comentários realmente estão sendo uteis?

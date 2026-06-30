@@ -38,45 +38,11 @@ class TokenTracker:
         # 2. Dynamic Candidate Detection
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
 
-        # 3. Origin Search (Grep)
-        resolved_tokens: List[DynamicToken] = []
-        for candidate in candidates:
-            # 4. Extractor Identification / Reuse
-            if candidate.token_id in self.session_store.state.registry:
-                existing: Extractor = self.session_store.state.registry[candidate.token_id]
-                if existing.verified:
-                    candidate.status = "Resolved"
-                    resolved_tokens.append(candidate)
-                    continue
-
-            origin: Optional[Tuple[int, str]] = grep_in_real_responses(
-                self.responses_dir, candidate.current_value
-            )
-            if origin:
-                candidate.origin_step = origin[0]
-                candidate.status = "Resolved"
-                resolved_tokens.append(candidate)
-
-                response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
-                if response_sample:
-                    if not is_dry_run:
-                        # 5. Extractor Generation
-                        new_extractor: Optional[Extractor] = self._generate_extractor(
-                            candidate, response_sample
-                        )
-                        if new_extractor is not None:
-                            self.session_store.state.registry[candidate.token_id] = new_extractor
-                    else:
-                        # In dry-run, register as Pending (no code generation)
-                        self.session_store.state.registry[candidate.token_id] = Extractor(
-                            token_id=candidate.token_id,
-                            code="",
-                            verified=False,
-                            agent_type=AgentType.REGEX,  # placeholder; not yet determined
-                        )
-            else:
-                candidate.status = "Unresolved"
-                resolved_tokens.append(candidate)
+        # 3–5. Origin Search, Extractor Identification / Generation (per candidate)
+        resolved_tokens: List[DynamicToken] = [
+            self._process_candidate(candidate, is_dry_run)
+            for candidate in candidates
+        ]
 
         # 6. Curl Template Generation
         template: str = self._generate_curl_template(step.request)
@@ -89,17 +55,65 @@ class TokenTracker:
             curl_template=template,
         )
 
+    def _process_candidate(self, candidate: DynamicToken, is_dry_run: bool) -> DynamicToken:
+        """Resolves a single candidate token: reuse, grep, and extractor generation."""
+        # 4. Extractor Identification / Reuse
+        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
+        if existing is not None and existing.verified:
+            candidate.status = "Resolved"
+            return candidate
+
+        # 3. Origin Search (Grep)
+        origin: Optional[Tuple[int, str]] = grep_in_real_responses(
+            self.responses_dir, candidate.current_value
+        )
+        if not origin:
+            candidate.status = "Unresolved"
+            return candidate
+
+        candidate.origin_step = origin[0]
+        candidate.status = "Resolved"
+
+        # 5. Extractor Generation
+        response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
+        if response_sample is None:
+            return candidate
+
+        self._register_extractor(candidate, response_sample, is_dry_run)
+        return candidate
+
+    def _register_extractor(
+            self,
+            candidate: DynamicToken,
+            response_sample: Dict[str, Any],
+            is_dry_run: bool,
+    ) -> None:
+        """Generates or stubs an extractor and stores it in the registry."""
+        if is_dry_run:
+            # In dry-run, register as Pending (no code generation)
+            self.session_store.state.registry[candidate.token_id] = Extractor(
+                token_id=candidate.token_id,
+                code="",
+                verified=False,
+                agent_type=AgentType.REGEX,  # placeholder; not yet determined
+            )
+            return
+
+        new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample)
+        if new_extractor is not None:
+            self.session_store.state.registry[candidate.token_id] = new_extractor
+
     def _load_response(self, step_index: int) -> Optional[Dict[str, Any]]:
         """Loads a response JSON file from the responses directory."""
         res_file: Path = self.responses_dir / f"res_{step_index:04d}.json"
-        if res_file.exists():
-            try:
-                data: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
-                return data
-            except Exception as e:
-                print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
-                return None
-        return None
+        if not res_file.exists():
+            return None
+        try:
+            data: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
+            return data
+        except Exception as e:
+            print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
+            return None
 
     def _generate_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> Optional[Extractor]:
         """Tries to generate a verified extractor using the appropriate agent."""
@@ -131,14 +145,13 @@ class TokenTracker:
             if baseline.request.cookies.get(k) != v:
                 diffs[f"cookie:{k}"] = v
 
-        if step.request.body and baseline.request.body:
-            if step.request.body != baseline.request.body:
-                body_val: Optional[str | bytes] = step.request.body
-                diffs["body"] = (
-                    body_val
-                    if isinstance(body_val, str)
-                    else body_val.decode("utf-8", errors="replace")
-                )
+        if step.request.body and baseline.request.body and step.request.body != baseline.request.body:
+            body_val: Optional[str | bytes] = step.request.body
+            diffs["body"] = (
+                body_val
+                if isinstance(body_val, str)
+                else body_val.decode("utf-8", errors="replace")
+            )
 
         return diffs
 

@@ -554,7 +554,7 @@ extractor = self._generate_extractor(candidate, response_sample)
 ```
 
 **Critério de conclusão:**
-- [ ] Nenhum bloco com mais de 2 níveis de `if` aninhado em `tracker.py`
+- [X] Nenhum bloco com mais de 2 níveis de `if` aninhado em `tracker.py`
 
 ---
 
