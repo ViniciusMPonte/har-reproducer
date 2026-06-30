@@ -1,6 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Any, Dict, Optional, Tuple
 
 from har_reproducer.models import AgentType, Extractor
@@ -13,10 +14,10 @@ class BaseAgent:
     """
 
     def __init__(self, token_id: str, response_sample: Dict[str, Any], expected_value: str) -> None:
-        self.token_id = token_id
-        self.safe_token_id = token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
-        self.response_sample = response_sample
-        self.expected_value = expected_value
+        self.token_id: str = token_id
+        self.safe_token_id: str = token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
+        self.response_sample: dict[str, Any] = response_sample
+        self.expected_value: str = expected_value
 
     def generate_code(self, last_error: Optional[str] = None) -> str:
         """
@@ -31,7 +32,10 @@ class BaseAgent:
         """
         last_error: Optional[str] = None
         for attempt in range(max_attempts):
-            code = self.generate_code(last_error=last_error)
+            code: str = self.generate_code(last_error=last_error)
+
+            success: bool
+            error: Optional[str]
             success, error = self._verify_code(code)
 
             if success:
@@ -53,9 +57,9 @@ class BaseAgent:
         Verifies the generated code by executing it against the response sample.
         Returns a tuple of (success, error_message).
         """
-        temp_file = Path(f"temp_extractor_{self.token_id}.py")
+        temp_file: Path = Path(f"temp_extractor_{self.token_id}.py")
 
-        wrapped_code = f"""
+        wrapped_code: str = f"""
 import sys
 import json
 from typing import Dict
@@ -75,7 +79,7 @@ if __name__ == "__main__":
         temp_file.write_text(wrapped_code)
 
         try:
-            result = subprocess.run(
+            result: CompletedProcess[str] = subprocess.run(
                 [sys.executable, str(temp_file)],
                 capture_output=True,
                 text=True,

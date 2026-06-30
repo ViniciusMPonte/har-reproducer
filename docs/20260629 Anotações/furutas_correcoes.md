@@ -1,0 +1,1 @@
+- O grep_utils.py são funções soltas. COlocar tudo em um método.

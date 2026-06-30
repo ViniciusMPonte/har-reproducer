@@ -2,6 +2,7 @@ import base64
 import subprocess
 import urllib.parse
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import List, Optional, Tuple
 
 
@@ -64,14 +65,14 @@ def _build_pattern_variants(pattern: str) -> List[str]:
 def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
     """Runs grep for a single fixed pattern. Returns (step_index, filename) or None."""
     try:
-        cmd = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        cmd: list[str] = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
+        result: CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         if not result.stdout:
             return None
 
         first_match_file: str = result.stdout.splitlines()[0]
-        file_path = Path(first_match_file)
+        file_path: Path = Path(first_match_file)
         filename: str = file_path.name
         try:
             index_str: str = filename.split("_")[1].split(".")[0]
@@ -100,7 +101,7 @@ def grep_in_real_responses(responses_dir: Path, pattern: str) -> Optional[Tuple[
     The search is performed using the system grep for efficiency.
     """
     for variant in _build_pattern_variants(pattern):
-        match = _grep_single_pattern(responses_dir, variant)
+        match: Optional[tuple[int, str]] = _grep_single_pattern(responses_dir, variant)
         if match:
             return match
 

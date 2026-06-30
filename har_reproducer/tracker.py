@@ -27,8 +27,8 @@ class TokenTracker:
     """
 
     def __init__(self, responses_dir: Path, session_store: SessionStore) -> None:
-        self.responses_dir = responses_dir
-        self.session_store = session_store
+        self.responses_dir: Path = responses_dir
+        self.session_store: SessionStore = session_store
 
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         """Runs the 8-stage pipeline to analyze a step."""
@@ -91,7 +91,7 @@ class TokenTracker:
 
     def _load_response(self, step_index: int) -> Optional[Dict[str, Any]]:
         """Loads a response JSON file from the responses directory."""
-        res_file = self.responses_dir / f"res_{step_index:04d}.json"
+        res_file: Path = self.responses_dir / f"res_{step_index:04d}.json"
         if res_file.exists():
             try:
                 data: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
@@ -133,7 +133,7 @@ class TokenTracker:
 
         if step.request.body and baseline.request.body:
             if step.request.body != baseline.request.body:
-                body_val = step.request.body
+                body_val: Optional[str | bytes] = step.request.body
                 diffs["body"] = (
                     body_val
                     if isinstance(body_val, str)

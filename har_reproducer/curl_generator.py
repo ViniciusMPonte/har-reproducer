@@ -65,7 +65,7 @@ class CurlGenerator:
 
         # Check body
         if request.body:
-            body_str = (
+            body_str: str = (
                 request.body if isinstance(request.body, str)
                 else request.body.decode("utf-8", errors="replace")
             )

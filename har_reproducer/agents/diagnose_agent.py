@@ -14,8 +14,8 @@ class DiagnoseAgent:
     """
 
     def __init__(self, engine: "Engine", failure_context: FailureContext) -> None:
-        self.engine = engine
-        self.context = failure_context
+        self.engine: Engine = engine
+        self.context: FailureContext = failure_context
         self.history: List[str] = []
 
     def diagnose(self) -> Optional[Patch]:

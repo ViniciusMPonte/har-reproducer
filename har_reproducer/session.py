@@ -10,7 +10,7 @@ class SessionStore:
     """
 
     def __init__(self) -> None:
-        self.state = SessionState()
+        self.state: SessionState = SessionState()
 
     def set_token(self, token_id: str, value: str) -> None:
         """Updates a token value in the session state."""
@@ -25,7 +25,7 @@ class SessionStore:
         Interpolates tokens into a template string.
         Tokens are expected to be in the format {{token_id}}.
         """
-        result = template
+        result: str = template
         for token_id, value in self.state.tokens.items():
             result = result.replace(f"{{{{{token_id}}}}}", value)
         return result

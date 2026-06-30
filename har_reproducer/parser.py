@@ -62,7 +62,7 @@ class HARParser:
 
         is_skippable: bool = req_data["method"] == "OPTIONS"
 
-        request = StepRequest(
+        request: StepRequest = StepRequest(
             url=req_data["url"],
             method=req_data["method"],
             headers=req_headers,
@@ -81,7 +81,7 @@ class HARParser:
 
         body: str = HARParser.decode_body(text or "", encoding)
 
-        response = StepResponse(
+        response: StepResponse = StepResponse(
             status_code=res_data["status"],
             headers=res_headers,
             cookies=res_cookies,
@@ -106,11 +106,11 @@ class HARParser:
             step: Step = cls.parse_entry(entry, i)
 
             # Save request
-            req_file = output_dir / f"req_{i:04d}.json"
+            req_file: Path = output_dir / f"req_{i:04d}.json"
             req_file.write_text(step.request.model_dump_json(indent=2), encoding="utf-8")
 
             # Save response — response is always populated by parse_entry
-            res_file = output_dir / f"res_{i:04d}.json"
+            res_file: Path = output_dir / f"res_{i:04d}.json"
             assert step.response is not None  # parse_entry always sets response
             res_file.write_text(step.response.model_dump_json(indent=2), encoding="utf-8")
 

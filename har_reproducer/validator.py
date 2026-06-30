@@ -54,7 +54,7 @@ class Validator:
         elif isinstance(criterion, HtmlElementPresentCriterion):
             if not response.body or not isinstance(response.body, str):
                 return False
-            soup = BeautifulSoup(response.body, "html.parser")
+            soup: BeautifulSoup = BeautifulSoup(response.body, "html.parser")
             # expected is a CSS selector
             return soup.select_one(criterion.expected) is not None
 

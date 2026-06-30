@@ -3,9 +3,11 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from subprocess import CompletedProcess
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+from httpx import Response
 from pydantic import TypeAdapter
 
 from .agents.diagnose_agent import DiagnoseAgent
@@ -33,22 +35,22 @@ class Engine:
     """
 
     def __init__(self, har_path: Path, output_dir: Path, config_path: Optional[Path] = None) -> None:
-        self.har_path = har_path
-        self.output_dir = output_dir
-        self.real_responses_dir = output_dir / "real_responses"
+        self.har_path: Path = har_path
+        self.output_dir: Path = output_dir
+        self.real_responses_dir: Path = output_dir / "real_responses"
         self.real_responses_dir.mkdir(parents=True, exist_ok=True)
-        self.real_requests_dir = output_dir / "real_requests"
+        self.real_requests_dir: Path = output_dir / "real_requests"
         self.real_requests_dir.mkdir(parents=True, exist_ok=True)
 
-        self.session_store = SessionStore()
-        self.tracker = TokenTracker(self.real_responses_dir, self.session_store)
-        self.validator = Validator()
+        self.session_store: SessionStore = SessionStore()
+        self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store)
+        self.validator: Validator = Validator()
 
         self.success_criteria: List[SuccessCriterion] = []
         if config_path and config_path.exists():
             try:
                 with open(config_path, "r") as f:
-                    config = json.load(f)
+                    config: Any = json.load(f)
                     _criterion_adapter: TypeAdapter[SuccessCriterion] = TypeAdapter(SuccessCriterion)
                     self.success_criteria = [
                         _criterion_adapter.validate_python(c)
@@ -62,37 +64,40 @@ class Engine:
         Main loop to reproduce the HAR flow.
         Returns True/False on validation, or None for dry-run.
         """
-        entries = HARParser.get_entries(self.har_path)
+        entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
 
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
         analyses: List[StepAnalysis] = []
         last_response: Optional[StepResponse] = None
-        for i, entry in enumerate(entries):
-            step: Step = HARParser.parse_entry(entry, i)
+        for index, entry in enumerate(entries):
+            step: Step = HARParser.parse_entry(entry, index)
 
             self.update_session_tokens()
 
             if dry_run:
-                print(f"Dry-run: Analyzing step {i}...")
+                print(f"Dry-run: Analyzing step {index}...")
                 analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=True)
                 analyses.append(analysis)
                 continue
 
+            final_request: StepRequest
+            response: StepResponse
             final_request, response = self.execute_step(step)
+
             step.response = response
             last_response = response
 
-            req_file = self.real_requests_dir / f"req_{i:04d}.json"
+            req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
             req_file.write_text(final_request.model_dump_json(indent=2), encoding="utf-8")
 
-            res_file = self.real_responses_dir / f"res_{i:04d}.json"
+            res_file: Path = self.real_responses_dir / f"res_{index:04d}.json"
             res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
             step_analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=False)
             analyses.append(step_analysis)
 
-            print(f"Step {i} completed with status {response.status_code}")
+            print(f"Step {index} completed with status {response.status_code}")
 
         if dry_run:
             self._generate_dry_run_report(analyses)
@@ -128,7 +133,7 @@ class Engine:
             if not extractor.verified or extractor.origin_step is None:
                 continue
 
-            res_file = self.real_responses_dir / f"res_{extractor.origin_step:04d}.json"
+            res_file: Path = self.real_responses_dir / f"res_{extractor.origin_step:04d}.json"
             if res_file.exists():
                 try:
                     response: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
@@ -140,7 +145,7 @@ class Engine:
 
     def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
         """Executes the extractor code against a response and returns the result."""
-        temp_file = Path(f"run_extractor_{extractor.token_id}.py")
+        temp_file: Path = Path(f"run_extractor_{extractor.token_id}.py")
         safe_token_id: str = (
             extractor.token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
         )
@@ -163,7 +168,7 @@ if __name__ == "__main__":
         temp_file.write_text(wrapped_code)
 
         try:
-            result = subprocess.run(
+            result: CompletedProcess[str] = subprocess.run(
                 [sys.executable, str(temp_file)],
                 capture_output=True,
                 text=True,
@@ -204,7 +209,7 @@ if __name__ == "__main__":
 
         # TODO (TASK-10): The diagnose → apply flow is not production-ready.
         """
-        ctx = FailureContext(
+        ctx: FailureContext = FailureContext(
             failed_step=step_index,
             request_attempted=StepRequest(url="dummy", method="GET"),
             response_received=StepResponse(status_code=401, headers={}, cookies={}, body="Unauthorized"),
@@ -212,14 +217,14 @@ if __name__ == "__main__":
             active_extractors=list(self.session_store.state.registry.values()),
         )
 
-        agent = DiagnoseAgent(self, ctx)
+        agent: DiagnoseAgent = DiagnoseAgent(self, ctx)
         return agent.diagnose()
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         """
         Executes a single HTTP request using httpx with deterministic recovery.
         """
-        max_attempts = 2
+        max_attempts: int = 2
         for attempt in range(max_attempts):
             req: StepRequest = step.request
 
@@ -237,7 +242,7 @@ if __name__ == "__main__":
             else:
                 body = self.session_store.render(req.body)
 
-            final_request = StepRequest(
+            final_request: StepRequest = StepRequest(
                 url=req.url,
                 method=req.method,
                 headers=headers,
@@ -256,7 +261,7 @@ if __name__ == "__main__":
                 f.write(f"#!/bin/bash\n{curl_cmd}\n")
 
             with httpx.Client(follow_redirects=False) as client:
-                resp = client.request(
+                resp: Response = client.request(
                     method=final_request.method,
                     url=final_request.url,
                     headers=final_request.headers,
@@ -268,7 +273,7 @@ if __name__ == "__main__":
                     ) if final_request.body else None,
                 )
 
-                raw_status = resp.status_code
+                raw_status: int = resp.status_code
                 status_code: int
                 if not isinstance(raw_status, int):
                     try:
@@ -278,7 +283,7 @@ if __name__ == "__main__":
                 else:
                     status_code = raw_status
 
-                response = StepResponse(
+                response: StepResponse = StepResponse(
                     status_code=status_code,
                     headers=dict(resp.headers),
                     cookies=dict(client.cookies),
