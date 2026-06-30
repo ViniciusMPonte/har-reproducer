@@ -57,8 +57,15 @@ class BaseAgent:
         Verifies the generated code by executing it against the response sample.
         Returns a tuple of (success, error_message).
         """
-        temp_file: Path = Path(f"temp_extractor_{self.token_id}.py")
+        script_path: Path = self._write_temp_script(code)
+        try:
+            return self._execute_script(script_path)
+        finally:
+            self._cleanup_script(script_path)
 
+    def _write_temp_script(self, code: str) -> Path:
+        """Wraps the extractor code in a runnable script and writes it to a temp file."""
+        temp_file: Path = Path(f"temp_extractor_{self.token_id}.py")
         wrapped_code: str = f"""
 import sys
 import json
@@ -77,26 +84,30 @@ if __name__ == "__main__":
         sys.exit(1)
 """
         temp_file.write_text(wrapped_code)
+        return temp_file
 
+    def _execute_script(self, script_path: Path) -> Tuple[bool, Optional[str]]:
+        """Runs the temp script and checks whether its output matches the expected value."""
         try:
             result: CompletedProcess[str] = subprocess.run(
-                [sys.executable, str(temp_file)],
+                [sys.executable, str(script_path)],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=5,
             )
-
-            if result.returncode == 0 and result.stdout.strip() == self.expected_value:
-                return True, None
-
-            error: str = result.stderr.strip() or (
-                f"Output mismatch: got {result.stdout.strip()!r}, expected {self.expected_value!r}"
-            )
-            return False, error
-
         except subprocess.TimeoutExpired:
             print(f"[AVISO] Timeout ao verificar extrator para {self.token_id}")
             return False, "Timeout during verification"
-        finally:
-            if temp_file.exists():
-                temp_file.unlink()
+
+        if result.returncode == 0 and result.stdout.strip() == self.expected_value:
+            return True, None
+
+        error: str = result.stderr.strip() or (
+            f"Output mismatch: got {result.stdout.strip()!r}, expected {self.expected_value!r}"
+        )
+        return False, error
+
+    def _cleanup_script(self, script_path: Path) -> None:
+        """Removes the temporary script file if it exists."""
+        if script_path.exists():
+            script_path.unlink()

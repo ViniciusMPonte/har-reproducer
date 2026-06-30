@@ -519,8 +519,8 @@ Dividir em:
 - `_cleanup_script(script_path: Path) -> None`
 
 **Critério de conclusão:**
-- [ ] `analyze_step` é um orquestrador com no máximo 15 linhas de corpo
-- [ ] `_verify_code` delegado para submétodos com responsabilidade única
+- [X] `analyze_step` é um orquestrador com no máximo 15 linhas de corpo
+- [X] `_verify_code` delegado para submétodos com responsabilidade única
 
 ---
 

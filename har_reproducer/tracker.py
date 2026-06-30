@@ -32,25 +32,30 @@ class TokenTracker:
 
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         """Runs the 8-stage pipeline to analyze a step."""
-        # 1. Baseline Comparison
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
-
-        # 2. Dynamic Candidate Detection
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
-
-        # 3–5. Origin Search, Extractor Identification / Generation (per candidate)
-        resolved_tokens: List[DynamicToken] = [
-            self._process_candidate(candidate, is_dry_run)
-            for candidate in candidates
-        ]
-
-        # 6. Curl Template Generation
+        resolved_tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
         template: str = self._generate_curl_template(step.request)
+        static_values: Dict[str, str] = self._extract_static_values(step, baseline_step)
+        return self._build_step_analysis(step, static_values, resolved_tokens, template)
 
-        # 8. StepAnalysis construction
+    def _resolve_candidates(
+            self, candidates: List[DynamicToken], is_dry_run: bool
+    ) -> List[DynamicToken]:
+        """Stage 3–5: Origin Search, Extractor Identification / Generation (per candidate)."""
+        return [self._process_candidate(candidate, is_dry_run) for candidate in candidates]
+
+    def _build_step_analysis(
+            self,
+            step: Step,
+            static_values: Dict[str, str],
+            resolved_tokens: List[DynamicToken],
+            template: str,
+    ) -> StepAnalysis:
+        """Stage 8: Constructs and returns the final StepAnalysis object."""
         return StepAnalysis(
             step_index=step.index,
-            static_values=self._extract_static_values(step, baseline_step),
+            static_values=static_values,
             dynamic_tokens=resolved_tokens,
             curl_template=template,
         )
