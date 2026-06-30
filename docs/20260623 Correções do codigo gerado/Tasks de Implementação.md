@@ -659,9 +659,9 @@ extractors_dir.mkdir(parents=True, exist_ok=True)
 ```
 
 **Critério de conclusão:**
-- [ ] `run()` e `dry_run()` são métodos distintos sem condicionais cruzados
-- [ ] Curls salvos em `output_dir/curls/`
-- [ ] Extratores salvos em `output_dir/extractors/` e nunca apagados
+- [X] `run()` e `dry_run()` são métodos distintos sem condicionais cruzados
+- [X] Curls salvos em `output_dir/curls/`
+- [X] Extratores salvos em `output_dir/extractors/` e nunca apagados
 
 ---
 

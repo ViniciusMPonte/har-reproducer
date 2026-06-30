@@ -42,6 +42,8 @@ class Engine:
         self.real_responses_dir.mkdir(parents=True, exist_ok=True)
         self.real_requests_dir: Path = output_dir / "real_requests"
         self.real_requests_dir.mkdir(parents=True, exist_ok=True)
+        self.extractors_dir: Path = output_dir / "extractors"
+        self.extractors_dir.mkdir(parents=True, exist_ok=True)
 
         self.session_store: SessionStore = SessionStore()
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store)
@@ -60,13 +62,12 @@ class Engine:
             except Exception as e:
                 print(f"Error loading config: {e}")
 
-    def run(self, dry_run: bool = False) -> Optional[bool]:
+    def run(self) -> bool:
         """
         Main loop to reproduce the HAR flow.
-        Returns True/False on validation, or None for dry-run.
+        Returns True/False based on validation of the final response.
         """
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
-
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
         analyses: List[StepAnalysis] = []
@@ -75,12 +76,6 @@ class Engine:
             step: Step = HARParser.parse_entry(entry, index)
 
             self.update_session_tokens()
-
-            if dry_run:
-                print(f"Dry-run: Analyzing step {index}...")
-                analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=True)
-                analyses.append(analysis)
-                continue
 
             final_request: StepRequest
             response: StepResponse
@@ -100,16 +95,32 @@ class Engine:
 
             print(f"Step {index} completed with status {response.status_code}")
 
-        if dry_run:
-            self._generate_dry_run_report(analyses)
-            return None
-
         if last_response and self.success_criteria:
             is_success: bool = self.validator.validate(last_response, self.success_criteria)
             print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
             return is_success
 
         return True
+
+    def dry_run(self) -> None:
+        """
+        Analyzes the HAR flow without executing any HTTP requests.
+        Prints a report of detected dynamic tokens and their resolution status.
+        """
+        entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
+        first_entry: Step = HARParser.parse_entry(entries[0], 0)
+
+        analyses: List[StepAnalysis] = []
+        for index, entry in enumerate(entries):
+            step: Step = HARParser.parse_entry(entry, index)
+
+            self.update_session_tokens()
+
+            print(f"Dry-run: Analyzing step {index}...")
+            analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=True)
+            analyses.append(analysis)
+
+        self._generate_dry_run_report(analyses)
 
     def _generate_dry_run_report(self, analyses: List[StepAnalysis]) -> None:
         """Generates a report of dynamic tokens and their resolution status."""
@@ -146,10 +157,10 @@ class Engine:
 
     def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
         """Executes the extractor code against a response and returns the result."""
-        temp_file: Path = Path(f"run_extractor_{extractor.token_id}.py")
         safe_token_id: str = (
             extractor.token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
         )
+        extractor_file: Path = self.extractors_dir / f"extract_{safe_token_id}.py"
 
         wrapped_code = f"""
 import sys
@@ -166,11 +177,11 @@ if __name__ == "__main__":
     except Exception:
         sys.exit(1)
 """
-        temp_file.write_text(wrapped_code)
+        extractor_file.write_text(wrapped_code, encoding="utf-8")
 
         try:
             result: CompletedProcess[str] = subprocess.run(
-                [sys.executable, str(temp_file)],
+                [sys.executable, str(extractor_file)],
                 capture_output=True,
                 text=True,
                 timeout=5
@@ -179,9 +190,6 @@ if __name__ == "__main__":
                 return result.stdout.strip()
         except Exception:
             pass
-        finally:
-            if temp_file.exists():
-                temp_file.unlink()
         return None
 
     def handle_recovery(self, response: StepResponse) -> bool:

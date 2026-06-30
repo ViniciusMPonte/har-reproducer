@@ -23,14 +23,15 @@ def handle_run(args: Namespace) -> None:
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     config_path: Optional[Path] = Path(args.config) if args.config else None
     engine: Engine = Engine(har_path, output_dir, config_path=config_path)
-    result: Optional[bool] = engine.run(dry_run=args.dry_run)
-    if not args.dry_run:
+    if args.dry_run:
+        engine.dry_run()
+        print("\nDry-run analysis completed.")
+    else:
+        result: bool = engine.run()
         if result:
             print("\nReproduction SUCCESSFUL: Target state reached.")
         else:
             print("\nReproduction FAILED: Target state not reached.")
-    else:
-        print("\nDry-run analysis completed.")
 
 
 def handle_diagnose(args: Namespace) -> None:
