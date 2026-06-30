@@ -483,9 +483,9 @@ def render_dict(self, data: Any) -> Any: ...
 - Após TASK-05, `_check_criterion` já terá tipos concretos por critério
 
 **Critério de conclusão:**
-- [ ] `mypy --strict` (ou equivalente) sem erros nos arquivos alterados
-- [ ] Nenhum método público sem tipo de retorno declarado
-- [ ] Nenhum `origin_step = -1` no código
+- [X] `mypy --strict` (ou equivalente) sem erros nos arquivos alterados
+- [X] Nenhum método público sem tipo de retorno declarado
+- [X] Nenhum `origin_step = -1` no código
 
 ---
 
