@@ -1,5 +1,6 @@
 import base64
 import json
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -10,6 +11,8 @@ class HARParser:
     """
     Handles the decomposition of HAR files into atomic step files.
     """
+
+    SKIPPABLE_METHODS: set[str] = {"OPTIONS"}
 
     @staticmethod
     def load_har(path: Path) -> Dict[str, Any]:
@@ -60,7 +63,7 @@ class HARParser:
         if post_data:
             req_body = post_data.get("text")
 
-        is_skippable: bool = req_data["method"] == "OPTIONS"
+        is_skippable: bool = req_data["method"] in HARParser.SKIPPABLE_METHODS
 
         request: StepRequest = StepRequest(
             url=req_data["url"],
@@ -99,7 +102,9 @@ class HARParser:
         Returns the number of entries parsed.
         """
         output_dir = output_dir / "parse"
-        output_dir.mkdir(parents=True, exist_ok=True)
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir(parents=True)
         har_data: Dict[str, Any] = cls.load_har(har_path)
         entries: List[Dict[str, Any]] = har_data.get("log", {}).get("entries", [])
 

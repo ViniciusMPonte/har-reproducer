@@ -624,8 +624,8 @@ is_skippable = req_data["method"] in HARParser.SKIPPABLE_METHODS
 ```
 
 **Critério de conclusão:**
-- [ ] Re-execução do parser sobre o mesmo output não deixa arquivos órfãos
-- [ ] `SKIPPABLE_METHODS` é uma constante de classe em `HARParser`
+- [X] Re-execução do parser sobre o mesmo output não deixa arquivos órfãos
+- [X] `SKIPPABLE_METHODS` é uma constante de classe em `HARParser`
 
 ---
 
