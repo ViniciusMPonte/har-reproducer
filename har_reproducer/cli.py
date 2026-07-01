@@ -1,4 +1,5 @@
 import argparse
+import shutil
 from argparse import ArgumentParser, _SubParsersAction
 from argparse import Namespace
 from pathlib import Path
@@ -9,10 +10,18 @@ from .models import Patch
 from .parser import HARParser
 
 
+def _reset_output_dir(output_dir: Path) -> None:
+    """Deletes the output directory if it exists, then recreates it empty."""
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+
 def handle_parse(args: Namespace) -> None:
     """Handles the 'parse' subcommand to split a HAR file into steps."""
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
+    _reset_output_dir(output_dir)
     count: int = HARParser.split_har(har_path, output_dir)
     print(f"Parsed HAR into {count} steps.")
 
@@ -21,6 +30,7 @@ def handle_run(args: Namespace) -> None:
     """Handles the 'run' subcommand to execute the reproduction flow."""
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
+    _reset_output_dir(output_dir)
     config_path: Optional[Path] = Path(args.config) if args.config else None
     engine: Engine = Engine(har_path, output_dir, config_path=config_path)
     if args.dry_run:
