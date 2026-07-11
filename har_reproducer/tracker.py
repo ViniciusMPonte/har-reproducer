@@ -129,6 +129,7 @@ class TokenTracker:
             TokenLocation.BODY_HTML: CSSAgent,
             TokenLocation.SCRIPT: RegexAgent,
         }
+
         agent_cls: Type[BaseAgent] = location_map.get(candidate.location, RegexAgent)
 
         agent: BaseAgent = agent_cls(
@@ -164,21 +165,18 @@ class TokenTracker:
         """Classifies differences as dynamic token candidates."""
         candidates: List[DynamicToken] = []
         for path, value in diffs.items():
-            token_id: str = path.split(":", 1)[-1] if ":" in path else "body_token"
 
-            is_token_name: bool = any(
-                x in token_id.lower() for x in ["token", "jwt", "auth", "csrf", "session"]
-            )
+            token_id: str = path + value
+            location: TokenLocation = self._determine_location(path)
 
-            if is_token_name:
-                location: TokenLocation = self._determine_location(path)
-                candidates.append(DynamicToken(
-                    token_id=token_id,
-                    current_value=str(value),
-                    location=location,
-                    origin_step=None,  # replaced magic -1 with None
-                    status="Unresolved",
-                ))
+            candidates.append(DynamicToken(
+                token_id=token_id,
+                current_value=str(value),
+                location=location,
+                origin_step=None,
+                status="Unresolved",
+            ))
+
         return candidates
 
     def _determine_location(self, path: str) -> TokenLocation:

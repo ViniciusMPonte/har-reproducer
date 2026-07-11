@@ -75,13 +75,15 @@ class Engine:
         for index, entry in enumerate(entries):
             step: Step = HARParser.parse_entry(entry, index)
 
+            step_analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=False)
+            analyses.append(step_analysis)
+
             self.update_session_tokens()
 
             final_request: StepRequest
             response: StepResponse
             final_request, response = self.execute_step(step)
 
-            step.response = response
             last_response = response
 
             req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
@@ -89,9 +91,6 @@ class Engine:
 
             res_file: Path = self.real_responses_dir / f"res_{index:04d}.json"
             res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
-
-            step_analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=False)
-            analyses.append(step_analysis)
 
             print(f"Step {index} completed with status {response.status_code}")
 
