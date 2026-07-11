@@ -54,7 +54,7 @@ def test_tracker_integration_find_origin(tmp_path):
     candidate = DynamicToken(
         token_id="my_token",
         current_value="TOKEN_XYZ",
-        location="Header",
+        destination_location="Header",
         origin_step=-1,
         status="Unresolved"
     )

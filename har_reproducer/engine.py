@@ -135,7 +135,7 @@ class Engine:
         for tid, token in all_tokens.items():
             status_label: str = "✓ Resolved" if token.status == "Resolved" else "✗ Unresolved"
             origin_label: str = f" at step {token.origin_step}" if token.origin_step is not None else ""
-            print(f"- {tid}: {status_label}{origin_label} (Location: {token.location})")
+            print(f"- {tid}: {status_label}{origin_label} (Location: {token.destination_location})")
         print("------------------------------\n")
 
     def update_session_tokens(self) -> None:

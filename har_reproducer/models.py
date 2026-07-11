@@ -70,7 +70,8 @@ class DynamicToken(BaseModel):
     token_id: str
     baseline_value: Optional[str] = None
     current_value: str
-    location: TokenLocation
+    destination_location: TokenLocation
+    origin_location: Optional[TokenLocation] = None
     origin_step: Optional[int] = None
     status: Literal["Resolved", "Unresolved"]
 

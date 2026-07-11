@@ -64,7 +64,7 @@ class TokenOrigin:
     step_index: int     # índice do real_res_NNNN.json onde foi encontrado
     location: str       # "set_cookie" | "header" | "body_json" | "body_html"
                         # | "body_regex" | "redirect_url"
-    # campos específicos por location:
+    # campos específicos por destination_location:
     header_name: str | None = None
     cookie_name: str | None = None
     json_path: str | None = None

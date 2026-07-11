@@ -120,8 +120,22 @@ class TokenTracker:
             print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
             return None
 
+    def _find_origin_location(self, value: str, response_sample: Dict[str, Any]) -> TokenLocation:
+        for header_val in response_sample.get("headers", {}).values():
+            if value in header_val:
+                return TokenLocation.HEADER
+
+        for cookie_val in response_sample.get("cookies", {}).values():
+            if value in cookie_val:
+                return TokenLocation.COOKIE
+
+        return TokenLocation.BODY_JSON
+
     def _generate_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> Optional[Extractor]:
         """Tries to generate a verified extractor using the appropriate agent."""
+        if candidate.origin_location is None:
+            candidate.origin_location = self._find_origin_location(candidate.current_value, response_sample)
+
         location_map: Dict[TokenLocation, Type[BaseAgent]] = {
             TokenLocation.COOKIE: CookieAgent,
             TokenLocation.HEADER: HeaderAgent,
@@ -130,7 +144,7 @@ class TokenTracker:
             TokenLocation.SCRIPT: RegexAgent,
         }
 
-        agent_cls: Type[BaseAgent] = location_map.get(candidate.location, RegexAgent)
+        agent_cls: Type[BaseAgent] = location_map.get(candidate.origin_location, RegexAgent)
 
         agent: BaseAgent = agent_cls(
             token_id=candidate.token_id,
@@ -172,7 +186,7 @@ class TokenTracker:
             candidates.append(DynamicToken(
                 token_id=token_id,
                 current_value=str(value),
-                location=location,
+                destination_location=location,
                 origin_step=None,
                 status="Unresolved",
             ))

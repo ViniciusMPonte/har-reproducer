@@ -733,7 +733,7 @@ else:
     # fallback: comparação de string
     ...
 
-# 3: usar body_mime para determinar location
+# 3: usar body_mime para determinar destination_location
 if "text/html" in body_mime:
     return TokenLocation.BODY_HTML
 if "application/json" in body_mime:
