@@ -68,7 +68,6 @@ class Extractor(BaseModel):
 
 class DynamicToken(BaseModel):
     token_id: str
-    baseline_value: Optional[str] = None
     current_value: str
     destination_location: TokenLocation
     origin_location: Optional[TokenLocation] = None

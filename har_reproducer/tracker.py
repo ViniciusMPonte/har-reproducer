@@ -31,7 +31,6 @@ class TokenTracker:
         self.session_store: SessionStore = session_store
 
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
-        """Runs the 8-stage pipeline to analyze a step."""
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
         resolved_tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
@@ -42,7 +41,6 @@ class TokenTracker:
     def _resolve_candidates(
             self, candidates: List[DynamicToken], is_dry_run: bool
     ) -> List[DynamicToken]:
-        """Stage 3–5: Origin Search, Extractor Identification / Generation (per candidate)."""
         return [self._process_candidate(candidate, is_dry_run) for candidate in candidates]
 
     def _build_step_analysis(
@@ -52,7 +50,6 @@ class TokenTracker:
             resolved_tokens: List[DynamicToken],
             template: str,
     ) -> StepAnalysis:
-        """Stage 8: Constructs and returns the final StepAnalysis object."""
         return StepAnalysis(
             step_index=step.index,
             static_values=static_values,
@@ -61,14 +58,11 @@ class TokenTracker:
         )
 
     def _process_candidate(self, candidate: DynamicToken, is_dry_run: bool) -> DynamicToken:
-        """Resolves a single candidate token: reuse, grep, and extractor generation."""
-        # 4. Extractor Identification / Reuse
         existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
         if existing is not None and existing.verified:
             candidate.status = "Resolved"
             return candidate
 
-        # 3. Origin Search (Grep)
         origin: Optional[Tuple[int, str]] = grep_in_real_responses(
             self.responses_dir, candidate.current_value
         )
@@ -77,12 +71,13 @@ class TokenTracker:
             return candidate
 
         candidate.origin_step = origin[0]
-        candidate.status = "Resolved"
+        candidate.status = "Resolved" #Esse status esta errado, o certo seria só passar resolved quando extrator estivesse pronto. Talvez precise de outro status para esse caso
 
-        # 5. Extractor Generation
         response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
         if response_sample is None:
             return candidate
+
+        candidate.origin_location = self._find_origin_location(candidate.current_value, response_sample)
 
         self._register_extractor(candidate, response_sample, is_dry_run)
         return candidate
@@ -93,9 +88,7 @@ class TokenTracker:
             response_sample: Dict[str, Any],
             is_dry_run: bool,
     ) -> None:
-        """Generates or stubs an extractor and stores it in the registry."""
         if is_dry_run:
-            # In dry-run, register as Pending (no code generation)
             self.session_store.state.registry[candidate.token_id] = Extractor(
                 token_id=candidate.token_id,
                 code="",
@@ -109,7 +102,6 @@ class TokenTracker:
             self.session_store.state.registry[candidate.token_id] = new_extractor
 
     def _load_response(self, step_index: int) -> Optional[Dict[str, Any]]:
-        """Loads a response JSON file from the responses directory."""
         res_file: Path = self.responses_dir / f"res_{step_index:04d}.json"
         if not res_file.exists():
             return None
@@ -132,10 +124,6 @@ class TokenTracker:
         return TokenLocation.BODY_JSON
 
     def _generate_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> Optional[Extractor]:
-        """Tries to generate a verified extractor using the appropriate agent."""
-        if candidate.origin_location is None:
-            candidate.origin_location = self._find_origin_location(candidate.current_value, response_sample)
-
         location_map: Dict[TokenLocation, Type[BaseAgent]] = {
             TokenLocation.COOKIE: CookieAgent,
             TokenLocation.HEADER: HeaderAgent,
@@ -154,7 +142,6 @@ class TokenTracker:
         return agent.run_tdd_loop(origin_step=candidate.origin_step)
 
     def _compare_to_baseline(self, step: Step, baseline: Step) -> Dict[str, str]:
-        """Detects values that differ from the baseline."""
         diffs: Dict[str, str] = {}
 
         for k, v in step.request.headers.items():
@@ -176,7 +163,6 @@ class TokenTracker:
         return diffs
 
     def _detect_candidates(self, diffs: Dict[str, str]) -> List[DynamicToken]:
-        """Classifies differences as dynamic token candidates."""
         candidates: List[DynamicToken] = []
         for path, value in diffs.items():
 
@@ -194,7 +180,6 @@ class TokenTracker:
         return candidates
 
     def _determine_location(self, path: str) -> TokenLocation:
-        """Maps a diff path prefix to the appropriate TokenLocation."""
         if path.startswith("header:"):
             return TokenLocation.HEADER
         if path.startswith("cookie:"):
@@ -202,14 +187,12 @@ class TokenTracker:
         return TokenLocation.BODY_JSON
 
     def _generate_curl_template(self, request: StepRequest) -> str:
-        """Creates a curl command with {{token}} placeholders."""
         headers_str: str = " ".join(
             [f'-H "{k}: {v}"' for k, v in request.headers.items()]
         )
         return f"curl -X {request.method} '{request.url}' {headers_str}"
 
     def _extract_static_values(self, step: Step, baseline: Step) -> Dict[str, str]:
-        """Extracts values that are identical to the baseline."""
         statics: Dict[str, str] = {}
         for k, v in step.request.headers.items():
             if baseline.request.headers.get(k) == v:
