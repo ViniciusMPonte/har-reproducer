@@ -72,7 +72,7 @@ class DynamicToken(BaseModel):
     destination_location: TokenLocation
     origin_location: Optional[TokenLocation] = None
     origin_step: Optional[int] = None
-    status: Literal["Resolved", "Unresolved"]
+    status: Literal["UnderReview", "NotFound", "Unresolved", "Resolved"]
 
 
 class SessionState(BaseModel):

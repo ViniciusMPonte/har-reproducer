@@ -33,10 +33,10 @@ class TokenTracker:
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
-        resolved_tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
+        tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
         template: str = self._generate_curl_template(step.request)
         static_values: Dict[str, str] = self._extract_static_values(step, baseline_step)
-        return self._build_step_analysis(step, static_values, resolved_tokens, template)
+        return self._build_step_analysis(step, static_values, tokens, template)
 
     def _resolve_candidates(
             self, candidates: List[DynamicToken], is_dry_run: bool
@@ -47,13 +47,13 @@ class TokenTracker:
             self,
             step: Step,
             static_values: Dict[str, str],
-            resolved_tokens: List[DynamicToken],
+            tokens: List[DynamicToken],
             template: str,
     ) -> StepAnalysis:
         return StepAnalysis(
             step_index=step.index,
             static_values=static_values,
-            dynamic_tokens=resolved_tokens,
+            dynamic_tokens=tokens,
             curl_template=template,
         )
 
@@ -67,11 +67,11 @@ class TokenTracker:
             self.responses_dir, candidate.current_value
         )
         if not origin:
-            candidate.status = "Unresolved"
+            candidate.status = "NotFound"
             return candidate
 
         candidate.origin_step = origin[0]
-        candidate.status = "Resolved" #Esse status esta errado, o certo seria só passar resolved quando extrator estivesse pronto. Talvez precise de outro status para esse caso
+        candidate.status = "UnderReview"
 
         response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
         if response_sample is None:
@@ -174,7 +174,7 @@ class TokenTracker:
                 current_value=str(value),
                 destination_location=location,
                 origin_step=None,
-                status="Unresolved",
+                status="UnderReview",
             ))
 
         return candidates
