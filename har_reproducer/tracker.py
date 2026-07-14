@@ -1,4 +1,4 @@
-import json
+import json, re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type
 
@@ -121,7 +121,45 @@ class TokenTracker:
             if value in cookie_val:
                 return TokenLocation.COOKIE
 
+        body: Optional[str] = response_sample.get("body")
+        if body and value in body:
+            mime: str = (response_sample.get("body_mime") or "").lower()
+
+            if "javascript" in mime or "ecmascript" in mime:
+                return TokenLocation.SCRIPT
+
+            if "json" in mime or self._is_valid_json(body):
+                return TokenLocation.BODY_JSON
+
+            if "html" in mime or self._looks_like_html(body):
+                if self._value_inside_script_tag(body, value):
+                    return TokenLocation.SCRIPT
+                else:
+                    return TokenLocation.BODY_HTML
+
+        print(
+            f"[AVISO] Não foi possível determinar a origem do token '{value[:30]}...' com confiança; assumindo BODY_JSON.")
         return TokenLocation.BODY_JSON
+
+    @staticmethod
+    def _looks_like_html(body: str) -> bool:
+        return bool(re.search(r"<html|<!doctype html|<body|<div", body, re.IGNORECASE))
+
+    @staticmethod
+    def _value_inside_script_tag(body: str, value: str) -> bool:
+        for match in re.finditer(r"<script[^>]*>(.*?)</script>", body, re.DOTALL | re.IGNORECASE):
+            script_content: str = match.group(1)
+            if value in script_content:
+                return True
+        return False
+
+    @staticmethod
+    def _is_valid_json(body: str) -> bool:
+        try:
+            json.loads(body)
+            return True
+        except (json.JSONDecodeError, TypeError):
+            return False
 
     def _generate_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> Optional[Extractor]:
         location_map: Dict[TokenLocation, Type[BaseAgent]] = {
