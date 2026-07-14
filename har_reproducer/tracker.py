@@ -1,4 +1,5 @@
-import json, re
+import json
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type
 
@@ -132,10 +133,16 @@ class TokenTracker:
                 return TokenLocation.BODY_JSON
 
             if "html" in mime or self._looks_like_html(body):
-                if self._value_inside_script_tag(body, value):
-                    return TokenLocation.SCRIPT
-                else:
+                html_without_scripts: str = self._strip_script_blocks(body)
+                in_html: bool = value in html_without_scripts
+                if in_html:
                     return TokenLocation.BODY_HTML
+
+                in_script: bool = self._value_inside_script_tag(body, value)
+                if in_script:
+                    return TokenLocation.SCRIPT
+
+                return TokenLocation.BODY_HTML
 
         print(
             f"[AVISO] Não foi possível determinar a origem do token '{value[:30]}...' com confiança; assumindo BODY_JSON.")
@@ -144,6 +151,10 @@ class TokenTracker:
     @staticmethod
     def _looks_like_html(body: str) -> bool:
         return bool(re.search(r"<html|<!doctype html|<body|<div", body, re.IGNORECASE))
+
+    @staticmethod
+    def _strip_script_blocks(body: str) -> str:
+        return re.sub(r"<script[^>]*>.*?</script>", "", body, flags=re.DOTALL | re.IGNORECASE)
 
     @staticmethod
     def _value_inside_script_tag(body: str, value: str) -> bool:
@@ -203,7 +214,6 @@ class TokenTracker:
     def _detect_candidates(self, diffs: Dict[str, str]) -> List[DynamicToken]:
         candidates: List[DynamicToken] = []
         for path, value in diffs.items():
-
             token_id: str = path + value
             location: TokenLocation = self._determine_location(path)
 
