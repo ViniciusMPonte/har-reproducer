@@ -156,9 +156,7 @@ class Engine:
 
     def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
         """Executes the extractor code against a response and returns the result."""
-        safe_token_id: str = (
-            extractor.token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
-        )
+        safe_token_id: str = extractor.token_id
         extractor_file: Path = self.extractors_dir / f"extract_{safe_token_id}.py"
 
         wrapped_code = f"""

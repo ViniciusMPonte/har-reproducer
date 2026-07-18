@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -35,9 +36,42 @@ class TokenTracker:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
         tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
+        self._apply_placeholders(step, tokens)
         template: str = self._generate_curl_template(step.request)
         static_values: Dict[str, str] = self._extract_static_values(step, baseline_step)
         return self._build_step_analysis(step, static_values, tokens, template)
+
+    def _apply_placeholders(self, step: Step, tokens: List[DynamicToken]) -> None:
+        req: StepRequest = step.request
+
+        for token in tokens:
+            if not token.current_value:
+                continue
+
+            extractor: Optional[Extractor] = self.session_store.state.registry.get(token.token_id)
+            if extractor is None or not extractor.verified:
+                continue
+
+            placeholder: str = f"{{{{{token.token_id}}}}}"
+
+            for k, v in list(req.headers.items()):
+                if token.current_value in v:
+                    req.headers[k] = v.replace(token.current_value, placeholder)
+
+            for k, v in list(req.cookies.items()):
+                if token.current_value in v:
+                    req.cookies[k] = v.replace(token.current_value, placeholder)
+
+            if req.body:
+                if isinstance(req.body, bytes):
+                    try:
+                        body_str: Optional[str] = req.body.decode("utf-8")
+                    except UnicodeDecodeError:
+                        body_str = None
+                    if body_str is not None and token.current_value in body_str:
+                        req.body = body_str.replace(token.current_value, placeholder).encode("utf-8")
+                elif token.current_value in req.body:
+                    req.body = req.body.replace(token.current_value, placeholder)
 
     def _resolve_candidates(
             self, candidates: List[DynamicToken], is_dry_run: bool
@@ -59,11 +93,6 @@ class TokenTracker:
         )
 
     def _process_candidate(self, candidate: DynamicToken, is_dry_run: bool) -> DynamicToken:
-        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
-        if existing is not None and existing.verified:
-            candidate.status = "Resolved"
-            return candidate
-
         origin: Optional[Tuple[int, str]] = grep_in_real_responses(
             self.responses_dir, candidate.current_value
         )
@@ -72,6 +101,16 @@ class TokenTracker:
             return candidate
 
         candidate.origin_step = origin[0]
+
+        candidate.token_id = hashlib.md5(
+            f"{candidate.path}:{candidate.origin_step}".encode("utf-8")
+        ).hexdigest()
+
+        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
+        if existing is not None and existing.verified:
+            candidate.status = "Resolved"
+            return candidate
+
         candidate.status = "UnderReview"
 
         response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
@@ -101,6 +140,9 @@ class TokenTracker:
         new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample)
         if new_extractor is not None:
             self.session_store.state.registry[candidate.token_id] = new_extractor
+            candidate.status = "Resolved"
+        else:
+            candidate.status = "Unresolved"
 
     def _load_response(self, step_index: int) -> Optional[Dict[str, Any]]:
         res_file: Path = self.responses_dir / f"res_{step_index:04d}.json"
@@ -214,11 +256,13 @@ class TokenTracker:
     def _detect_candidates(self, diffs: Dict[str, str]) -> List[DynamicToken]:
         candidates: List[DynamicToken] = []
         for path, value in diffs.items():
-            token_id: str = path + value
             location: TokenLocation = self._determine_location(path)
 
+            provisional_id: str = hashlib.md5(path.encode("utf-8")).hexdigest()
+
             candidates.append(DynamicToken(
-                token_id=token_id,
+                token_id=provisional_id,
+                path=path,
                 current_value=str(value),
                 destination_location=location,
                 origin_step=None,

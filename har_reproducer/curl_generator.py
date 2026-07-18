@@ -21,13 +21,13 @@ class CurlGenerator:
         # Headers
         for header, value in request.headers.items():
             if trace := self._get_trace_for_value(header, value, traces):
-                parts.append(f"# Token {trace.token_id} comes from response of step {trace.origin_step}")
+                parts.append(self._trace_comment(trace))
             parts.append(f"-H '{header}: {value}'")
 
         # Cookies
         for cookie, value in request.cookies.items():
             if trace := self._get_trace_for_value(cookie, value, traces):
-                parts.append(f"# Token {trace.token_id} comes from response of step {trace.origin_step}")
+                parts.append(self._trace_comment(trace))
             parts.append(f"--cookie '{cookie}={value}'")
 
         # Body
@@ -38,10 +38,16 @@ class CurlGenerator:
             )
             body_traces: List[TokenTrace] = [t for t in traces if t.location == TokenLocation.BODY_JSON]
             for trace in body_traces:
-                parts.append(f"# Token {trace.token_id} comes from response of step {trace.origin_step}")
+                parts.append(self._trace_comment(trace))
             parts.append(f"--data-binary '{body_str}'")
 
         return " \\\n     ".join(parts)
+
+    def _trace_comment(self, trace: TokenTrace) -> str:
+        return (
+            f"# Token {trace.location.value}:{trace.key} (id={trace.token_id[:8]}) "
+            f"comes from response of step {trace.origin_step}"
+        )
 
     def _find_token_traces(self, request: StepRequest, session_store: Any) -> List[TokenTrace]:
         traces: List[TokenTrace] = []

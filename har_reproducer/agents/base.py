@@ -15,8 +15,7 @@ class BaseAgent:
 
     def __init__(self, token_id: str, response_sample: Dict[str, Any], expected_value: str) -> None:
         self.token_id: str = token_id
-        # acho que talvez seja uma boa usar MD5 nesses ids. Isso evitaria problemas com nomes grandes e caracteres invalidos
-        self.safe_token_id: str = token_id.replace("-", "_").replace(".", "_").replace(" ", "_")
+        self.safe_token_id: str = token_id
         self.response_sample: dict[str, Any] = response_sample
         self.expected_value: str = expected_value
 
