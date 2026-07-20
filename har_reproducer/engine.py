@@ -11,11 +11,13 @@ from pydantic import TypeAdapter
 
 from .agents.diagnose_agent import DiagnoseAgent
 from .curl_generator import CurlGenerator
+from .llm_factory import create_llm
 from .models import (
     DynamicToken,
     Extractor,
     FailureContext,
     Patch,
+    ProjectConfig,
     Step,
     StepAnalysis,
     StepRequest,
@@ -33,7 +35,12 @@ class Engine:
     The Execution Engine: Performs the HTTP requests and manages the loop.
     """
 
-    def __init__(self, har_path: Path, output_dir: Path, config_path: Optional[Path] = None) -> None:
+    def __init__(
+        self,
+        har_path: Path,
+        output_dir: Path,
+        config_path: Optional[Path] = None,
+    ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
         self.curls_dir: Path = output_dir / "curls"
@@ -46,21 +53,25 @@ class Engine:
         self.extractors_dir.mkdir(parents=True, exist_ok=True)
 
         self.session_store: SessionStore = SessionStore()
-        self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store)
         self.validator: Validator = Validator()
 
         self.success_criteria: List[SuccessCriterion] = []
+        llm = None
+
         if config_path and config_path.exists():
             try:
                 with open(config_path, "r") as f:
-                    config: Any = json.load(f)
-                    _criterion_adapter: TypeAdapter[SuccessCriterion] = TypeAdapter(SuccessCriterion)
-                    self.success_criteria = [
-                        _criterion_adapter.validate_python(c)
-                        for c in config.get("success_criteria", [])
-                    ]
+                    config_data: Any = json.load(f)
+                    _project_config_adapter: TypeAdapter[ProjectConfig] = TypeAdapter(ProjectConfig)
+                    project_config = _project_config_adapter.validate_python(config_data)
+                    self.success_criteria = project_config.success_criteria
+                    if project_config.llm:
+                        llm = create_llm(project_config.llm)
+                        print(f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
             except Exception as e:
                 print(f"Error loading config: {e}")
+
+        self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
 
     def run(self) -> bool:
         """

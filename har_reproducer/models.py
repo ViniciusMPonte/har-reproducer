@@ -113,6 +113,16 @@ class CompositeCriterion(BaseModel):
     expected: List["SuccessCriterion"]
 
 
+class LLMSettings(BaseModel):
+    provider: str = "ollama"
+    model: str
+
+
+class ProjectConfig(BaseModel):
+    llm: Optional[LLMSettings] = None
+    success_criteria: List["SuccessCriterion"] = Field(default_factory=list)
+
+
 SuccessCriterion = Annotated[
     Union[
         StatusCodeCriterion,
@@ -126,6 +136,7 @@ SuccessCriterion = Annotated[
 
 # Required for CompositeCriterion's self-referential List["SuccessCriterion"]
 CompositeCriterion.model_rebuild()
+ProjectConfig.model_rebuild()
 
 
 class FailureContext(BaseModel):

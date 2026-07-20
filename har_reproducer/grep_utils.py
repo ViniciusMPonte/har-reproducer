@@ -29,7 +29,7 @@ def try_decode(value: str) -> str:
         if decoded_b64.isprintable():
             current = decoded_b64
     except Exception as e:
-        print(f"[AVISO] Falha ao decodificar base64: {e}")
+        pass
 
     return current
 

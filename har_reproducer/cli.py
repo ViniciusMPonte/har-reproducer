@@ -32,6 +32,7 @@ def handle_run(args: Namespace) -> None:
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     _reset_output_dir(output_dir)
     config_path: Optional[Path] = Path(args.config) if args.config else None
+
     engine: Engine = Engine(har_path, output_dir, config_path=config_path)
     if args.dry_run:
         engine.dry_run()
@@ -85,7 +86,7 @@ def main() -> None:
     run_parser.add_argument("--har", required=True, help="Path to HAR file")
     run_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
     run_parser.add_argument("--dry-run", action="store_true", help="Simulate without network calls")
-    run_parser.add_argument("--config", help="Path to success criteria config")
+    run_parser.add_argument("--config", help="Path to project config (JSON)")
     run_parser.set_defaults(func=handle_run)
 
     # Diagnose

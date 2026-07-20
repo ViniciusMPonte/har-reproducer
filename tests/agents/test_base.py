@@ -2,8 +2,8 @@ import pytest
 from har_reproducer.agents.base import BaseAgent
 
 class MockAgent(BaseAgent):
-    def generate_code(self) -> str:
-        return f"def extract_{self.token_id}(response: dict) -> str: return response['body']"
+    def generate_code(self, last_error=None) -> str:
+        return f"def extract_{self.safe_token_id}(response: dict) -> str: return response['body']"
     
     @property
     def __class__(self):
@@ -22,10 +22,16 @@ def test_base_agent_tdd_success():
 
 def test_base_agent_tdd_failure():
     class FailingAgent(BaseAgent):
-        def generate_code(self) -> str:
-            return f"def extract_{self.token_id}(response: dict) -> str: return 'wrong'"
+        def generate_code(self, last_error=None) -> str:
+            return f"def extract_{self.safe_token_id}(response: dict) -> str: return 'wrong'"
             
     agent = FailingAgent("test_token", {"body": "value123"}, "value123")
     extractor = agent.run_tdd_loop(max_attempts=2)
     
     assert extractor is None
+
+def test_base_agent_path_key_property():
+    agent = BaseAgent("hash123", {}, "v", path="cookie:session_id")
+    assert agent.key == "session_id"
+    # token_id must never be used as the key
+    assert agent.token_id == "hash123"

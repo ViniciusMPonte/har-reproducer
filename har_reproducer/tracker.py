@@ -28,9 +28,16 @@ class TokenTracker:
     The Analysis Pipeline: Detects dynamic tokens and determines how to extract them.
     """
 
-    def __init__(self, responses_dir: Path, session_store: SessionStore) -> None:
+    def __init__(
+        self,
+        responses_dir: Path,
+        session_store: SessionStore,
+        llm: Optional[Any] = None,
+    ) -> None:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
+        # Optional LangChain chat model injected into agents for the LLM fallback.
+        self.llm: Optional[Any] = llm
 
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
@@ -229,6 +236,9 @@ class TokenTracker:
             token_id=candidate.token_id,
             response_sample=response_sample,
             expected_value=candidate.current_value,
+            path=candidate.path,
+            location=candidate.origin_location.value if candidate.origin_location else None,
+            llm=self.llm,
         )
         return agent.run_tdd_loop(origin_step=candidate.origin_step)
 
