@@ -69,6 +69,8 @@ class Engine:
                         llm = create_llm(project_config.llm)
                         print(f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 print(f"Error loading config: {e}")
 
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Annotated, Dict, List, Optional, Union, Literal
+from typing import Annotated, Any, Dict, List, Optional, Union, Literal
 
 from pydantic import BaseModel, Field
 
@@ -116,6 +116,8 @@ class CompositeCriterion(BaseModel):
 class LLMSettings(BaseModel):
     provider: str = "ollama"
     model: str
+    temperature: Optional[float] = 0.0
+    extra: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ProjectConfig(BaseModel):
