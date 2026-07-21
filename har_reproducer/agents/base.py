@@ -5,6 +5,8 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+from har_reproducer.prompts import build_extractor_prompt
+from har_reproducer.templates import render_extractor_script
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
@@ -105,24 +107,14 @@ class BaseAgent:
         return "".join(parts)
 
     def _build_llm_prompt(self, last_error: Optional[str]) -> str:
-        error_section: str = (
-            f"\nThe previous attempt failed with this error:\n{last_error}\n"
-            if last_error
-            else ""
+        return build_extractor_prompt(
+            safe_token_id=self.safe_token_id,
+            location=self.location,
+            path=self.path,
+            expected_value=self.expected_value,
+            response_sample=self.response_sample,
+            last_error=last_error,
         )
-        return f"""You are a Python code generator for HTTP token extraction.
-
-Write a single Python function named `extract_{self.safe_token_id}` that receives
-one argument `response` (a dict with keys like 'headers', 'cookies', 'body') and
-returns the extracted token value as a string. Raise an Exception if the token is
-not found. Return ONLY the function code inside a ```python code block, with any
-required imports inside or above the function.
-
-Token location: {self.location}
-Original key/path: {self.path}
-Expected returned value: {self.expected_value!r}
-Response sample: {self.response_sample!r}
-{error_section}"""
 
     @staticmethod
     def _extract_code_block(text: str) -> str:
@@ -174,23 +166,11 @@ Response sample: {self.response_sample!r}
 
     def _write_temp_script(self, code: str) -> Path:
         temp_file: Path = Path(f"temp_extractor_{self.safe_token_id}.py")
-        wrapped_code: str = f"""
-import sys
-import json
-from typing import Dict
-class ExtractorError(Exception): pass
-
-{code}
-
-if __name__ == "__main__":
-    response = {self.response_sample!r}
-    try:
-        result = extract_{self.safe_token_id}(response)
-        print(result)
-    except Exception as e:
-        print(f"ERROR: {{e}}", file=sys.stderr)
-        sys.exit(1)
-"""
+        wrapped_code: str = render_extractor_script(
+            safe_token_id=self.safe_token_id,
+            code=code,
+            response_sample=self.response_sample,
+        )
         temp_file.write_text(wrapped_code)
         return temp_file
 
