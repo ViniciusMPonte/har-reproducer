@@ -4,6 +4,7 @@ from argparse import ArgumentParser, _SubParsersAction
 from argparse import Namespace
 from pathlib import Path
 from typing import Optional
+from dotenv import load_dotenv
 
 from .engine import Engine
 from .models import Patch
@@ -72,6 +73,8 @@ def handle_diagnose(args: Namespace) -> None:
 
 def main() -> None:
     """Entry point for the har-reproducer CLI."""
+    load_dotenv()
+
     parser: ArgumentParser = argparse.ArgumentParser(prog="har-reproducer")
     subparsers: _SubParsersAction[ArgumentParser] = parser.add_subparsers(dest="command", required=True)
 

@@ -1,7 +1,7 @@
 {
   "llm": {
-    "provider": "ollama",
-    "model": "gemma4:e2b"
+    "provider": "google",
+    "model": "gemma-4-26b-a4b-it"
   },
   "success_criteria": [
     {
