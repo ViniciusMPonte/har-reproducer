@@ -3,7 +3,10 @@ import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage
 
 from har_reproducer.models import AgentType, Extractor
 
@@ -37,7 +40,7 @@ class BaseAgent:
         expected_value: str,
         path: Optional[str] = None,
         location: Optional[str] = None,
-        llm: Optional[Any] = None,
+        llm: Optional[BaseChatModel] = None,
     ) -> None:
         self.token_id: str = token_id
         # ``token_id`` may be an MD5 hash or an arbitrary string; sanitize it so it
@@ -49,7 +52,7 @@ class BaseAgent:
         # via ``path`` (e.g. ``"cookie:session_id"``); never derived from token_id.
         self.path: Optional[str] = path
         self.location: Optional[str] = location
-        self.llm: Optional[Any] = llm
+        self.llm: Optional[BaseChatModel] = llm
 
         # Instance state: a fresh agent is created per token, so there is no leak.
         self._attempt_index: int = 0
@@ -115,14 +118,27 @@ class BaseAgent:
             return None
         prompt: str = self._build_llm_prompt(last_error)
         try:
-            response: Any = self.llm.invoke(prompt)
+            response: AIMessage = self.llm.invoke(prompt)
         except Exception as exc:  # pragma: no cover - network/provider errors
             print(f"[AVISO] Falha na chamada ao LLM para {self.token_id}: {exc}")
             return None
-        text: str = getattr(response, "content", response)
-        if isinstance(text, list):
-            text = "".join(str(part) for part in text)
-        return self._extract_code_block(str(text))
+        text: str = self._response_to_text(response)
+        return self._extract_code_block(text)
+
+    @staticmethod
+    def _response_to_text(response: AIMessage) -> str:
+        content: Union[str, List[Union[str, Dict[str, Any]]]] = response.content
+        if isinstance(content, str):
+            return content
+        parts: List[str] = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict) and (
+                part.get("type") == "text" or "text" in part
+            ):
+                parts.append(str(part.get("text", "")))
+        return "".join(parts)
 
     def _build_llm_prompt(self, last_error: Optional[str]) -> str:
         error_section: str = (
