@@ -1,7 +1,7 @@
 {
   "llm": {
     "provider": "google",
-    "model": "gemma-4-26b-a4b-it"
+    "model": "gemini-flash-latest"
   },
   "success_criteria": [
     {

@@ -22,7 +22,7 @@ LOOP
 	- acrescenta mais 1 no index
 
 __________
-//- cada modelo vai ter uma forma especifica de extrair o texto do response, isso precisa ser considerado para a extração do response ser certo.
+
 //
 //- o conteudo do rep_.json precisa estar no teste enviado para llm ler, mas não no teste. Porem precisa ter a leitura do arquivo la. (remover o Any, ou fazer o cast dentro do try
 //
@@ -36,4 +36,8 @@ __________
 //  "llm": {
 //    "provider": "ollama",
 //    "model": "gemma4:e2b"
+  "model": "gemma-4-26b-a4b-it"
 //  },
+
+- outro problema, nos extratores, a criação de código esta em dois lugares diferentes, um é na geração, que hoje esta no _write_temp_script do base.py, e o outro no _run_extractor, que esta no engine.py
+- creio que o fluxo não esteja correto, o código esta criando todos os extratores antes de testar em uma requisição real

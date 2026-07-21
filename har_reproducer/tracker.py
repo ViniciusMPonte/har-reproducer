@@ -4,6 +4,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+from langchain_core.language_models import BaseChatModel
+
 from .agents.base import BaseAgent
 from .agents.cookie_agent import CookieAgent
 from .agents.css_agent import CSSAgent
@@ -24,20 +26,16 @@ from .session import SessionStore
 
 
 class TokenTracker:
-    """
-    The Analysis Pipeline: Detects dynamic tokens and determines how to extract them.
-    """
 
     def __init__(
-        self,
-        responses_dir: Path,
-        session_store: SessionStore,
-        llm: Optional[Any] = None,
+            self,
+            responses_dir: Path,
+            session_store: SessionStore,
+            llm: Optional[BaseChatModel] = None,
     ) -> None:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
-        # Optional LangChain chat model injected into agents for the LLM fallback.
-        self.llm: Optional[Any] = llm
+        self.llm: Optional[BaseChatModel] = llm
 
     def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)

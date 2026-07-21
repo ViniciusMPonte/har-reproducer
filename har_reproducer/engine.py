@@ -31,15 +31,12 @@ from .validator import Validator
 
 
 class Engine:
-    """
-    The Execution Engine: Performs the HTTP requests and manages the loop.
-    """
 
     def __init__(
-        self,
-        har_path: Path,
-        output_dir: Path,
-        config_path: Optional[Path] = None,
+            self,
+            har_path: Path,
+            output_dir: Path,
+            config_path: Optional[Path] = None,
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
@@ -67,7 +64,8 @@ class Engine:
                     self.success_criteria = project_config.success_criteria
                     if project_config.llm:
                         llm = create_llm(project_config.llm)
-                        print(f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
+                        print(
+                            f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
             except Exception as e:
                 import traceback
                 traceback.print_exc()
@@ -76,10 +74,6 @@ class Engine:
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
 
     def run(self) -> bool:
-        """
-        Main loop to reproduce the HAR flow.
-        Returns True/False based on validation of the final response.
-        """
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
@@ -115,10 +109,6 @@ class Engine:
         return True
 
     def dry_run(self) -> None:
-        """
-        Analyzes the HAR flow without executing any HTTP requests.
-        Prints a report of detected dynamic tokens and their resolution status.
-        """
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
@@ -135,7 +125,6 @@ class Engine:
         self._generate_dry_run_report(analyses)
 
     def _generate_dry_run_report(self, analyses: List[StepAnalysis]) -> None:
-        """Generates a report of dynamic tokens and their resolution status."""
         print("\n--- Dry-Run Analysis Report ---")
         print(f"Analyzed {len(analyses)} steps.")
 
@@ -152,7 +141,6 @@ class Engine:
         print("------------------------------\n")
 
     def update_session_tokens(self) -> None:
-        """Runs all verified extractors and updates the session store."""
         for token_id, extractor in self.session_store.state.registry.items():
             if not extractor.verified or extractor.origin_step is None:
                 continue
@@ -168,7 +156,6 @@ class Engine:
                     continue
 
     def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
-        """Executes the extractor code against a response and returns the result."""
         safe_token_id: str = extractor.token_id
         extractor_file: Path = self.extractors_dir / f"extract_{safe_token_id}.py"
 
@@ -203,10 +190,6 @@ if __name__ == "__main__":
         return None
 
     def handle_recovery(self, response: StepResponse) -> bool:
-        """
-        Attempts deterministic recovery for common failure codes.
-        Returns True if a recovery action was taken that warrants a retry.
-        """
         if response.status_code == 401:
             print("Detected 401 Unauthorized. Attempting deterministic recovery (token refresh)...")
             self.update_session_tokens()
@@ -240,19 +223,14 @@ if __name__ == "__main__":
         return agent.diagnose()
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
-        """
-        Executes a single HTTP request using httpx with deterministic recovery.
-        """
         max_attempts: int = 2
         for attempt in range(max_attempts):
             req: StepRequest = step.request
 
-            # Interpolate tokens; render_dict returns Dict[str, str] for dict[str,str] input
             raw_headers: Dict[str, str] = self.session_store.render_dict(req.headers)
             headers: Dict[str, str] = {k: v for k, v in raw_headers.items() if not k.startswith(":")}
             cookies: Dict[str, str] = self.session_store.render_dict(req.cookies)
 
-            # body is Optional[str | bytes]; we only render if it's a str
             body: Optional[str]
             if req.body is None:
                 body = None
@@ -286,7 +264,7 @@ if __name__ == "__main__":
                     content=(
                         final_request.body.encode("utf-8")
                         if isinstance(final_request.body, str)
-                        else final_request.body  # bytes passed through as-is; None handled by falsy guard
+                        else final_request.body
                     ) if final_request.body else None,
                 )
 
@@ -315,5 +293,4 @@ if __name__ == "__main__":
 
             return final_request, response
 
-        # Unreachable with max_attempts=2, but required for the type checker
         raise RuntimeError(f"execute_step exhausted {max_attempts} attempts for step {step.index}")
