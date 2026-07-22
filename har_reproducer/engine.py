@@ -9,7 +9,7 @@ import httpx
 from httpx import Response
 from pydantic import TypeAdapter
 
-from contracts import StepExecutor
+from .contracts import StepExecutor
 from .curl_generator import CurlGenerator
 from .llm_factory import create_llm
 from .models import (
