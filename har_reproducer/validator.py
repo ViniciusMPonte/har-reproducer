@@ -10,7 +10,6 @@ from .models import (
     BodyContainsCriterion,
     UrlMatchCriterion,
     HtmlElementPresentCriterion,
-    CompositeCriterion,
 )
 
 
@@ -44,8 +43,5 @@ class Validator:
             soup: BeautifulSoup = BeautifulSoup(response.body, "html.parser")
 
             return soup.select_one(criterion.expected) is not None
-
-        elif isinstance(criterion, CompositeCriterion):
-            return all(Validator._check_criterion(response, c) for c in criterion.expected)
 
         return False

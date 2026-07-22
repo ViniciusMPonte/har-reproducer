@@ -1,4 +1,4 @@
-from typing import Annotated, List, Literal, Union
+from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
@@ -23,18 +23,12 @@ class HtmlElementPresentCriterion(BaseModel):
     expected: str
 
 
-class CompositeCriterion(BaseModel):
-    type: Literal["composite"]
-    expected: List["SuccessCriterion"]
-
-
 SuccessCriterion = Annotated[
     Union[
         StatusCodeCriterion,
         BodyContainsCriterion,
         UrlMatchCriterion,
         HtmlElementPresentCriterion,
-        CompositeCriterion,
     ],
     Field(discriminator="type"),
 ]
