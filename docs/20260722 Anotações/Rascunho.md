@@ -6,6 +6,6 @@ Hoje eu estou com muita dificuldade de me achar no código, por que ele esta pol
 
 eu proponho
 
-- verificar e remover todos os códigos sem classe
+
 incluir __init__.py no pacote agents
 - refatorar até fazer sentido

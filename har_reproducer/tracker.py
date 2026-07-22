@@ -6,12 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Type
 
 from langchain_core.language_models import BaseChatModel
 
-from .agents.base import BaseAgent
-from .agents.cookie_agent import CookieAgent
-from .agents.css_agent import CSSAgent
-from .agents.header_agent import HeaderAgent
-from .agents.jsonpath_agent import JSONPathAgent
-from .agents.regex_agent import RegexAgent
+from .agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
 from .grep_utils import grep_in_real_responses
 from .models import (
     Extractor,
