@@ -5,12 +5,12 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from har_reproducer.prompts import build_extractor_prompt
-from har_reproducer.templates import render_extractor_script
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from har_reproducer.models import AgentType, Extractor
+from har_reproducer.prompts import build_extractor_prompt
+from har_reproducer.templates import ExtractorTemplate
 
 Strategy = Callable[[Optional[str]], Optional[str]]
 
@@ -166,7 +166,7 @@ class BaseAgent:
 
     def _write_temp_script(self, code: str) -> Path:
         temp_file: Path = Path(f"temp_extractor_{self.safe_token_id}.py")
-        wrapped_code: str = render_extractor_script(
+        wrapped_code: str = ExtractorTemplate.render_temp_script(
             safe_token_id=self.safe_token_id,
             code=code,
             response_sample=self.response_sample,

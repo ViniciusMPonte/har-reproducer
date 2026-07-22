@@ -26,6 +26,7 @@ from .models import (
 )
 from .parser import HARParser
 from .session import SessionStore
+from .templates import ExtractorTemplate
 from .tracker import TokenTracker
 from .validator import Validator
 
@@ -159,21 +160,11 @@ class Engine:
         safe_token_id: str = extractor.token_id
         extractor_file: Path = self.extractors_dir / f"extract_{safe_token_id}.py"
 
-        wrapped_code = f"""
-import sys
-import json
-from typing import Dict
-
-{extractor.code}
-
-if __name__ == "__main__":
-    response = {response}
-    try:
-        result = extract_{safe_token_id}(response)
-        print(result)
-    except Exception:
-        sys.exit(1)
-"""
+        wrapped_code: str = ExtractorTemplate.render_script(
+            safe_token_id=safe_token_id,
+            code=extractor.code,
+            response_sample=response,
+        )
         extractor_file.write_text(wrapped_code, encoding="utf-8")
 
         try:
