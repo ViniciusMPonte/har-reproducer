@@ -64,6 +64,7 @@ class Extractor(BaseModel):
     verified: bool = False
     agent_type: AgentType
     origin_step: Optional[int] = None
+    temp_file_path: Optional[str] = None
 
 
 class DynamicToken(BaseModel):

@@ -2,6 +2,16 @@ import pytest
 import json
 from pathlib import Path
 
+from har_reproducer.paths import Workspace
+
+
+@pytest.fixture(autouse=True)
+def init_workspace(tmp_path):
+    """Initializes the Workspace in a temporary directory for each test."""
+    Workspace.init(tmp_path / "output")
+    yield
+
+
 @pytest.fixture
 def tmp_steps_dir(tmp_path):
     """Provides a temporary directory for step files."""

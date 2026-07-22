@@ -9,6 +9,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from har_reproducer.models import AgentType, Extractor
+from har_reproducer.paths import Workspace
 from har_reproducer.prompts import ExtractorPrompt
 from har_reproducer.templates import ExtractorTemplate
 
@@ -125,8 +126,7 @@ class BaseAgent:
             return fenced.group(1).strip()
         return text.strip()
 
-    def run_tdd_loop(self, max_attempts: Optional[int] = None, origin_step: Optional[int] = None) -> Optional[
-        Extractor]:
+    def run_tdd_loop(self, max_attempts: Optional[int] = None, origin_step: Optional[int] = None) -> Optional[Extractor]:
 
         strategies: List[Strategy] = self._get_strategies()
         total: int = len(strategies) if max_attempts is None else max_attempts
@@ -143,29 +143,29 @@ class BaseAgent:
             success, error = self._verify_code(code)
 
             if success:
+                temp_path: Path = Workspace.temp_extractor_file(self.safe_token_id)
                 return Extractor(
                     token_id=self.token_id,
                     code=code,
                     verified=True,
                     agent_type=AgentType(self.__class__.__name__),
                     origin_step=origin_step,
+                    temp_file_path=str(temp_path),
                 )
 
             last_error = error
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
 
+        self._cleanup_script(Workspace.temp_extractor_file(self.safe_token_id))
         return None
 
     def _verify_code(self, code: str) -> Tuple[bool, Optional[str]]:
 
         script_path: Path = self._write_temp_script(code)
-        try:
-            return self._execute_script(script_path)
-        finally:
-            self._cleanup_script(script_path)
+        return self._execute_script(script_path)
 
     def _write_temp_script(self, code: str) -> Path:
-        temp_file: Path = Path(f"temp_extractor_{self.safe_token_id}.py")
+        temp_file: Path = Workspace.temp_extractor_file(self.safe_token_id)
         wrapped_code: str = ExtractorTemplate.render_temp_script(
             safe_token_id=self.safe_token_id,
             code=code,

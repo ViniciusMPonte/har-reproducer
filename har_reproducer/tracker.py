@@ -41,13 +41,12 @@ class TokenTracker:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
         tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
-        self._apply_placeholders(step, tokens)
+        self._apply_placeholders(step.request, tokens)
         template: str = self._generate_curl_template(step.request)
         static_values: Dict[str, str] = self._extract_static_values(step, baseline_step)
         return self._build_step_analysis(step, static_values, tokens, template)
 
-    def _apply_placeholders(self, step: Step, tokens: List[DynamicToken]) -> None:
-        req: StepRequest = step.request
+    def _apply_placeholders(self, request: StepRequest, tokens: List[DynamicToken]) -> None:
 
         for token in tokens:
             if not token.current_value:
@@ -59,24 +58,24 @@ class TokenTracker:
 
             placeholder: str = f"{{{{{token.token_id}}}}}"
 
-            for k, v in list(req.headers.items()):
+            for k, v in list(request.headers.items()):
                 if token.current_value in v:
-                    req.headers[k] = v.replace(token.current_value, placeholder)
+                    request.headers[k] = v.replace(token.current_value, placeholder)
 
-            for k, v in list(req.cookies.items()):
+            for k, v in list(request.cookies.items()):
                 if token.current_value in v:
-                    req.cookies[k] = v.replace(token.current_value, placeholder)
+                    request.cookies[k] = v.replace(token.current_value, placeholder)
 
-            if req.body:
-                if isinstance(req.body, bytes):
+            if request.body:
+                if isinstance(request.body, bytes):
                     try:
-                        body_str: Optional[str] = req.body.decode("utf-8")
+                        body_str: Optional[str] = request.body.decode("utf-8")
                     except UnicodeDecodeError:
                         body_str = None
                     if body_str is not None and token.current_value in body_str:
-                        req.body = body_str.replace(token.current_value, placeholder).encode("utf-8")
-                elif token.current_value in req.body:
-                    req.body = req.body.replace(token.current_value, placeholder)
+                        request.body = body_str.replace(token.current_value, placeholder).encode("utf-8")
+                elif token.current_value in request.body:
+                    request.body = request.body.replace(token.current_value, placeholder)
 
     def _resolve_candidates(
             self, candidates: List[DynamicToken], is_dry_run: bool

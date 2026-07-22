@@ -25,6 +25,7 @@ from .models import (
     SuccessCriterion,
 )
 from .parser import HARParser
+from .paths import Workspace
 from .session import SessionStore
 from .templates import ExtractorTemplate
 from .tracker import TokenTracker
@@ -41,14 +42,13 @@ class Engine:
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
-        self.curls_dir: Path = output_dir / "curls"
-        self.curls_dir.mkdir(parents=True, exist_ok=True)
-        self.real_responses_dir: Path = output_dir / "real_responses"
-        self.real_responses_dir.mkdir(parents=True, exist_ok=True)
-        self.real_requests_dir: Path = output_dir / "real_requests"
-        self.real_requests_dir.mkdir(parents=True, exist_ok=True)
-        self.extractors_dir: Path = output_dir / "extractors"
-        self.extractors_dir.mkdir(parents=True, exist_ok=True)
+
+        Workspace.init(output_dir)
+        self.curls_dir: Path = Workspace.curls
+        self.real_responses_dir: Path = Workspace.real_responses
+        self.real_requests_dir: Path = Workspace.real_requests
+        self.extractors_dir: Path = Workspace.extractors
+        self.temp_extractors_dir: Path = Workspace.temp_extractors
 
         self.session_store: SessionStore = SessionStore()
         self.validator: Validator = Validator()
@@ -158,7 +158,7 @@ class Engine:
 
     def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
         safe_token_id: str = extractor.token_id
-        extractor_file: Path = self.extractors_dir / f"extract_{safe_token_id}.py"
+        extractor_file: Path = Workspace.extractor_file(safe_token_id)
 
         wrapped_code: str = ExtractorTemplate.render_script(
             safe_token_id=safe_token_id,
@@ -166,6 +166,11 @@ class Engine:
             response_sample=response,
         )
         extractor_file.write_text(wrapped_code, encoding="utf-8")
+
+        if extractor.temp_file_path:
+            temp_file: Path = Path(extractor.temp_file_path)
+            if temp_file.exists():
+                temp_file.unlink()
 
         try:
             result: CompletedProcess[str] = subprocess.run(
