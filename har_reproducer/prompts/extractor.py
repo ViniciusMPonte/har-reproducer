@@ -1,20 +1,23 @@
 from typing import Any, Dict, Optional
 
 
-def build_extractor_prompt(
-        safe_token_id: str,
-        location: Optional[str],
-        path: Optional[str],
-        expected_value: str,
-        response_sample: Dict[str, Any],
-        last_error: Optional[str] = None,
-) -> str:
-    error_section: str = (
-        f"\nThe previous attempt failed with this error:\n{last_error}\n"
-        if last_error
-        else ""
-    )
-    return f"""You are a Python code generator for HTTP token extraction.
+class ExtractorPrompt:
+
+    @staticmethod
+    def build(
+            safe_token_id: str,
+            location: Optional[str],
+            path: Optional[str],
+            expected_value: str,
+            response_sample: Dict[str, Any],
+            last_error: Optional[str] = None,
+    ) -> str:
+        error_section: str = (
+            f"\nThe previous attempt failed with this error:\n{last_error}\n"
+            if last_error
+            else ""
+        )
+        return f"""You are a Python code generator for HTTP token extraction.
 
 Write a single Python function named `extract_{safe_token_id}` that receives
 one argument `response` (a dict with keys like 'headers', 'cookies', 'body') and

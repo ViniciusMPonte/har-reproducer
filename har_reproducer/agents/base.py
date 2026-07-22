@@ -9,7 +9,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
 from har_reproducer.models import AgentType, Extractor
-from har_reproducer.prompts import build_extractor_prompt
+from har_reproducer.prompts import ExtractorPrompt
 from har_reproducer.templates import ExtractorTemplate
 
 Strategy = Callable[[Optional[str]], Optional[str]]
@@ -107,7 +107,7 @@ class BaseAgent:
         return "".join(parts)
 
     def _build_llm_prompt(self, last_error: Optional[str]) -> str:
-        return build_extractor_prompt(
+        return ExtractorPrompt.build(
             safe_token_id=self.safe_token_id,
             location=self.location,
             path=self.path,

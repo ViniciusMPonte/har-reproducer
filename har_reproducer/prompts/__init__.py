@@ -1,3 +1,3 @@
-from har_reproducer.prompts.extractor import build_extractor_prompt
+from har_reproducer.prompts.extractor import ExtractorPrompt
 
-__all__ = ["build_extractor_prompt"]
+__all__ = ["ExtractorPrompt"]
