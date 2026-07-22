@@ -1,16 +1,13 @@
 import json
-import subprocess
-import sys
 from pathlib import Path
-from subprocess import CompletedProcess
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 
-import httpx
-from httpx import Response
+from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import TypeAdapter
 
 from .contracts import StepExecutor
-from .curl_generator import CurlGenerator
+from .extractor_runner import ExtractorRunner
+from .http_transport import HttpTransport
 from .llm_factory import LLMFactory
 from .models import (
     Extractor,
@@ -22,13 +19,16 @@ from .models import (
 )
 from .parser import HARParser
 from .paths import Workspace
+from .request_builder import RequestBuilder
 from .session import SessionStore
-from .templates import ExtractorTemplate
 from .tracker import TokenTracker
 from .validator import Validator
 
 
 class Engine:
+
+    RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = {400, 401}
+    MAX_STEP_ATTEMPTS: ClassVar[int] = 2
 
     def __init__(
             self,
@@ -49,26 +49,47 @@ class Engine:
         self.session_store: SessionStore = SessionStore()
         self.validator: Validator = Validator()
 
-        self.success_criteria: List[SuccessCriterion] = []
-        llm = None
+        self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
+        self.http_transport: HttpTransport = HttpTransport()
+        self.extractor_runner: ExtractorRunner = ExtractorRunner()
 
-        if config_path and config_path.exists():
-            try:
-                with open(config_path, "r") as f:
-                    config_data: Any = json.load(f)
-                    _project_config_adapter: TypeAdapter[ProjectConfig] = TypeAdapter(ProjectConfig)
-                    project_config = _project_config_adapter.validate_python(config_data)
-                    self.success_criteria = project_config.success_criteria
-                    if project_config.llm:
-                        llm = LLMFactory.create(project_config.llm)
-                        print(
-                            f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                print(f"Error loading config: {e}")
-
+        self.success_criteria, llm = self._load_project_config(config_path)
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
+
+    def _load_project_config(
+            self, config_path: Optional[Path]
+    ) -> Tuple[List[SuccessCriterion], Optional[BaseChatModel]]:
+        if not config_path or not config_path.exists():
+            return [], None
+
+        try:
+            return self._parse_project_config(config_path)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"Error loading config: {e}")
+            return [], None
+
+    def _parse_project_config(
+            self, config_path: Path
+    ) -> Tuple[List[SuccessCriterion], Optional[BaseChatModel]]:
+        config_json: str = config_path.read_text(encoding="utf-8")
+        adapter: TypeAdapter[ProjectConfig] = TypeAdapter(ProjectConfig)
+        project_config: ProjectConfig = adapter.validate_json(config_json)
+
+        llm: Optional[BaseChatModel] = self._build_llm(project_config)
+        return project_config.success_criteria, llm
+
+    def _build_llm(self, project_config: ProjectConfig) -> Optional[BaseChatModel]:
+        if not project_config.llm:
+            return None
+
+        llm = LLMFactory.create(project_config.llm)
+        print(
+            f"LLM fallback enabled from config: "
+            f"provider={project_config.llm.provider} model={project_config.llm.model}"
+        )
+        return llm
 
     def run(self) -> bool:
         return self._reproduce(self.execute_step)
@@ -82,20 +103,26 @@ class Engine:
 
         last_response: Optional[StepResponse] = None
         for index, entry in enumerate(entries):
-            step: Step = HARParser.parse_entry(entry, index)
-
-            self.tracker.analyze_step(step, first_entry)
-            self.update_session_tokens()
-
-            final_request: StepRequest
-            response: StepResponse
-            final_request, response = executor(step)
-            last_response = response
-
-            self._persist_step(index, final_request, response)
-            print(f"Step {index} completed with status {response.status_code}")
+            last_response = self._process_entry(index, entry, first_entry, executor)
 
         return self._validate_final(last_response)
+
+    def _process_entry(
+            self,
+            index: int,
+            entry: Dict[str, Any],
+            first_entry: Step,
+            executor: StepExecutor,
+    ) -> StepResponse:
+        step: Step = HARParser.parse_entry(entry, index)
+
+        self.tracker.analyze_step(step, first_entry)
+        self.update_session_tokens()
+
+        final_request, response = executor(step)
+        self._persist_step(index, final_request, response)
+        print(f"Step {index} completed with status {response.status_code}")
+        return response
 
     def _persist_step(self, index: int, request: StepRequest, response: StepResponse) -> None:
         req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
@@ -105,164 +132,75 @@ class Engine:
         res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
-        if last_response and self.success_criteria:
-            is_success: bool = self.validator.validate(last_response, self.success_criteria)
-            print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
-            return is_success
-        return True
+        if not last_response or not self.success_criteria:
+            return True
+
+        is_success: bool = self.validator.validate(last_response, self.success_criteria)
+        print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
+        return is_success
 
     def update_session_tokens(self) -> None:
         for token_id, extractor in self.session_store.state.registry.items():
-            if not extractor.verified or extractor.origin_step is None:
-                continue
+            if self._should_refresh_token(extractor):
+                self._refresh_token(token_id, extractor)
 
-            res_file: Path = self.real_responses_dir / f"res_{extractor.origin_step:04d}.json"
-            if res_file.exists():
-                try:
-                    response: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
-                    value: Optional[str] = self._run_extractor(extractor, response)
-                    if value:
-                        self.session_store.set_token(token_id, value)
-                except Exception:
-                    continue
+    def _should_refresh_token(self, extractor: Extractor) -> bool:
+        return extractor.verified and extractor.origin_step is not None
 
-    def _run_extractor(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
-        safe_token_id: str = extractor.token_id
-        extractor_file: Path = Workspace.extractor_file(safe_token_id)
-
-        wrapped_code: str = ExtractorTemplate.render_script(
-            safe_token_id=safe_token_id,
-            code=extractor.code,
-            response_sample=response,
-        )
-        extractor_file.write_text(wrapped_code, encoding="utf-8")
-
-        if extractor.temp_file_path:
-            temp_file: Path = Path(extractor.temp_file_path)
-            if temp_file.exists():
-                temp_file.unlink()
+    def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
+        response: Optional[Dict[str, Any]] = self._load_step_response(extractor.origin_step)
+        if response is None:
+            return
 
         try:
-            result: CompletedProcess[str] = subprocess.run(
-                [sys.executable, str(extractor_file)],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if result.returncode == 0:
-                return result.stdout.strip()
+            value: Optional[str] = self.extractor_runner.run(extractor, response)
         except Exception:
-            pass
-        return None
+            return
+
+        if value:
+            self.session_store.set_token(token_id, value)
+
+    def _load_step_response(self, step_index: int) -> Optional[Dict[str, Any]]:
+        res_file: Path = self.real_responses_dir / f"res_{step_index:04d}.json"
+        if not res_file.exists():
+            return None
+
+        try:
+            return json.loads(res_file.read_text(encoding="utf-8"))
+        except Exception:
+            return None
 
     def handle_recovery(self, response: StepResponse) -> bool:
-        if response.status_code == 401:
-            print("Detected 401 Unauthorized. Attempting deterministic recovery (token refresh)...")
-            self.update_session_tokens()
-            return True
+        if response.status_code not in self.RECOVERABLE_STATUS_CODES:
+            return False
 
-        if response.status_code == 400:
-            print("Detected 400 Bad Request. Attempting deterministic recovery (token refresh)...")
-            self.update_session_tokens()
-            return True
-
-        return False
-
-    def _build_final_request(self, step: Step) -> StepRequest:
-        req: StepRequest = step.request
-
-        raw_headers: Dict[str, str] = self.session_store.render_dict(req.headers)
-        headers: Dict[str, str] = {k: v for k, v in raw_headers.items() if not k.startswith(":")}
-        cookies: Dict[str, str] = self.session_store.render_dict(req.cookies)
-
-        body: Optional[str]
-        if req.body is None:
-            body = None
-        elif isinstance(req.body, bytes):
-            body = req.body.decode("utf-8", errors="replace")
-        else:
-            body = self.session_store.render(req.body)
-
-        return StepRequest(
-            url=req.url,
-            method=req.method,
-            headers=headers,
-            cookies=cookies,
-            body=body,
-            is_skippable=req.is_skippable,
+        print(
+            f"Detected {response.status_code}. "
+            f"Attempting deterministic recovery (token refresh)..."
         )
-
-    def _write_curl(self, step: Step, final_request: StepRequest) -> None:
-        curl_cmd: str = CurlGenerator().generate(
-            step.index, final_request, session_store=self.session_store
-        )
-
-        curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
-        curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
+        self.update_session_tokens()
+        return True
 
     def execute_step_dry(self, step: Step) -> Tuple[StepRequest, StepResponse]:
-        final_request: StepRequest = self._build_final_request(step)
-        self._write_curl(step, final_request)
+        final_request: StepRequest = self.request_builder.build_final_request(step)
+        self.request_builder.write_curl(step, final_request)
         assert step.response is not None
         return final_request, step.response
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
-        max_attempts: int = 2
-        for attempt in range(max_attempts):
-            final_request: StepRequest = self._build_final_request(step)
-            self._write_curl(step, final_request)
+        for attempt in range(self.MAX_STEP_ATTEMPTS):
+            final_request, response = self._attempt_step(step)
 
-            with httpx.Client(follow_redirects=False) as client:
-                try:
-                    resp: Response = client.request(
-                        method=final_request.method,
-                        url=final_request.url,
-                        headers=final_request.headers,
-                        cookies=final_request.cookies,
-                        content=(
-                            final_request.body.encode("utf-8")
-                            if isinstance(final_request.body, str)
-                            else final_request.body
-                        ) if final_request.body else None,
-                    )
-                except httpx.RequestError as exc:
-                    print(
-                        f"Network error while executing step {step.index} "
-                        f"({final_request.method} {final_request.url}): {exc}"
-                    )
-                    response: StepResponse = StepResponse(
-                        status_code=0,
-                        headers={},
-                        cookies=dict(client.cookies),
-                        body=str(exc),
-                        body_mime=None,
-                        redirect_url=None,
-                    )
-                    return final_request, response
+            is_last_attempt: bool = attempt == self.MAX_STEP_ATTEMPTS - 1
+            if is_last_attempt or not self.handle_recovery(response):
+                return final_request, response
 
-                raw_status: int = resp.status_code
-                status_code: int
-                if not isinstance(raw_status, int):
-                    try:
-                        status_code = int(raw_status)
-                    except (TypeError, ValueError):
-                        status_code = raw_status.value if hasattr(raw_status, "value") else 500
-                else:
-                    status_code = raw_status
+            print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
 
-                response: StepResponse = StepResponse(
-                    status_code=status_code,
-                    headers=dict(resp.headers),
-                    cookies=dict(client.cookies),
-                    body=resp.text,
-                    body_mime=resp.headers.get("Content-Type"),
-                    redirect_url=resp.headers.get("Location"),
-                )
+        raise RuntimeError(f"execute_step exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step.index}")
 
-            if attempt == 0 and self.handle_recovery(response):
-                print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
-                continue
-
-            return final_request, response
-
-        raise RuntimeError(f"execute_step exhausted {max_attempts} attempts for step {step.index}")
+    def _attempt_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
+        final_request: StepRequest = self.request_builder.build_final_request(step)
+        self.request_builder.write_curl(step, final_request)
+        response: StepResponse = self.http_transport.send_request(final_request, step.index)
+        return final_request, response
