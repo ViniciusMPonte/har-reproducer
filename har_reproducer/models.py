@@ -137,7 +137,6 @@ SuccessCriterion = Annotated[
     Field(discriminator="type"),
 ]
 
-# Required for CompositeCriterion's self-referential List["SuccessCriterion"]
 CompositeCriterion.model_rebuild()
 ProjectConfig.model_rebuild()
 

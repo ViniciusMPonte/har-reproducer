@@ -4,33 +4,23 @@ from .models import StepRequest, TokenLocation, TokenTrace
 
 
 class CurlGenerator:
-    """
-    Service responsible for converting an HTTP request into a valid curl command
-    with traceability comments for dynamic tokens.
-    """
 
     def generate(self, step_index: int, request: StepRequest, session_store: Any = None) -> str:
-        """
-        Converts a StepRequest into a curl command string.
-        If session_store is provided, adds traceability comments for dynamic tokens.
-        """
+
         traces: List[TokenTrace] = self._find_token_traces(request, session_store) if session_store else []
 
         parts: List[str] = [f"curl -X {request.method}", f"'{request.url}'"]
 
-        # Headers
         for header, value in request.headers.items():
             if trace := self._get_trace_for_value(header, value, traces):
                 parts.append(self._trace_comment(trace))
             parts.append(f"-H '{header}: {value}'")
 
-        # Cookies
         for cookie, value in request.cookies.items():
             if trace := self._get_trace_for_value(cookie, value, traces):
                 parts.append(self._trace_comment(trace))
             parts.append(f"--cookie '{cookie}={value}'")
 
-        # Body
         if request.body:
             body_str: str = (
                 request.body if isinstance(request.body, str)
@@ -54,7 +44,6 @@ class CurlGenerator:
         tokens: Dict[str, str] = session_store.state.tokens
         registry: Dict[str, Any] = session_store.state.registry
 
-        # Check headers and cookies
         for key, value in {**request.headers, **request.cookies}.items():
             if tid := self._find_token_id_by_value(value, tokens):
                 if ext := registry.get(tid):
@@ -69,7 +58,6 @@ class CurlGenerator:
                         key=key,
                     ))
 
-        # Check body
         if request.body:
             body_str: str = (
                 request.body if isinstance(request.body, str)

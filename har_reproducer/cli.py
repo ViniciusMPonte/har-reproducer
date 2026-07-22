@@ -12,14 +12,14 @@ from .parser import HARParser
 
 
 def _reset_output_dir(output_dir: Path) -> None:
-    """Deletes the output directory if it exists, then recreates it empty."""
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def handle_parse(args: Namespace) -> None:
-    """Handles the 'parse' subcommand to split a HAR file into steps."""
+
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     _reset_output_dir(output_dir)
@@ -28,7 +28,7 @@ def handle_parse(args: Namespace) -> None:
 
 
 def handle_run(args: Namespace) -> None:
-    """Handles the 'run' subcommand to execute the reproduction flow."""
+
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     _reset_output_dir(output_dir)
@@ -47,7 +47,7 @@ def handle_run(args: Namespace) -> None:
 
 
 def handle_diagnose(args: Namespace) -> None:
-    """Handles the 'diagnose' subcommand to suggest fixes for failed steps."""
+
     steps_dir: Path = Path(args.steps)
     res_dir: Path = Path(args.real_responses)
 
@@ -72,19 +72,17 @@ def handle_diagnose(args: Namespace) -> None:
 
 
 def main() -> None:
-    """Entry point for the har-reproducer CLI."""
+
     load_dotenv()
 
     parser: ArgumentParser = argparse.ArgumentParser(prog="har-reproducer")
     subparsers: _SubParsersAction[ArgumentParser] = parser.add_subparsers(dest="command", required=True)
 
-    # Parse
     parse_parser: ArgumentParser = subparsers.add_parser("parse")
     parse_parser.add_argument("--har", required=True, help="Path to HAR file")
     parse_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
     parse_parser.set_defaults(func=handle_parse)
 
-    # Run
     run_parser: ArgumentParser = subparsers.add_parser("run")
     run_parser.add_argument("--har", required=True, help="Path to HAR file")
     run_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
@@ -92,7 +90,6 @@ def main() -> None:
     run_parser.add_argument("--config", help="Path to project config (JSON)")
     run_parser.set_defaults(func=handle_run)
 
-    # Diagnose
     diag_parser: ArgumentParser = subparsers.add_parser("diagnose")
     diag_parser.add_argument("--steps", required=True, help="Steps directory")
     diag_parser.add_argument("--real-responses", required=True, help="Responses directory")

@@ -5,11 +5,8 @@ from bs4.element import Tag
 
 from .base import BaseAgent, Strategy
 
-# A ranked candidate: (rank, css_selector, extraction_kind). ``extraction_kind`` is
-# either "text" or the name of the attribute holding the value.
 Candidate = Tuple[int, str, str]
 
-# Attributes considered stable enough to build a selector from.
 STABLE_ATTRS: Tuple[str, ...] = ("name", "for", "aria-label")
 
 RANK_ID: int = 0
@@ -18,30 +15,11 @@ RANK_CLASS: int = 2
 
 
 class CSSAgent(BaseAgent):
-    """
-    Agent specialized in extracting tokens from HTML bodies using CSS selectors.
-
-    A naive class selector is fragile: the value may live in an attribute (not the
-    text), may appear in several places, or the element may lack stable hooks. This
-    agent parses the HTML, locates every element carrying the value (in text or in
-    an attribute) and builds a ranked list of *unique* selectors:
-
-      1. unique ``id``          (strongest)
-      2. unique stable attribute (``name``, ``data-*``, ...)
-      3. unique ``class``
-
-    Purely positional selectors (``nth-of-type``) are intentionally **not**
-    generated: rather than shipping something fragile, the agent lets the loop fall
-    through to the LLM fallback (and ultimately reports failure if nothing works).
-    """
 
     def deterministic_strategies(self) -> List[Strategy]:
         candidates: List[Candidate] = self._rank_candidates()
         return [self._make_strategy(sel, kind) for _, sel, kind in candidates]
 
-    # ------------------------------------------------------------------ #
-    # Structural search + ranking
-    # ------------------------------------------------------------------ #
     def _rank_candidates(self) -> List[Candidate]:
         body: Any = self.response_sample.get("body", "")
         if not isinstance(body, str) or not body:
@@ -57,7 +35,6 @@ class CSSAgent(BaseAgent):
                 continue
             candidates.extend(self._selectors_for(soup, element, kind))
 
-        # Deduplicate keeping the strongest rank per (selector, kind).
         seen: dict[Tuple[str, str], int] = {}
         for rank, sel, kind in candidates:
             key = (sel, kind)
@@ -68,12 +45,12 @@ class CSSAgent(BaseAgent):
         return unique
 
     def _match_kind(self, element: Tag) -> Optional[str]:
-        """Return "text", an attribute name, or None depending on where the value is."""
+
         for attr, val in element.attrs.items():
             values: List[str] = val if isinstance(val, list) else [val]
             if any(str(v) == self.expected_value for v in values):
                 return attr
-        # Only treat as a text match when this element is the innermost holder.
+
         if element.get_text(strip=True) == self.expected_value and not any(
             isinstance(child, Tag) and child.get_text(strip=True) == self.expected_value
             for child in element.find_all(True)
@@ -111,9 +88,6 @@ class CSSAgent(BaseAgent):
         except Exception:
             return False
 
-    # ------------------------------------------------------------------ #
-    # Code generation
-    # ------------------------------------------------------------------ #
     def _make_strategy(self, selector: str, kind: str) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:
             return self._build_code(selector, kind)

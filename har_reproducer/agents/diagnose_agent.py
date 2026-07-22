@@ -9,9 +9,6 @@ if TYPE_CHECKING:
 
 
 class DiagnoseAgent:
-    """
-    Diagnostic Agent: Uses tool-use to analyze failures and propose patches.
-    """
 
     def __init__(self, engine: "Engine", failure_context: FailureContext) -> None:
         self.engine: Engine = engine
@@ -19,13 +16,11 @@ class DiagnoseAgent:
         self.history: List[str] = []
 
     def diagnose(self) -> Optional[Patch]:
-        """
-        Main loop: Think -> Tool Use -> Observe -> Think -> Patch.
-        """
+
         return self._simulate_diagnosis()
 
     def _simulate_diagnosis(self) -> Optional[Patch]:
-        """Simulates the diagnostic process for tests."""
+
         responses_dir: Path = self.engine.real_responses_dir
         for res_file in glob.glob(str(responses_dir / "res_*.json")):
             with open(res_file, "r") as f:
@@ -47,13 +42,13 @@ class DiagnoseAgent:
         return None
 
     def read_step(self, index: int) -> str:
-        """Reads the request and response of a step."""
+
         return f"Step {index} data..."
 
     def grep_responses(self, pattern: str) -> List[str]:
-        """Greps all real responses for a pattern."""
+
         return [f"Found {pattern} in res_0001.json"]
 
     def get_session_state(self) -> str:
-        """Returns the current session state."""
+
         return str(self.engine.session_store.state)

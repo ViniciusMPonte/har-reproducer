@@ -4,13 +4,6 @@ from .base import BaseAgent, Strategy
 
 
 class CookieAgent(BaseAgent):
-    """
-    Agent specialized in extracting tokens from HTTP cookies.
-
-    Cookies are keyed directly by name, so a single deterministic strategy using
-    the real cookie name (``self.key``) is enough; the LLM fallback only kicks in
-    when the name is unknown or the sample does not match.
-    """
 
     def deterministic_strategies(self) -> List[Strategy]:
         return [self._by_name]

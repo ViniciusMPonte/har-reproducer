@@ -137,7 +137,7 @@ class TokenTracker:
                 token_id=candidate.token_id,
                 code="",
                 verified=False,
-                agent_type=AgentType.REGEX,  # placeholder; not yet determined
+                agent_type=AgentType.REGEX,
             )
             return
 

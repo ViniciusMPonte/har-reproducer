@@ -3,21 +3,10 @@ from typing import Any, List, Optional, Tuple
 
 from .base import BaseAgent, Strategy
 
-# An access path is a list of (kind, key) steps, where kind is "key" (dict) or
-# "index" (list). It is used to build the navigation code deterministically.
 AccessPath = List[Tuple[str, Any]]
 
 
 class JSONPathAgent(BaseAgent):
-    """
-    Agent specialized in extracting tokens from JSON bodies.
-
-    Instead of blindly using a key name, it parses the sample body, locates every
-    place the expected value appears and ranks the resulting access paths from the
-    most robust (shortest / top-level) to the weakest (deeply nested). Each ranked
-    path becomes one deterministic strategy; the LLM fallback handles anything the
-    structural search cannot resolve.
-    """
 
     def deterministic_strategies(self) -> List[Strategy]:
         paths: List[AccessPath] = self._find_value_paths()
@@ -32,7 +21,7 @@ class JSONPathAgent(BaseAgent):
 
         matches: List[AccessPath] = []
         self._walk(data, [], matches)
-        # Rank by path length (shorter == more robust / closer to the root).
+
         matches.sort(key=len)
         return matches
 

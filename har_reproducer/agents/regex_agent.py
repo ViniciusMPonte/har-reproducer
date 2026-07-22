@@ -5,16 +5,6 @@ from .base import BaseAgent, Strategy
 
 
 class RegexAgent(BaseAgent):
-    """
-    Agent specialized in extracting tokens using regular expressions.
-
-    Useful when the value lives inside a ``<script>`` block or otherwise
-    unstructured text. Strategies are ranked from most to least specific:
-
-      1. key-anchored: ``key = "VALUE"`` / ``key: VALUE`` when a real key is known
-      2. context-anchored: the literal text immediately preceding the value in the
-         sample is used as an anchor, capturing the value by its character class
-    """
 
     def deterministic_strategies(self) -> List[Strategy]:
         strategies: List[Strategy] = []
@@ -45,7 +35,7 @@ class RegexAgent(BaseAgent):
         return rf"{re.escape(prefix)}({self._value_char_class()})"
 
     def _value_char_class(self) -> str:
-        """A capture group matching the shape of the expected value."""
+
         if re.fullmatch(r"[\w\-.]+", self.expected_value):
             return r"[\w\-.]+"
         return r".+?"
