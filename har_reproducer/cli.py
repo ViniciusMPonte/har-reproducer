@@ -4,22 +4,20 @@ from argparse import ArgumentParser, _SubParsersAction
 from argparse import Namespace
 from pathlib import Path
 from typing import Optional
+
 from dotenv import load_dotenv
 
 from .engine import Engine
-from .models import Patch
 from .parser import HARParser
 
 
 def _reset_output_dir(output_dir: Path) -> None:
-
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
 
 def handle_parse(args: Namespace) -> None:
-
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     _reset_output_dir(output_dir)
@@ -28,7 +26,6 @@ def handle_parse(args: Namespace) -> None:
 
 
 def handle_run(args: Namespace) -> None:
-
     har_path: Path = Path(args.har)
     output_dir: Path = Path(args.output) if args.output else har_path.parent / "output"
     _reset_output_dir(output_dir)
@@ -45,8 +42,8 @@ def handle_run(args: Namespace) -> None:
         else:
             print("\nReproduction FAILED: Target state not reached.")
 
-def main() -> None:
 
+def main() -> None:
     load_dotenv()
 
     parser: ArgumentParser = argparse.ArgumentParser(prog="har-reproducer")

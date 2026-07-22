@@ -14,8 +14,6 @@ from .llm_factory import create_llm
 from .models import (
     DynamicToken,
     Extractor,
-    FailureContext,
-    Patch,
     ProjectConfig,
     Step,
     StepAnalysis,
