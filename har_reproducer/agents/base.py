@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -12,12 +12,7 @@ from har_reproducer.models import AgentType, Extractor
 from har_reproducer.paths import Workspace
 from har_reproducer.prompts import ExtractorPrompt
 from har_reproducer.templates import ExtractorTemplate
-
-Strategy = Callable[[Optional[str]], Optional[str]]
-
-
-class NoStrategyAvailable(Exception):
-    """Raised when every generation strategy (deterministic + LLM) is exhausted."""
+from ..contracts.types import Strategy
 
 
 class BaseAgent:
@@ -70,7 +65,7 @@ class BaseAgent:
             self._strategies = self._build_strategies()
         return self._strategies
 
-    def generate_code(self, last_error: Optional[str] = None) -> str:
+    def generate_code(self, last_error: Optional[str] = None) -> Optional[str]:
         strategies: List[Strategy] = self._get_strategies()
         while self._attempt_index < len(strategies):
             strategy: Strategy = strategies[self._attempt_index]
@@ -78,9 +73,7 @@ class BaseAgent:
             code: Optional[str] = strategy(last_error)
             if code is not None:
                 return code
-        raise NoStrategyAvailable(
-            f"No extractor strategy could be generated for '{self.token_id}'"
-        )
+        return None
 
     def _llm_strategy(self, last_error: Optional[str] = None) -> Optional[str]:
         if self.llm is None:
@@ -126,16 +119,16 @@ class BaseAgent:
             return fenced.group(1).strip()
         return text.strip()
 
-    def run_tdd_loop(self, max_attempts: Optional[int] = None, origin_step: Optional[int] = None) -> Optional[Extractor]:
+    def run_tdd_loop(self, max_attempts: Optional[int] = None, origin_step: Optional[int] = None) -> Optional[
+        Extractor]:
 
         strategies: List[Strategy] = self._get_strategies()
         total: int = len(strategies) if max_attempts is None else max_attempts
 
         last_error: Optional[str] = None
         for attempt in range(total):
-            try:
-                code: str = self.generate_code(last_error=last_error)
-            except NoStrategyAvailable:
+            code: Optional[str] = self.generate_code(last_error=last_error)
+            if code is None:
                 break
 
             success: bool
