@@ -7,7 +7,6 @@ from typing import List, Optional, Tuple
 
 
 def try_decode(value: str) -> str:
-
     current: str = value
 
     decoded_url: str = urllib.parse.unquote(current)
@@ -27,7 +26,6 @@ def try_decode(value: str) -> str:
 
 
 def _build_pattern_variants(pattern: str) -> List[str]:
-
     variants: List[str] = []
     seen: set[str] = set()
 
@@ -45,7 +43,6 @@ def _build_pattern_variants(pattern: str) -> List[str]:
 
 
 def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
-
     try:
         cmd: list[str] = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
         result: CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -72,7 +69,6 @@ def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[in
 
 
 def grep_in_real_responses(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
-
     for variant in _build_pattern_variants(pattern):
         match: Optional[tuple[int, str]] = _grep_single_pattern(responses_dir, variant)
         if match:

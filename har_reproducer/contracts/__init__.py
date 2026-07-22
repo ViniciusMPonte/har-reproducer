@@ -1,3 +1,3 @@
-from .types import StepExecutor
+from .types import LLMProviderProtocol, ProviderRegistry, StepExecutor
 
-__all__ = ["StepExecutor"]
+__all__ = ["StepExecutor", "LLMProviderProtocol", "ProviderRegistry"]

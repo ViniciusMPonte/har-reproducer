@@ -11,7 +11,7 @@ from pydantic import TypeAdapter
 
 from .contracts import StepExecutor
 from .curl_generator import CurlGenerator
-from .llm_factory import create_llm
+from .llm_factory import LLMFactory
 from .models import (
     Extractor,
     ProjectConfig,
@@ -60,7 +60,7 @@ class Engine:
                     project_config = _project_config_adapter.validate_python(config_data)
                     self.success_criteria = project_config.success_criteria
                     if project_config.llm:
-                        llm = create_llm(project_config.llm)
+                        llm = LLMFactory.create(project_config.llm)
                         print(
                             f"LLM fallback enabled from config: provider={project_config.llm.provider} model={project_config.llm.model}")
             except Exception as e:

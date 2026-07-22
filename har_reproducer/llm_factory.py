@@ -5,11 +5,11 @@ from typing import Any, Dict, Optional, Type
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 
+from .contracts import ProviderRegistry
 from .models import LLMSettings
 
 
 class LLMProvider(ABC):
-
     names: tuple[str, ...] = ()
     langchain_provider: str = ""
     api_key_env: Optional[str] = None
@@ -40,33 +40,8 @@ class LLMProvider(ABC):
         )
 
 
-class OllamaProvider(LLMProvider):
-    names = ("ollama",)
-    langchain_provider = "ollama"
-    api_key_env = None
-
-
-class GoogleProvider(LLMProvider):
-    names = ("google", "gemini", "gemma", "google_genai")
-    langchain_provider = "google_genai"
-    api_key_env = "GOOGLE_API_KEY"
-
-
-class OpenAIProvider(LLMProvider):
-    names = ("openai",)
-    langchain_provider = "openai"
-    api_key_env = "OPENAI_API_KEY"
-
-
-class AnthropicProvider(LLMProvider):
-    names = ("anthropic", "claude")
-    langchain_provider = "anthropic"
-    api_key_env = "ANTHROPIC_API_KEY"
-
-
 class LLMFactory:
-
-    _registry: Dict[str, Type[LLMProvider]] = {}
+    _registry: ProviderRegistry = {}
 
     @classmethod
     def register(cls, provider_cls: Type[LLMProvider]) -> Type[LLMProvider]:
@@ -90,9 +65,29 @@ class LLMFactory:
         return cls.get_provider(config).create()
 
 
-for _provider in (OllamaProvider, GoogleProvider, OpenAIProvider, AnthropicProvider):
-    LLMFactory.register(_provider)
+@LLMFactory.register
+class OllamaProvider(LLMProvider):
+    names = ("ollama",)
+    langchain_provider = "ollama"
+    api_key_env = None
 
 
-def create_llm(config: LLMSettings) -> BaseChatModel:
-    return LLMFactory.create(config)
+@LLMFactory.register
+class GoogleProvider(LLMProvider):
+    names = ("google", "gemini", "gemma", "google_genai")
+    langchain_provider = "google_genai"
+    api_key_env = "GOOGLE_API_KEY"
+
+
+@LLMFactory.register
+class OpenAIProvider(LLMProvider):
+    names = ("openai",)
+    langchain_provider = "openai"
+    api_key_env = "OPENAI_API_KEY"
+
+
+@LLMFactory.register
+class AnthropicProvider(LLMProvider):
+    names = ("anthropic", "claude")
+    langchain_provider = "anthropic"
+    api_key_env = "ANTHROPIC_API_KEY"
