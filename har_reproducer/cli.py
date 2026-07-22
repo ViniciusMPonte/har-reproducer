@@ -32,15 +32,11 @@ def handle_run(args: Namespace) -> None:
     config_path: Optional[Path] = Path(args.config) if args.config else None
 
     engine: Engine = Engine(har_path, output_dir, config_path=config_path)
-    if args.dry_run:
-        engine.dry_run()
-        print("\nDry-run analysis completed.")
+    result: bool = engine.dry_run() if args.dry_run else engine.run()
+    if result:
+        print("\nReproduction SUCCESSFUL: Target state reached.")
     else:
-        result: bool = engine.run()
-        if result:
-            print("\nReproduction SUCCESSFUL: Target state reached.")
-        else:
-            print("\nReproduction FAILED: Target state not reached.")
+        print("\nReproduction FAILED: Target state not reached.")
 
 
 def main() -> None:

@@ -14,7 +14,6 @@ from .agents.jsonpath_agent import JSONPathAgent
 from .agents.regex_agent import RegexAgent
 from .grep_utils import grep_in_real_responses
 from .models import (
-    AgentType,
     Extractor,
     Step,
     StepRequest,
@@ -37,10 +36,10 @@ class TokenTracker:
         self.session_store: SessionStore = session_store
         self.llm: Optional[BaseChatModel] = llm
 
-    def analyze_step(self, step: Step, baseline_step: Step, is_dry_run: bool = False) -> StepAnalysis:
+    def analyze_step(self, step: Step, baseline_step: Step) -> StepAnalysis:
         diffs: Dict[str, str] = self._compare_to_baseline(step, baseline_step)
         candidates: List[DynamicToken] = self._detect_candidates(diffs)
-        tokens: List[DynamicToken] = self._resolve_candidates(candidates, is_dry_run)
+        tokens: List[DynamicToken] = self._resolve_candidates(candidates)
         self._apply_placeholders(step.request, tokens)
         template: str = self._generate_curl_template(step.request)
         static_values: Dict[str, str] = self._extract_static_values(step, baseline_step)
@@ -77,10 +76,8 @@ class TokenTracker:
                 elif token.current_value in request.body:
                     request.body = request.body.replace(token.current_value, placeholder)
 
-    def _resolve_candidates(
-            self, candidates: List[DynamicToken], is_dry_run: bool
-    ) -> List[DynamicToken]:
-        return [self._process_candidate(candidate, is_dry_run) for candidate in candidates]
+    def _resolve_candidates(self, candidates: List[DynamicToken]) -> List[DynamicToken]:
+        return [self._process_candidate(candidate) for candidate in candidates]
 
     def _build_step_analysis(
             self,
@@ -96,7 +93,7 @@ class TokenTracker:
             curl_template=template,
         )
 
-    def _process_candidate(self, candidate: DynamicToken, is_dry_run: bool) -> DynamicToken:
+    def _process_candidate(self, candidate: DynamicToken) -> DynamicToken:
         origin: Optional[Tuple[int, str]] = grep_in_real_responses(
             self.responses_dir, candidate.current_value
         )
@@ -123,24 +120,10 @@ class TokenTracker:
 
         candidate.origin_location = self._find_origin_location(candidate.current_value, response_sample)
 
-        self._register_extractor(candidate, response_sample, is_dry_run)
+        self._register_extractor(candidate, response_sample)
         return candidate
 
-    def _register_extractor(
-            self,
-            candidate: DynamicToken,
-            response_sample: Dict[str, Any],
-            is_dry_run: bool,
-    ) -> None:
-        if is_dry_run:
-            self.session_store.state.registry[candidate.token_id] = Extractor(
-                token_id=candidate.token_id,
-                code="",
-                verified=False,
-                agent_type=AgentType.REGEX,
-            )
-            return
-
+    def _register_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> None:
         new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample)
         if new_extractor is not None:
             self.session_store.state.registry[candidate.token_id] = new_extractor

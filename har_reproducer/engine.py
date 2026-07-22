@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias
 
 import httpx
 from httpx import Response
@@ -12,11 +12,9 @@ from pydantic import TypeAdapter
 from .curl_generator import CurlGenerator
 from .llm_factory import create_llm
 from .models import (
-    DynamicToken,
     Extractor,
     ProjectConfig,
     Step,
-    StepAnalysis,
     StepRequest,
     StepResponse,
     SuccessCriterion,
@@ -28,6 +26,7 @@ from .templates import ExtractorTemplate
 from .tracker import TokenTracker
 from .validator import Validator
 
+StepExecutor: TypeAlias = Callable[[Step], Tuple[StepRequest, StepResponse]]
 
 class Engine:
 
@@ -72,71 +71,45 @@ class Engine:
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
 
     def run(self) -> bool:
+        return self._reproduce(self.execute_step)
+
+    def dry_run(self) -> bool:
+        return self._reproduce(self.execute_step_dry)
+
+    def _reproduce(self, executor: StepExecutor) -> bool:
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
-        analyses: List[StepAnalysis] = []
         last_response: Optional[StepResponse] = None
         for index, entry in enumerate(entries):
             step: Step = HARParser.parse_entry(entry, index)
 
-            step_analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=False)
-            analyses.append(step_analysis)
-
+            self.tracker.analyze_step(step, first_entry)
             self.update_session_tokens()
 
             final_request: StepRequest
             response: StepResponse
-            final_request, response = self.execute_step(step)
-
+            final_request, response = executor(step)
             last_response = response
 
-            req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
-            req_file.write_text(final_request.model_dump_json(indent=2), encoding="utf-8")
-
-            res_file: Path = self.real_responses_dir / f"res_{index:04d}.json"
-            res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
-
+            self._persist_step(index, final_request, response)
             print(f"Step {index} completed with status {response.status_code}")
 
+        return self._validate_final(last_response)
+
+    def _persist_step(self, index: int, request: StepRequest, response: StepResponse) -> None:
+        req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
+        req_file.write_text(request.model_dump_json(indent=2), encoding="utf-8")
+
+        res_file: Path = self.real_responses_dir / f"res_{index:04d}.json"
+        res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
+
+    def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if last_response and self.success_criteria:
             is_success: bool = self.validator.validate(last_response, self.success_criteria)
             print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
             return is_success
-
         return True
-
-    def dry_run(self) -> None:
-        entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
-        first_entry: Step = HARParser.parse_entry(entries[0], 0)
-
-        analyses: List[StepAnalysis] = []
-        for index, entry in enumerate(entries):
-            step: Step = HARParser.parse_entry(entry, index)
-
-            self.update_session_tokens()
-
-            print(f"Dry-run: Analyzing step {index}...")
-            analysis: StepAnalysis = self.tracker.analyze_step(step, first_entry, is_dry_run=True)
-            analyses.append(analysis)
-
-        self._generate_dry_run_report(analyses)
-
-    def _generate_dry_run_report(self, analyses: List[StepAnalysis]) -> None:
-        print("\n--- Dry-Run Analysis Report ---")
-        print(f"Analyzed {len(analyses)} steps.")
-
-        all_tokens: Dict[str, DynamicToken] = {}
-        for analysis in analyses:
-            for token in analysis.dynamic_tokens:
-                all_tokens[token.token_id] = token
-
-        print(f"Detected {len(all_tokens)} dynamic token candidates:")
-        for tid, token in all_tokens.items():
-            status_label: str = "✓ Resolved" if token.status == "Resolved" else "✗ Unresolved"
-            origin_label: str = f" at step {token.origin_step}" if token.origin_step is not None else ""
-            print(f"- {tid}: {status_label}{origin_label} (Location: {token.destination_location})")
-        print("------------------------------\n")
 
     def update_session_tokens(self) -> None:
         for token_id, extractor in self.session_store.state.registry.items():
@@ -195,38 +168,49 @@ class Engine:
 
         return False
 
+    def _build_final_request(self, step: Step) -> StepRequest:
+        req: StepRequest = step.request
+
+        raw_headers: Dict[str, str] = self.session_store.render_dict(req.headers)
+        headers: Dict[str, str] = {k: v for k, v in raw_headers.items() if not k.startswith(":")}
+        cookies: Dict[str, str] = self.session_store.render_dict(req.cookies)
+
+        body: Optional[str]
+        if req.body is None:
+            body = None
+        elif isinstance(req.body, bytes):
+            body = req.body.decode("utf-8", errors="replace")
+        else:
+            body = self.session_store.render(req.body)
+
+        return StepRequest(
+            url=req.url,
+            method=req.method,
+            headers=headers,
+            cookies=cookies,
+            body=body,
+            is_skippable=req.is_skippable,
+        )
+
+    def _write_curl(self, step: Step, final_request: StepRequest) -> None:
+        curl_cmd: str = CurlGenerator().generate(
+            step.index, final_request, session_store=self.session_store
+        )
+
+        curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
+        curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
+
+    def execute_step_dry(self, step: Step) -> Tuple[StepRequest, StepResponse]:
+        final_request: StepRequest = self._build_final_request(step)
+        self._write_curl(step, final_request)
+        assert step.response is not None
+        return final_request, step.response
+
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         max_attempts: int = 2
         for attempt in range(max_attempts):
-            req: StepRequest = step.request
-
-            raw_headers: Dict[str, str] = self.session_store.render_dict(req.headers)
-            headers: Dict[str, str] = {k: v for k, v in raw_headers.items() if not k.startswith(":")}
-            cookies: Dict[str, str] = self.session_store.render_dict(req.cookies)
-
-            body: Optional[str]
-            if req.body is None:
-                body = None
-            elif isinstance(req.body, bytes):
-                body = req.body.decode("utf-8", errors="replace")
-            else:
-                body = self.session_store.render(req.body)
-
-            final_request: StepRequest = StepRequest(
-                url=req.url,
-                method=req.method,
-                headers=headers,
-                cookies=cookies,
-                body=body,
-                is_skippable=req.is_skippable,
-            )
-
-            curl_cmd: str = CurlGenerator().generate(
-                step.index, final_request, session_store=self.session_store
-            )
-
-            curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
-            curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
+            final_request: StepRequest = self._build_final_request(step)
+            self._write_curl(step, final_request)
 
             with httpx.Client(follow_redirects=False) as client:
                 try:
