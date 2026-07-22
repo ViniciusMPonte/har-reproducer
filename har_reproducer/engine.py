@@ -3,12 +3,13 @@ import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeAlias
+from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
 from httpx import Response
 from pydantic import TypeAdapter
 
+from contracts import StepExecutor
 from .curl_generator import CurlGenerator
 from .llm_factory import create_llm
 from .models import (
@@ -26,7 +27,6 @@ from .templates import ExtractorTemplate
 from .tracker import TokenTracker
 from .validator import Validator
 
-StepExecutor: TypeAlias = Callable[[Step], Tuple[StepRequest, StepResponse]]
 
 class Engine:
 
