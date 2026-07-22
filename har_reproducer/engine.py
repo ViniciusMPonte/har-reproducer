@@ -231,17 +231,32 @@ class Engine:
             curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
 
             with httpx.Client(follow_redirects=False) as client:
-                resp: Response = client.request(
-                    method=final_request.method,
-                    url=final_request.url,
-                    headers=final_request.headers,
-                    cookies=final_request.cookies,
-                    content=(
-                        final_request.body.encode("utf-8")
-                        if isinstance(final_request.body, str)
-                        else final_request.body
-                    ) if final_request.body else None,
-                )
+                try:
+                    resp: Response = client.request(
+                        method=final_request.method,
+                        url=final_request.url,
+                        headers=final_request.headers,
+                        cookies=final_request.cookies,
+                        content=(
+                            final_request.body.encode("utf-8")
+                            if isinstance(final_request.body, str)
+                            else final_request.body
+                        ) if final_request.body else None,
+                    )
+                except httpx.RequestError as exc:
+                    print(
+                        f"Network error while executing step {step.index} "
+                        f"({final_request.method} {final_request.url}): {exc}"
+                    )
+                    response: StepResponse = StepResponse(
+                        status_code=0,
+                        headers={},
+                        cookies=dict(client.cookies),
+                        body=str(exc),
+                        body_mime=None,
+                        redirect_url=None,
+                    )
+                    return final_request, response
 
                 raw_status: int = resp.status_code
                 status_code: int
