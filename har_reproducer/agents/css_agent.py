@@ -1,32 +1,29 @@
-from typing import Any, List, Optional, Tuple
+from typing import Any, ClassVar, List, Optional, Tuple
 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
 from .base import BaseAgent, Strategy
 
-Candidate = Tuple[int, str, str]
-
-STABLE_ATTRS: Tuple[str, ...] = ("name", "for", "aria-label")
-
-RANK_ID: int = 0
-RANK_ATTR: int = 1
-RANK_CLASS: int = 2
-
 
 class CSSAgent(BaseAgent):
+    STABLE_ATTRS: ClassVar[Tuple[str, ...]] = ("name", "for", "aria-label")
+
+    RANK_ID: ClassVar[int] = 0
+    RANK_ATTR: ClassVar[int] = 1
+    RANK_CLASS: ClassVar[int] = 2
 
     def deterministic_strategies(self) -> List[Strategy]:
-        candidates: List[Candidate] = self._rank_candidates()
+        candidates: List[Tuple[int, str, str]] = self._rank_candidates()
         return [self._make_strategy(sel, kind) for _, sel, kind in candidates]
 
-    def _rank_candidates(self) -> List[Candidate]:
+    def _rank_candidates(self) -> List[Tuple[int, str, str]]:
         body: Any = self.response_sample.get("body", "")
         if not isinstance(body, str) or not body:
             return []
         soup: BeautifulSoup = BeautifulSoup(body, "html.parser")
 
-        candidates: List[Candidate] = []
+        candidates: List[Tuple[int, str, str]] = []
         for element in soup.find_all(True):
             if not isinstance(element, Tag):
                 continue
@@ -40,7 +37,7 @@ class CSSAgent(BaseAgent):
             key = (sel, kind)
             if key not in seen or rank < seen[key]:
                 seen[key] = rank
-        unique: List[Candidate] = [(rank, sel, kind) for (sel, kind), rank in seen.items()]
+        unique: List[Tuple[int, str, str]] = [(rank, sel, kind) for (sel, kind), rank in seen.items()]
         unique.sort(key=lambda c: c[0])
         return unique
 
@@ -52,32 +49,32 @@ class CSSAgent(BaseAgent):
                 return attr
 
         if element.get_text(strip=True) == self.expected_value and not any(
-            isinstance(child, Tag) and child.get_text(strip=True) == self.expected_value
-            for child in element.find_all(True)
+                isinstance(child, Tag) and child.get_text(strip=True) == self.expected_value
+                for child in element.find_all(True)
         ):
             return "text"
         return None
 
     def _selectors_for(
-        self, soup: BeautifulSoup, element: Tag, kind: str
-    ) -> List[Candidate]:
-        found: List[Candidate] = []
+            self, soup: BeautifulSoup, element: Tag, kind: str
+    ) -> List[Tuple[int, str, str]]:
+        found: List[Tuple[int, str, str]] = []
 
         element_id: Optional[str] = element.get("id")
         if element_id and self._is_unique(soup, f"#{element_id}"):
-            found.append((RANK_ID, f"#{element_id}", kind))
+            found.append((self.RANK_ID, f"#{element_id}", kind))
 
-        for attr in (*STABLE_ATTRS, *[a for a in element.attrs if a.startswith("data-")]):
+        for attr in (*self.STABLE_ATTRS, *[a for a in element.attrs if a.startswith("data-")]):
             val: Any = element.get(attr)
             if isinstance(val, str) and val:
                 selector: str = f'{element.name}[{attr}="{val}"]'
                 if self._is_unique(soup, selector):
-                    found.append((RANK_ATTR, selector, kind))
+                    found.append((self.RANK_ATTR, selector, kind))
 
         classes: Any = element.get("class") or []
         for cls in classes:
             if self._is_unique(soup, f".{cls}"):
-                found.append((RANK_CLASS, f".{cls}", kind))
+                found.append((self.RANK_CLASS, f".{cls}", kind))
 
         return found
 

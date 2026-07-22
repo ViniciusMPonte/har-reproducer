@@ -6,8 +6,6 @@ Hoje eu estou com muita dificuldade de me achar no código, por que ele esta pol
 
 eu proponho
 
-- remover a pasta testes
-- remover comentários
-- remover ficture diagnostic
-- implementar o --dry-run
+- verificar e remover todos os códigos sem classe
+incluir __init__.py no pacote agents
 - refatorar até fazer sentido

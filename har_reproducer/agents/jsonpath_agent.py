@@ -3,29 +3,27 @@ from typing import Any, List, Optional, Tuple
 
 from .base import BaseAgent, Strategy
 
-AccessPath = List[Tuple[str, Any]]
-
 
 class JSONPathAgent(BaseAgent):
 
     def deterministic_strategies(self) -> List[Strategy]:
-        paths: List[AccessPath] = self._find_value_paths()
+        paths: List[List[Tuple[str, Any]]] = self._find_value_paths()
         return [self._make_strategy(path) for path in paths]
 
-    def _find_value_paths(self) -> List[AccessPath]:
+    def _find_value_paths(self) -> List[List[Tuple[str, Any]]]:
         body: Any = self.response_sample.get("body", "")
         try:
             data: Any = json.loads(body) if isinstance(body, str) else body
         except (json.JSONDecodeError, TypeError):
             return []
 
-        matches: List[AccessPath] = []
+        matches: List[List[Tuple[str, Any]]] = []
         self._walk(data, [], matches)
 
         matches.sort(key=len)
         return matches
 
-    def _walk(self, node: Any, current: AccessPath, matches: List[AccessPath]) -> None:
+    def _walk(self, node: Any, current: List[Tuple[str, Any]], matches: List[List[Tuple[str, Any]]]) -> None:
         if self._matches_value(node):
             matches.append(list(current))
             return
@@ -41,13 +39,13 @@ class JSONPathAgent(BaseAgent):
             return False
         return str(node) == self.expected_value
 
-    def _make_strategy(self, path: AccessPath) -> Strategy:
+    def _make_strategy(self, path: List[Tuple[str, Any]]) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:
             return self._build_code(path)
 
         return strategy
 
-    def _build_code(self, path: AccessPath) -> str:
+    def _build_code(self, path: List[Tuple[str, Any]]) -> str:
         accessor: str = "".join(f"[{key!r}]" for _, key in path)
         return f"""
 import json
