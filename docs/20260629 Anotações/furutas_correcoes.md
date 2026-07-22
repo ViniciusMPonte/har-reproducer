@@ -38,6 +38,10 @@ __________
 //    "model": "gemma4:e2b"
   "model": "gemma-4-26b-a4b-it"
 //  },
-
+Gemini 3.1 Flash Lite
 - outro problema, nos extratores, a criação de código esta em dois lugares diferentes, um é na geração, que hoje esta no _write_temp_script do base.py, e o outro no _run_extractor, que esta no engine.py
 - creio que o fluxo não esteja correto, o código esta criando todos os extratores antes de testar em uma requisição real
+- estou na duvida se essa linha esta funcionando:
+deterministic: List[Strategy] = self.deterministic_strategies()
+
+Outra coisa, acho que preciso implementar logo a validação se o token candidato é realmente algo que precise ser pesquisado ou é só uma palavra estatica obvia
