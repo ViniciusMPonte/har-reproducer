@@ -9,7 +9,6 @@ import httpx
 from httpx import Response
 from pydantic import TypeAdapter
 
-from .agents.diagnose_agent import DiagnoseAgent
 from .curl_generator import CurlGenerator
 from .llm_factory import create_llm
 from .models import (
@@ -197,26 +196,6 @@ class Engine:
             return True
 
         return False
-
-    def diagnose(self, step_index: int) -> Optional[Patch]:
-        """
-        Launches the Diagnostic Agent to find a fix for a failed step.
-
-        Returns a Patch describing the proposed fix, or None if no fix was found.
-        The caller is responsible for deciding whether and how to apply the patch.
-
-        # TODO (TASK-10): The diagnose → apply flow is not production-ready.
-        """
-        ctx: FailureContext = FailureContext(
-            failed_step=step_index,
-            request_attempted=StepRequest(url="dummy", method="GET"),
-            response_received=StepResponse(status_code=401, headers={}, cookies={}, body="Unauthorized"),
-            session_snapshot=self.session_store.state,
-            active_extractors=list(self.session_store.state.registry.values()),
-        )
-
-        agent: DiagnoseAgent = DiagnoseAgent(self, ctx)
-        return agent.diagnose()
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         max_attempts: int = 2

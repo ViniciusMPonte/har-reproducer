@@ -45,32 +45,6 @@ def handle_run(args: Namespace) -> None:
         else:
             print("\nReproduction FAILED: Target state not reached.")
 
-
-def handle_diagnose(args: Namespace) -> None:
-
-    steps_dir: Path = Path(args.steps)
-    res_dir: Path = Path(args.real_responses)
-
-    engine: Engine = Engine.from_disk(steps_dir=steps_dir, real_responses_dir=res_dir)
-
-    print("Analyzing failures...")
-    patch: Optional[Patch] = engine.diagnose(step_index=args.step)
-
-    if patch:
-        print(f"Proposed Patch: {patch.action}")
-        print(f"Target: {patch.target_token_id}")
-        print(f"Rationale: {patch.rationale}")
-        if hasattr(patch, "new_code"):
-            print(f"Suggested Code:\n{patch.new_code}")
-
-        # TODO (TASK-10): Applying the patch is not yet implemented.
-        #   When the diagnose → apply → re-execute → verify loop is production-ready,
-        #   call engine.apply_patch(patch) here and re-run the failed step to confirm
-        #   the fix. Until then, the patch is only printed for manual inspection.
-    else:
-        print("No deterministic fix found.")
-
-
 def main() -> None:
 
     load_dotenv()
@@ -89,12 +63,6 @@ def main() -> None:
     run_parser.add_argument("--dry-run", action="store_true", help="Simulate without network calls")
     run_parser.add_argument("--config", help="Path to project config (JSON)")
     run_parser.set_defaults(func=handle_run)
-
-    diag_parser: ArgumentParser = subparsers.add_parser("diagnose")
-    diag_parser.add_argument("--steps", required=True, help="Steps directory")
-    diag_parser.add_argument("--real-responses", required=True, help="Responses directory")
-    diag_parser.add_argument("--step", type=int, required=True, help="Index of the step to diagnose")
-    diag_parser.set_defaults(func=handle_diagnose)
 
     args: Namespace = parser.parse_args()
     args.func(args)
