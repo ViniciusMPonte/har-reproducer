@@ -7,7 +7,7 @@ from pydantic import TypeAdapter
 
 from .contracts import StepExecutor
 from .fs_io import HARParser, Workspace
-from .llm_factory import LLMFactory
+from .llm import LLMFactory
 from .models import (
     Extractor,
     ProjectConfig,

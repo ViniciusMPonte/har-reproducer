@@ -1,3 +1,3 @@
-from .store import SessionStore
+from .session_store import SessionStore
 
 __all__ = ["SessionStore"]
