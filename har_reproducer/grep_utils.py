@@ -3,75 +3,85 @@ import subprocess
 import urllib.parse
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import List, Optional, Tuple
+from typing import List, Optional, Set, Tuple
 
 
-def try_decode(value: str) -> str:
-    current: str = value
+class ResponseGrep:
 
-    decoded_url: str = urllib.parse.unquote(current)
-    if decoded_url != current:
-        current = decoded_url
+    @classmethod
+    def find(cls, responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
+        for variant in cls._build_pattern_variants(pattern):
+            match: Optional[Tuple[int, str]] = cls._grep_single_pattern(responses_dir, variant)
+            if match is not None:
+                return match
+        return None
 
-    try:
-        b64_bytes: bytes = base64.b64decode(current, validate=True)
-        decoded_b64: str = b64_bytes.decode("utf-8")
+    @staticmethod
+    def try_decode(value: str) -> str:
+        current: str = value
 
-        if decoded_b64.isprintable():
-            current = decoded_b64
-    except Exception as e:
-        pass
+        decoded_url: str = urllib.parse.unquote(current)
+        if decoded_url != current:
+            current = decoded_url
 
-    return current
+        try:
+            b64_bytes: bytes = base64.b64decode(current, validate=True)
+            decoded_b64: str = b64_bytes.decode("utf-8")
+            if decoded_b64.isprintable():
+                current = decoded_b64
+        except Exception:
+            pass
 
+        return current
 
-def _build_pattern_variants(pattern: str) -> List[str]:
-    variants: List[str] = []
-    seen: set[str] = set()
+    @classmethod
+    def _build_pattern_variants(cls, pattern: str) -> List[str]:
+        candidates: List[str] = [
+            pattern,
+            cls.try_decode(pattern),
+            urllib.parse.quote(pattern, safe=""),
+            base64.b64encode(pattern.encode("utf-8")).decode("ascii"),
+        ]
+        return cls._deduplicate(candidates)
 
-    def add(v: str) -> None:
-        if v and v not in seen:
-            seen.add(v)
-            variants.append(v)
+    @staticmethod
+    def _deduplicate(values: List[str]) -> List[str]:
+        seen: Set[str] = set()
+        unique: List[str] = []
+        for value in values:
+            if value and value not in seen:
+                seen.add(value)
+                unique.append(value)
+        return unique
 
-    add(pattern)
-    add(try_decode(pattern))
-    add(urllib.parse.quote(pattern, safe=""))
-    add(base64.b64encode(pattern.encode("utf-8")).decode("ascii"))
+    @classmethod
+    def _grep_single_pattern(cls, responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
+        try:
+            cmd: List[str] = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
+            result: CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-    return variants
+            if not result.stdout:
+                return None
 
+            first_match_file: str = sorted(result.stdout.splitlines())[0]
+            filename: str = Path(first_match_file).name
 
-def _grep_single_pattern(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
-    try:
-        cmd: list[str] = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
-        result: CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            step_index: Optional[int] = cls._extract_step_index(filename)
+            if step_index is None:
+                return None
 
-        if not result.stdout:
-            return None
+            return step_index, filename
 
-        first_match_file: str = sorted(result.stdout.splitlines())[0]
-        file_path: Path = Path(first_match_file)
-        filename: str = file_path.name
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                return None
+            raise
+
+    @staticmethod
+    def _extract_step_index(filename: str) -> Optional[int]:
         try:
             index_str: str = filename.split("_")[1].split(".")[0]
-            step_index: int = int(index_str)
+            return int(index_str)
         except (IndexError, ValueError) as e:
             print(f"[AVISO] Falha ao extrair step index do arquivo '{filename}': {e}")
             return None
-
-        return step_index, filename
-
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 1:
-            return None
-        raise
-
-
-def grep_in_real_responses(responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
-    for variant in _build_pattern_variants(pattern):
-        match: Optional[tuple[int, str]] = _grep_single_pattern(responses_dir, variant)
-        if match:
-            return match
-
-    return None

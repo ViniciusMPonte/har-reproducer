@@ -6,7 +6,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 from langchain_core.language_models import BaseChatModel
 
 from .agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
-from .grep_utils import grep_in_real_responses
+from .grep_utils import ResponseGrep
 from .models import DynamicToken, Extractor, TokenLocation
 from .session import SessionStore
 from .token_location_detector import TokenLocationDetector
@@ -35,7 +35,7 @@ class CandidateResolver:
         return [self._process_candidate(candidate) for candidate in candidates]
 
     def _process_candidate(self, candidate: DynamicToken) -> DynamicToken:
-        origin: Optional[Tuple[int, str]] = grep_in_real_responses(
+        origin: Optional[Tuple[int, str]] = ResponseGrep.find(
             self.responses_dir, candidate.current_value
         )
         if not origin:
