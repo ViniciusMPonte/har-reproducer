@@ -1,7 +1,8 @@
 import re
 from typing import List, Optional
 
-from .base import BaseAgent, Strategy
+from .base_agent import BaseAgent
+from ..contracts import Strategy
 
 
 class RegexAgent(BaseAgent):

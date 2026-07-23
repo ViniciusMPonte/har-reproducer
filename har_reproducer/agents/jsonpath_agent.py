@@ -1,8 +1,8 @@
 import json
 from typing import Any, List, Optional, Tuple
 
-from .base import BaseAgent, Strategy
-
+from .base_agent import BaseAgent
+from ..contracts import Strategy
 
 class JSONPathAgent(BaseAgent):
 

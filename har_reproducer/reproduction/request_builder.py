@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 from .curl_generator import CurlGenerator
-from .models import Step, StepRequest
-from .session import SessionStore
+from ..models import Step, StepRequest
+from ..session import SessionStore
 
 
 class RequestBuilder:

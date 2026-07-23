@@ -4,9 +4,9 @@ from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, ClassVar, Dict, Optional
 
-from .models import Extractor
-from .paths import Workspace
-from .templates import ExtractorTemplate
+from ..models import Extractor
+from ..fs_io import Workspace
+from ..templates import ExtractorTemplate
 
 
 class ExtractorRunner:

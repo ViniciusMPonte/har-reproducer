@@ -1,7 +1,7 @@
 from typing import Dict, List, Optional, Union
 
-from .models import Extractor, StepRequest, TokenLocation, TokenTrace
-from .session import SessionStore
+from ..models import Extractor, StepRequest, TokenLocation, TokenTrace
+from ..session import SessionStore
 
 
 class CurlGenerator:

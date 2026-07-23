@@ -8,7 +8,7 @@ from typing import Optional
 from dotenv import load_dotenv
 
 from .engine import Engine
-from .parser import HARParser
+from .fs_io import HARParser
 
 
 def _reset_output_dir(output_dir: Path) -> None:

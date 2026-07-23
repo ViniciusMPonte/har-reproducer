@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .models import Step, StepRequest, StepResponse
+from ..models import Step, StepRequest, StepResponse
 
 
 class HARParser:

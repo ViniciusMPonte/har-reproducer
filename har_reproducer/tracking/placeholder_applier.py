@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
-from .models import DynamicToken, Extractor, StepRequest
-from .session import SessionStore
+from ..models import DynamicToken, Extractor, StepRequest
+from ..session import SessionStore
 
 
 class PlaceholderApplier:

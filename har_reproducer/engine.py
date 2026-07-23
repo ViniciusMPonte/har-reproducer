@@ -6,8 +6,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import TypeAdapter
 
 from .contracts import StepExecutor
-from .extractor_runner import ExtractorRunner
-from .http_transport import HttpTransport
+from .fs_io import HARParser, Workspace
 from .llm_factory import LLMFactory
 from .models import (
     Extractor,
@@ -17,16 +16,13 @@ from .models import (
     StepResponse,
     SuccessCriterion,
 )
-from .parser import HARParser
-from .paths import Workspace
-from .request_builder import RequestBuilder
+from .reproduction import ExtractorRunner, HttpTransport, RequestBuilder
 from .session import SessionStore
-from .tracker import TokenTracker
+from .tracking import TokenTracker
 from .validator import Validator
 
 
 class Engine:
-
     RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = {400, 401}
     MAX_STEP_ATTEMPTS: ClassVar[int] = 2
 

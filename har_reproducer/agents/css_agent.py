@@ -3,8 +3,8 @@ from typing import Any, ClassVar, List, Optional, Tuple
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from .base import BaseAgent, Strategy
-
+from .base_agent import BaseAgent
+from ..contracts import Strategy
 
 class CSSAgent(BaseAgent):
     STABLE_ATTRS: ClassVar[Tuple[str, ...]] = ("name", "for", "aria-label")
