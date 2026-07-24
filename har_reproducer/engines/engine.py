@@ -5,10 +5,9 @@ from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import TypeAdapter
 
-from .contracts import StepExecutor
-from .fs_io import HARParser, Workspace
-from .llm import LLMFactory
-from .models import (
+from ..fs_io import HARParser, Workspace
+from ..llm import LLMFactory
+from ..models import (
     Extractor,
     ProjectConfig,
     Step,
@@ -16,10 +15,10 @@ from .models import (
     StepResponse,
     SuccessCriterion,
 )
-from .reproduction import ExtractorRunner, HttpTransport, RequestBuilder
-from .session import SessionStore
-from .tracking import TokenTracker
-from .validator import Validator
+from ..reproduction import ExtractorRunner, HttpTransport, RequestBuilder
+from ..session import SessionStore
+from ..tracking import TokenTracker
+from ..validator import Validator
 
 
 class Engine:
@@ -88,18 +87,15 @@ class Engine:
         return llm
 
     def run(self) -> bool:
-        return self._reproduce(self.execute_step)
+        return self._reproduce()
 
-    def dry_run(self) -> bool:
-        return self._reproduce(self.execute_step_dry)
-
-    def _reproduce(self, executor: StepExecutor) -> bool:
+    def _reproduce(self) -> bool:
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
 
         last_response: Optional[StepResponse] = None
         for index, entry in enumerate(entries):
-            last_response = self._process_entry(index, entry, first_entry, executor)
+            last_response = self._process_entry(index, entry, first_entry)
 
         return self._validate_final(last_response)
 
@@ -108,14 +104,13 @@ class Engine:
             index: int,
             entry: Dict[str, Any],
             first_entry: Step,
-            executor: StepExecutor,
     ) -> StepResponse:
         step: Step = HARParser.parse_entry(entry, index)
 
         self.tracker.analyze_step(step, first_entry)
         self.update_session_tokens()
 
-        final_request, response = executor(step)
+        final_request, response = self.execute_step(step)
         self._persist_step(index, final_request, response)
         print(f"Step {index} completed with status {response.status_code}")
         return response
@@ -176,12 +171,6 @@ class Engine:
         )
         self.update_session_tokens()
         return True
-
-    def execute_step_dry(self, step: Step) -> Tuple[StepRequest, StepResponse]:
-        final_request: StepRequest = self.request_builder.build_final_request(step)
-        self.request_builder.write_curl(step, final_request)
-        assert step.response is not None
-        return final_request, step.response
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         for attempt in range(self.MAX_STEP_ATTEMPTS):
