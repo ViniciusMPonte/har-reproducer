@@ -3,7 +3,7 @@ from typing import Optional
 import httpx
 from httpx import Client, Response
 
-from ..models import StepRequest, StepResponse
+from har_reproducer.models import StepRequest, StepResponse
 
 
 class HttpTransport:

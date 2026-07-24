@@ -5,11 +5,10 @@ from typing import Any, ClassVar, Dict, Optional, Tuple
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 
-from ..models import LLMSettings
+from har_reproducer.models import LLMSettings
 
 
 class LLMProvider(ABC):
-
     names: ClassVar[Tuple[str, ...]] = ()
     langchain_provider: ClassVar[str] = ""
     api_key_env: ClassVar[Optional[str]] = None

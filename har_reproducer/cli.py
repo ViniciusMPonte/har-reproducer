@@ -7,8 +7,8 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from .engines import EngineFactory, EngineMode, Engine
-from .fs_io import HARParser
+from har_reproducer.engines import EngineFactory, EngineMode, Engine
+from har_reproducer.fs_io import HARParser
 
 
 def _reset_output_dir(output_dir: Path) -> None:

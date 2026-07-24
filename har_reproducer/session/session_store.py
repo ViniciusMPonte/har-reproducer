@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Union
 
-from ..models import SessionState
+from har_reproducer.models import SessionState
 
 
 class SessionStore:

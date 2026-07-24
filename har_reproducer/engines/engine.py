@@ -5,9 +5,9 @@ from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import TypeAdapter
 
-from ..fs_io import HARParser, Workspace
-from ..llm import LLMFactory
-from ..models import (
+from har_reproducer.fs_io import HARParser, Workspace
+from har_reproducer.llm import LLMFactory
+from har_reproducer.models import (
     Extractor,
     ProjectConfig,
     Step,
@@ -15,10 +15,10 @@ from ..models import (
     StepResponse,
     SuccessCriterion,
 )
-from ..reproduction import ExtractorRunner, HttpTransport, RequestBuilder
-from ..session import SessionStore
-from ..tracking import TokenTracker
-from ..validation.validator import Validator
+from har_reproducer.reproduction import ExtractorRunner, HttpTransport, RequestBuilder
+from har_reproducer.session import SessionStore
+from har_reproducer.tracking import TokenTracker
+from har_reproducer.validation import Validator
 
 
 class Engine:

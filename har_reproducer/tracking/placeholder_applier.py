@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
-from ..models import DynamicToken, Extractor, StepRequest
-from ..session import SessionStore
+from har_reproducer.models import DynamicToken, Extractor, StepRequest
+from har_reproducer.session import SessionStore
 
 
 class PlaceholderApplier:

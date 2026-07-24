@@ -8,11 +8,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 
-from ..models import AgentType, Extractor
-from ..fs_io import Workspace
-from ..prompts import ExtractorPrompt
-from ..templates import ExtractorTemplate
-from ..contracts.types import Strategy
+from har_reproducer.contracts import Strategy
+from har_reproducer.fs_io import Workspace
+from har_reproducer.models import AgentType, Extractor
+from har_reproducer.prompts import ExtractorPrompt
+from har_reproducer.templates import ExtractorTemplate
 
 
 class BaseAgent:

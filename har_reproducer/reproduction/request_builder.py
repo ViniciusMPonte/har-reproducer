@@ -1,9 +1,9 @@
 from pathlib import Path
 from typing import Dict, Optional, Union
 
-from .curl_generator import CurlGenerator
-from ..models import Step, StepRequest
-from ..session import SessionStore
+from har_reproducer.models import Step, StepRequest
+from har_reproducer.reproduction import CurlGenerator
+from har_reproducer.session import SessionStore
 
 
 class RequestBuilder:

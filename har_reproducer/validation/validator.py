@@ -3,7 +3,7 @@ from typing import List
 
 from bs4 import BeautifulSoup
 
-from ..models import (
+from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
     StatusCodeCriterion,

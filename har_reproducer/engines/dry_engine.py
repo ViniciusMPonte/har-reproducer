@@ -1,7 +1,7 @@
 from typing import Tuple
 
-from ..models import Step, StepRequest, StepResponse
-from .engine import Engine
+from har_reproducer.models import Step, StepRequest, StepResponse
+from har_reproducer.engines import Engine
 
 
 class DryEngine(Engine):

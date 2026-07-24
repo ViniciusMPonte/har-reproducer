@@ -2,7 +2,7 @@ import json
 import re
 from typing import Any, Dict, Optional
 
-from ..models import TokenLocation
+from har_reproducer.models import TokenLocation
 
 
 class TokenLocationDetector:

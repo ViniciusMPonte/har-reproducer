@@ -1,7 +1,7 @@
 import hashlib
 from typing import Dict, List, Union
 
-from ..models import DynamicToken, Step, TokenLocation
+from har_reproducer.models import DynamicToken, Step, TokenLocation
 
 
 class BaselineDiff:
