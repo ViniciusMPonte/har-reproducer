@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 
 
 class Workspace:
-
     _output_dir: Optional[Path] = None
 
     curls: Path
@@ -45,3 +44,13 @@ class Workspace:
     def extractor_file(cls, safe_token_id: str) -> Path:
         cls._ensure_initialized()
         return cls.extractors / f"extract_{safe_token_id}.py"
+
+    @classmethod
+    def request_file(cls, index: int) -> Path:
+        cls._ensure_initialized()
+        return cls.real_requests / f"req_{index:04d}.json"
+
+    @classmethod
+    def response_file(cls, index: int) -> Path:
+        cls._ensure_initialized()
+        return cls.real_responses / f"res_{index:04d}.json"

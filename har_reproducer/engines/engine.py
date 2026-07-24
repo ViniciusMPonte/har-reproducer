@@ -37,7 +37,6 @@ class Engine:
         Workspace.init(output_dir)
         self.curls_dir: Path = Workspace.curls
         self.real_responses_dir: Path = Workspace.real_responses
-        self.real_requests_dir: Path = Workspace.real_requests
         self.extractors_dir: Path = Workspace.extractors
         self.temp_extractors_dir: Path = Workspace.temp_extractors
 
@@ -116,11 +115,8 @@ class Engine:
         return response
 
     def _persist_step(self, index: int, request: StepRequest, response: StepResponse) -> None:
-        req_file: Path = self.real_requests_dir / f"req_{index:04d}.json"
-        req_file.write_text(request.model_dump_json(indent=2), encoding="utf-8")
-
-        res_file: Path = self.real_responses_dir / f"res_{index:04d}.json"
-        res_file.write_text(response.model_dump_json(indent=2), encoding="utf-8")
+        Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
+        Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if not last_response or not self.success_criteria:
@@ -152,7 +148,7 @@ class Engine:
             self.session_store.set_token(token_id, value)
 
     def _load_step_response(self, step_index: int) -> Optional[Dict[str, Any]]:
-        res_file: Path = self.real_responses_dir / f"res_{step_index:04d}.json"
+        res_file: Path = Workspace.response_file(step_index)
         if not res_file.exists():
             return None
 
