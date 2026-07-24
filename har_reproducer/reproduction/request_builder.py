@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 from har_reproducer.models import Step, StepRequest
-from har_reproducer.reproduction import CurlGenerator
+from har_reproducer.reproduction.curl_generator import CurlGenerator
 from har_reproducer.session import SessionStore
 
 

@@ -1,7 +1,9 @@
 from pathlib import Path
 from typing import ClassVar, Dict, Optional, Type
 
-from har_reproducer.engines import Engine, DryEngine, EngineMode
+from har_reproducer.engines.dry_engine import DryEngine
+from har_reproducer.engines.engine import Engine
+from har_reproducer.engines.construction.engine_mode import EngineMode
 
 
 class EngineFactory:

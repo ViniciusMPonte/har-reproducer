@@ -8,7 +8,8 @@ from langchain_core.language_models import BaseChatModel
 from har_reproducer.agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
 from har_reproducer.models import DynamicToken, Extractor, TokenLocation
 from har_reproducer.session import SessionStore
-from har_reproducer.tracking import ResponseGrep, TokenLocationDetector
+from har_reproducer.tracking.response_grep import ResponseGrep
+from har_reproducer.tracking.token_location_detector import TokenLocationDetector
 
 
 class CandidateResolver:

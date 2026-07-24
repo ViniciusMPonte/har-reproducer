@@ -2,7 +2,7 @@ from typing import Dict, List
 
 from pydantic import BaseModel, Field
 
-from har_reproducer.models import DynamicToken
+from har_reproducer.models.session import DynamicToken
 
 
 class StepAnalysis(BaseModel):

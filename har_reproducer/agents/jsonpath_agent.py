@@ -1,7 +1,7 @@
 import json
 from typing import Any, List, Optional, Tuple
 
-from har_reproducer.agents import BaseAgent
+from har_reproducer.agents.base_agent import BaseAgent
 from har_reproducer.contracts import Strategy
 
 class JSONPathAgent(BaseAgent):

@@ -3,7 +3,7 @@ from typing import ClassVar, Optional, Type
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from har_reproducer.contracts import ProviderRegistry
-from har_reproducer.llm import LLMProvider
+from har_reproducer.llm.llm_provider import LLMProvider
 from har_reproducer.models import LLMSettings
 
 

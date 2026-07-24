@@ -5,7 +5,9 @@ from langchain_core.language_models import BaseChatModel
 
 from har_reproducer.models import DynamicToken, Step, StepAnalysis, StepRequest
 from har_reproducer.session import SessionStore
-from har_reproducer.tracking import BaselineDiff, CandidateResolver, PlaceholderApplier
+from har_reproducer.tracking.baseline_diff import BaselineDiff
+from har_reproducer.tracking.candidate_resolver import CandidateResolver
+from har_reproducer.tracking.placeholder_applier import PlaceholderApplier
 
 
 class TokenTracker:

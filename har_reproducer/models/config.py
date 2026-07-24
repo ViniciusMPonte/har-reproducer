@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from har_reproducer.models import SuccessCriterion
+from har_reproducer.models.criteria import SuccessCriterion
 
 
 class LLMSettings(BaseModel):

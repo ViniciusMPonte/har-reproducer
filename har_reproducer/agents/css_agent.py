@@ -3,7 +3,7 @@ from typing import Any, ClassVar, List, Optional, Tuple
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 
-from har_reproducer.agents import BaseAgent
+from har_reproducer.agents.base_agent import BaseAgent
 from har_reproducer.contracts import Strategy
 
 class CSSAgent(BaseAgent):

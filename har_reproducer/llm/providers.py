@@ -1,4 +1,5 @@
-from har_reproducer.llm.llm_factory import LLMFactory, LLMProvider
+from har_reproducer.llm.llm_factory import LLMFactory
+from har_reproducer.llm.llm_provider import LLMProvider
 
 
 @LLMFactory.register
