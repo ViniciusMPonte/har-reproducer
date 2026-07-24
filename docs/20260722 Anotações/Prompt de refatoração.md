@@ -1,17 +1,3 @@
-Hoje eu estou com muita dificuldade de me achar no código, por que ele esta poluido com:
-
-- comentários inuteis
-- fictures não implementadas
-- falta de organização
-
-eu proponho
-
-
-- refatorar até fazer sentido
-
-
--------------------
-
 # Prompt de refatoração
 
 Refatore a(s) classe(s) abaixo seguindo estritamente estas regras:
