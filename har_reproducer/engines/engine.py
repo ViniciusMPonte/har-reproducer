@@ -18,7 +18,7 @@ from ..models import (
 from ..reproduction import ExtractorRunner, HttpTransport, RequestBuilder
 from ..session import SessionStore
 from ..tracking import TokenTracker
-from ..validator import Validator
+from ..validation.validator import Validator
 
 
 class Engine:
