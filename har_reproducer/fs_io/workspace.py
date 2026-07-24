@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
+
+from har_reproducer.fs_io.workspace_dir import WorkspaceDir
 
 
 class Workspace:
@@ -11,22 +13,14 @@ class Workspace:
     extractors: Path
     temp_extractors: Path
 
-    _SUBDIRS: Tuple[str, ...] = (
-        "curls",
-        "real_responses",
-        "real_requests",
-        "extractors",
-        "temp_extractors",
-    )
-
     @classmethod
     def init(cls, output_dir: Path) -> None:
         cls._output_dir = Path(output_dir)
         cls._output_dir.mkdir(parents=True, exist_ok=True)
-        for name in cls._SUBDIRS:
-            path: Path = cls._output_dir / name
+        for workspace_dir in WorkspaceDir:
+            path: Path = cls._output_dir / workspace_dir.value
             path.mkdir(parents=True, exist_ok=True)
-            setattr(cls, name, path)
+            setattr(cls, workspace_dir.value, path)
 
     @classmethod
     def _ensure_initialized(cls) -> None:

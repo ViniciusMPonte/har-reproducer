@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from har_reproducer.fs_io import WorkspaceDir
+
 
 class ExtractorTemplate:
 
@@ -42,7 +44,7 @@ from typing import Dict
 {code}
 
 def _load_response() -> Dict:
-    response_file: Path = Path(__file__).resolve().parent.parent / "real_responses" / "res_{step_index:04d}.json"
+    response_file: Path = Path(__file__).resolve().parent.parent / "{WorkspaceDir.REAL_RESPONSES.value}" / "res_{step_index:04d}.json"
     return json.loads(response_file.read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
