@@ -12,17 +12,20 @@ from har_reproducer.templates import ExtractorTemplate
 class ExtractorRunner:
     EXTRACTOR_TIMEOUT_SECONDS: ClassVar[int] = 5
 
-    def run(self, extractor: Extractor, response: Dict[str, Any]) -> Optional[str]:
-        extractor_file: Path = self._write_extractor_script(extractor, response)
+    def run(self, extractor: Extractor) -> Optional[str]:
+        extractor_file: Path = self._write_extractor_script(extractor)
         self._cleanup_temp_file(extractor)
         return self._execute_extractor_script(extractor_file)
 
-    def _write_extractor_script(self, extractor: Extractor, response: Dict[str, Any]) -> Path:
+    def _write_extractor_script(self, extractor: Extractor) -> Path:
+        if extractor.origin_step is None:
+            raise ValueError(f"Extractor '{extractor.token_id}' has no origin_step to load a response from.")
+
         extractor_file: Path = Workspace.extractor_file(extractor.token_id)
         wrapped_code: str = ExtractorTemplate.render_script(
             safe_token_id=extractor.token_id,
             code=extractor.code,
-            response_sample=response,
+            step_index=extractor.origin_step,
         )
         extractor_file.write_text(wrapped_code, encoding="utf-8")
         return extractor_file

@@ -31,18 +31,23 @@ if __name__ == "__main__":
     def render_script(
             safe_token_id: str,
             code: str,
-            response_sample: Dict[str, Any],
+            step_index: int,
     ) -> str:
         return f"""
 import sys
 import json
+from pathlib import Path
 from typing import Dict
 
 {code}
 
+def _load_response() -> Dict:
+    response_file: Path = Path(__file__).resolve().parent.parent / "real_responses" / "res_{step_index:04d}.json"
+    return json.loads(response_file.read_text(encoding="utf-8"))
+
 if __name__ == "__main__":
-    response = {response_sample!r}
     try:
+        response = _load_response()
         result = extract_{safe_token_id}(response)
         print(result)
     except Exception:

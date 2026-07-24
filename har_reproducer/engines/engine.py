@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 
@@ -135,27 +134,17 @@ class Engine:
         return extractor.verified and extractor.origin_step is not None
 
     def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
-        response: Optional[Dict[str, Any]] = self._load_step_response(extractor.origin_step)
-        if response is None:
+        if not Workspace.response_file(extractor.origin_step).exists():
             return
 
         try:
-            value: Optional[str] = self.extractor_runner.run(extractor, response)
-        except Exception:
+            value: Optional[str] = self.extractor_runner.run(extractor)
+        except Exception as e:
+            print(f"Failed to refresh token '{token_id}': {e}")
             return
 
         if value:
             self.session_store.set_token(token_id, value)
-
-    def _load_step_response(self, step_index: int) -> Optional[Dict[str, Any]]:
-        res_file: Path = Workspace.response_file(step_index)
-        if not res_file.exists():
-            return None
-
-        try:
-            return json.loads(res_file.read_text(encoding="utf-8"))
-        except Exception:
-            return None
 
     def handle_recovery(self, response: StepResponse) -> bool:
         if response.status_code not in self.RECOVERABLE_STATUS_CODES:
