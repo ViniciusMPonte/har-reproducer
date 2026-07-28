@@ -3,7 +3,8 @@ from typing import Dict, List, Optional
 
 from langchain_core.language_models import BaseChatModel
 
-from har_reproducer.models import DynamicToken, Step, StepAnalysis, StepRequest
+from har_reproducer.models import DynamicToken, Step, StepAnalysis
+from har_reproducer.reproduction import CurlGenerator
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking.baseline_diff import BaselineDiff
 from har_reproducer.tracking.candidate_resolver import CandidateResolver
@@ -31,7 +32,7 @@ class TokenTracker:
         candidates: List[DynamicToken] = self.baseline_diff.detect_candidates(diffs)
         tokens: List[DynamicToken] = self.candidate_resolver.resolve(candidates)
         self.placeholder_applier.apply(step.request, tokens)
-        template: str = self._generate_curl_template(step.request)
+        template: str = CurlGenerator().generate(step.request, tokens)
         static_values: Dict[str, str] = self.baseline_diff.extract_static_values(step, baseline_step)
 
         return StepAnalysis(
@@ -40,8 +41,3 @@ class TokenTracker:
             dynamic_tokens=tokens,
             curl_template=template,
         )
-
-    @staticmethod
-    def _generate_curl_template(request: StepRequest) -> str:
-        headers_str: str = " ".join(f'-H "{key}: {value}"' for key, value in request.headers.items())
-        return f"curl -X {request.method} '{request.url}' {headers_str}"

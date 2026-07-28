@@ -18,3 +18,4 @@
     - criar "modelo do teste" exigindo da llm que ela só edite aonde ela é permitida. Dessa forma o teste fica
       padronizada e previsivel. Tipo uma interface.
 - a detecção de token em urls (TokenLocation.URL_PARAM) não esta funcionando direto, ele esta procurando a url completa, mas há casos onde nos responses só vai ter o caminho relativo.
+- a linha "template: str = CurlGenerator().generate(step.request, tokens)" não faz muito sentido, esta coplado, e talvez o curl_template em StepAnalysis não faça sentido, acho que no futuro vou separar essa lógica. 

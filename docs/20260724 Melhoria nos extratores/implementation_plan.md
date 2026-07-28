@@ -209,10 +209,10 @@ chamado dentro de `analyze_step` como `template = self._generate_curl_template(s
 - O restante de `analyze_step` (chamadas a `baseline_diff`, `candidate_resolver`, montagem de `StepAnalysis`) não muda.
 
 **Critérios de aceite:**
-- [ ] `_generate_curl_template` não existe mais na classe.
-- [ ] `analyze_step` retorna um `StepAnalysis.curl_template` gerado via `CurlGenerator` — validar manualmente (ou via teste) que o resultado inclui cookies e body quando o step tiver, coisa que a versão antiga nunca fazia.
-- [ ] `StepAnalysis.dynamic_tokens` continua sendo preenchido normalmente (comportamento herdado, não deve regredir).
-- [ ] Nenhuma outra mudança de comportamento em `analyze_step` além da troca da geração do curl.
+- [X] `_generate_curl_template` não existe mais na classe.
+- [X] `analyze_step` retorna um `StepAnalysis.curl_template` gerado via `CurlGenerator` — validar manualmente (ou via teste) que o resultado inclui cookies e body quando o step tiver, coisa que a versão antiga nunca fazia.
+- [X] `StepAnalysis.dynamic_tokens` continua sendo preenchido normalmente (comportamento herdado, não deve regredir).
+- [X] Nenhuma outra mudança de comportamento em `analyze_step` além da troca da geração do curl.
 
 ---
 
