@@ -7,18 +7,16 @@ from pydantic import TypeAdapter
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.llm import LLMFactory
 from har_reproducer.models import (
-    Extractor,
     ProjectConfig,
     Step,
     StepRequest,
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import ExtractorRunner, HttpTransport, RequestBuilder
+from har_reproducer.reproduction import HttpTransport, RequestBuilder
 from har_reproducer.session import SessionStore
-from har_reproducer.tracking import TokenTracker
+from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
-from models import StepAnalysis
 
 
 class Engine:
@@ -45,7 +43,7 @@ class Engine:
 
         self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
         self.http_transport: HttpTransport = HttpTransport()
-        self.extractor_runner: ExtractorRunner = ExtractorRunner()
+        self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
         self.success_criteria, llm = self._load_project_config(config_path)
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
@@ -107,7 +105,7 @@ class Engine:
         step: Step = HARParser.parse_entry(entry, index)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
-        self.update_session_tokens()
+        self.token_resolver.resolve_all()
 
         final_request, response = self.execute_step(step)
         self._persist_step(index, final_request, response)
@@ -132,27 +130,6 @@ class Engine:
         print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
         return is_success
 
-    def update_session_tokens(self) -> None:
-        for token_id, extractor in self.session_store.state.registry.items():
-            if self._should_refresh_token(extractor):
-                self._refresh_token(token_id, extractor)
-
-    def _should_refresh_token(self, extractor: Extractor) -> bool:
-        return extractor.verified and extractor.origin_step is not None
-
-    def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
-        if not Workspace.response_file(extractor.origin_step).exists():
-            return
-
-        try:
-            value: Optional[str] = self.extractor_runner.run(extractor)
-        except Exception as e:
-            print(f"Failed to refresh token '{token_id}': {e}")
-            return
-
-        if value:
-            self.session_store.set_token(token_id, value)
-
     def handle_recovery(self, response: StepResponse) -> bool:
         if response.status_code not in self.RECOVERABLE_STATUS_CODES:
             return False
@@ -161,7 +138,7 @@ class Engine:
             f"Detected {response.status_code}. "
             f"Attempting deterministic recovery (token refresh)..."
         )
-        self.update_session_tokens()
+        self.token_resolver.resolve_all()
         return True
 
     def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:

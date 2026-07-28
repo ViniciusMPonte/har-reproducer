@@ -258,10 +258,10 @@ def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
   - Toda chamada a `self.update_session_tokens()` dentro de `Engine` (em `_process_entry` e `handle_recovery`) passa a ser `self.token_resolver.resolve_all()`.
 
 **Critérios de aceite:**
-- [ ] `TokenResolver.resolve_all()` produz exatamente o mesmo efeito colateral (atualização de `session_store.state.tokens`) que `Engine.update_session_tokens()` produzia antes, para o mesmo cenário de entrada (mesmo registry, mesmas responses em disco).
-- [ ] `Engine` não tem mais `update_session_tokens`, `_should_refresh_token`, `_refresh_token`, nem `self.extractor_runner`.
-- [ ] `Engine._process_entry` e `Engine.handle_recovery` chamam `self.token_resolver.resolve_all()` no lugar de `self.update_session_tokens()`.
-- [ ] `TokenResolver` não importa nada de `har_reproducer.engines` (evita dependência circular — ele deve poder ser importado e instanciado sem precisar de um `Engine`).
+- [X] `TokenResolver.resolve_all()` produz exatamente o mesmo efeito colateral (atualização de `session_store.state.tokens`) que `Engine.update_session_tokens()` produzia antes, para o mesmo cenário de entrada (mesmo registry, mesmas responses em disco).
+- [X] `Engine` não tem mais `update_session_tokens`, `_should_refresh_token`, `_refresh_token`, nem `self.extractor_runner`.
+- [X] `Engine._process_entry` e `Engine.handle_recovery` chamam `self.token_resolver.resolve_all()` no lugar de `self.update_session_tokens()`.
+- [X] `TokenResolver` não importa nada de `har_reproducer.engines` (evita dependência circular — ele deve poder ser importado e instanciado sem precisar de um `Engine`).
 
 ---
 
