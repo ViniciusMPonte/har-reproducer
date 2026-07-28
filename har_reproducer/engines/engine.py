@@ -18,6 +18,7 @@ from har_reproducer.reproduction import ExtractorRunner, HttpTransport, RequestB
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking import TokenTracker
 from har_reproducer.validation import Validator
+from models import StepAnalysis
 
 
 class Engine:
@@ -105,17 +106,23 @@ class Engine:
     ) -> StepResponse:
         step: Step = HARParser.parse_entry(entry, index)
 
-        self.tracker.analyze_step(step, first_entry)
+        step.analysis = self.tracker.analyze_step(step, first_entry)
         self.update_session_tokens()
 
         final_request, response = self.execute_step(step)
         self._persist_step(index, final_request, response)
         print(f"Step {index} completed with status {response.status_code}")
+
+        self._persist_template_curl(step)
+
         return response
 
     def _persist_step(self, index: int, request: StepRequest, response: StepResponse) -> None:
         Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
         Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
+
+    def _persist_template_curl(self, step: Step) -> None:
+        self.request_builder.write_curl(step)
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if not last_response or not self.success_criteria:
@@ -161,16 +168,16 @@ class Engine:
         for attempt in range(self.MAX_STEP_ATTEMPTS):
             final_request, response = self._attempt_step(step)
 
-            is_last_attempt: bool = attempt == self.MAX_STEP_ATTEMPTS - 1
-            if is_last_attempt or not self.handle_recovery(response):
-                return final_request, response
+            is_last_attempt = attempt == self.MAX_STEP_ATTEMPTS - 1
+            if not is_last_attempt and self.handle_recovery(response):
+                print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
+                continue
 
-            print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
+            return final_request, response
 
         raise RuntimeError(f"execute_step exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step.index}")
 
     def _attempt_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
         final_request: StepRequest = self.request_builder.build_final_request(step)
-        self.request_builder.write_curl(step, final_request)
         response: StepResponse = self.http_transport.send_request(final_request, step.index)
         return final_request, response

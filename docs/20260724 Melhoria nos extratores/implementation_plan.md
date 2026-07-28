@@ -36,8 +36,8 @@
 **Estado esperado depois:** a classe não existe mais no arquivo.
 
 **Critérios de aceite:**
-- [ ] Classe `TokenTrace` removida por completo do arquivo.
-- [ ] Nenhum import de `TokenTrace` sobra em nenhum outro arquivo do projeto (buscar por `TokenTrace` no repositório inteiro antes de fechar a task — a remoção do uso em `CurlGenerator` acontece em T07, então rode essa busca só depois de T07 estar concluída, ou trate T02 e T07 como um par a fechar junto).
+- [X] Classe `TokenTrace` removida por completo do arquivo.
+- [X] Nenhum import de `TokenTrace` sobra em nenhum outro arquivo do projeto (buscar por `TokenTrace` no repositório inteiro antes de fechar a task — a remoção do uso em `CurlGenerator` acontece em T07, então rode essa busca só depois de T07 estar concluída, ou trate T02 e T07 como um par a fechar junto).
 
 ---
 
@@ -176,14 +176,14 @@ def generate(self, request: StepRequest, tokens: List[DynamicToken]) -> str
 - Import de `TokenTrace`, `SessionStore`: removidos (a classe não depende mais deles).
 
 **Critérios de aceite:**
-- [ ] Header ou cookie com valor contendo aspas simples (`'`) gera um curl sintaticamente válido (testar com `shlex.split` no resultado, por exemplo, pra confirmar que não quebra).
-- [ ] Um header e um cookie com o **mesmo nome de chave** aparecem ambos corretamente no curl gerado, sem um sobrescrever o outro.
-- [ ] Múltiplos cookies resultam em uma única flag `--cookie`, valores separados por `; `.
-- [ ] Chamando `generate(request, tokens=[])` sobre um `request` sem nenhum placeholder produz um curl 100% literal, sem nenhum comentário `# Token ...`.
-- [ ] Chamando `generate(request, tokens=[dt1, dt2])` produz exatamente 2 linhas de comentário, uma para cada `DynamicToken`, agregadas antes do `curl -X`, no formato especificado acima.
-- [ ] Um `request` que já contém `{{extractor:token_id}}` em algum header/cookie/body (aplicado previamente por `PlaceholderApplier`) aparece **literalmente** no curl gerado — `CurlGenerator` não tenta resolver nem tocar nesse texto.
-- [ ] Nenhum dos métodos antigos de detecção de trace (`_find_token_traces`, `_header_and_cookie_traces`, `_body_traces`, `_get_trace_for_value`, `_find_token_id_by_value`, `_trace_comment`) existe mais na classe.
-- [ ] Busca por `TokenTrace` no arquivo inteiro não retorna nenhuma ocorrência.
+- [X] Header ou cookie com valor contendo aspas simples (`'`) gera um curl sintaticamente válido (testar com `shlex.split` no resultado, por exemplo, pra confirmar que não quebra).
+- [X] Um header e um cookie com o **mesmo nome de chave** aparecem ambos corretamente no curl gerado, sem um sobrescrever o outro.
+- [X] Múltiplos cookies resultam em uma única flag `--cookie`, valores separados por `; `.
+- [X] Chamando `generate(request, tokens=[])` sobre um `request` sem nenhum placeholder produz um curl 100% literal, sem nenhum comentário `# Token ...`.
+- [X] Chamando `generate(request, tokens=[dt1, dt2])` produz exatamente 2 linhas de comentário, uma para cada `DynamicToken`, agregadas antes do `curl -X`, no formato especificado acima.
+- [X] Um `request` que já contém `{{extractor:token_id}}` em algum header/cookie/body (aplicado previamente por `PlaceholderApplier`) aparece **literalmente** no curl gerado — `CurlGenerator` não tenta resolver nem tocar nesse texto.
+- [X] Nenhum dos métodos antigos de detecção de trace (`_find_token_traces`, `_header_and_cookie_traces`, `_body_traces`, `_get_trace_for_value`, `_find_token_id_by_value`, `_trace_comment`) existe mais na classe.
+- [X] Busca por `TokenTrace` no arquivo inteiro não retorna nenhuma ocorrência.
 
 ---
 

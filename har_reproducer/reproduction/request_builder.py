@@ -35,10 +35,8 @@ class RequestBuilder:
             return body.decode("utf-8", errors="replace")
         return self.session_store.render(body)
 
-    def write_curl(self, step: Step, final_request: StepRequest) -> None:
-        curl_cmd: str = CurlGenerator().generate(
-            step.index, final_request, session_store=self.session_store
-        )
+    def write_curl(self, step: Step) -> None:
+        curl_cmd: str = CurlGenerator().generate(step.request, step.analysis.dynamic_tokens)
 
         curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
         curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")

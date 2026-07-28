@@ -21,14 +21,6 @@ class TokenLocation(str, Enum):
     URL_PARAM = "UrlParam"
 
 
-class TokenTrace(BaseModel):
-    token_id: str
-    value: str
-    origin_step: int
-    location: TokenLocation
-    key: str
-
-
 class Extractor(BaseModel):
     token_id: str
     code: str

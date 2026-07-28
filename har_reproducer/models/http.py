@@ -1,6 +1,7 @@
 from typing import Dict, Optional, Union
-
 from pydantic import BaseModel, Field
+
+from har_reproducer.models.analysis import StepAnalysis
 
 
 class StepRequest(BaseModel):
@@ -25,3 +26,4 @@ class Step(BaseModel):
     index: int
     request: StepRequest
     response: Optional[StepResponse] = None
+    analysis: Optional[StepAnalysis] = None

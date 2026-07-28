@@ -1,135 +1,67 @@
-from typing import Dict, List, Optional, Union
+import shlex
+from typing import List, Optional, Union
 
-from har_reproducer.models import Extractor, StepRequest, TokenLocation, TokenTrace
-from har_reproducer.session import SessionStore
+from har_reproducer.models import DynamicToken, StepRequest
 
 
 class CurlGenerator:
 
-    def generate(
-            self,
-            step_index: int,
-            request: StepRequest,
-            session_store: Optional[SessionStore] = None,
-    ) -> str:
-        traces: List[TokenTrace] = self._find_token_traces(request, session_store) if session_store else []
+    def generate(self, request: StepRequest, tokens: List[DynamicToken]) -> str:
+        comment_lines: List[str] = self._token_comments(tokens)
+        curl_block: str = " \\\n     ".join(self._curl_parts(request))
 
-        parts: List[str] = [f"curl -X {request.method}", f"'{request.url}'"]
-        parts.extend(self._header_parts(request, traces))
-        parts.extend(self._cookie_parts(request, traces))
-        parts.extend(self._body_parts(request, traces))
+        if not comment_lines:
+            return curl_block
+        return "\n".join(comment_lines) + "\n" + curl_block
 
-        return " \\\n     ".join(parts)
+    def _curl_parts(self, request: StepRequest) -> List[str]:
+        parts: List[str] = [self._request_line(request), shlex.quote(request.url)]
+        parts.extend(self._header_parts(request))
 
-    def _header_parts(self, request: StepRequest, traces: List[TokenTrace]) -> List[str]:
-        parts: List[str] = []
-        for header, value in request.headers.items():
-            trace: Optional[TokenTrace] = self._get_trace_for_value(header, value, traces)
-            if trace is not None:
-                parts.append(self._trace_comment(trace))
-            parts.append(f"-H '{header}: {value}'")
+        cookie_part: Optional[str] = self._cookie_part(request)
+        if cookie_part is not None:
+            parts.append(cookie_part)
+
+        parts.extend(self._body_part(request))
         return parts
 
-    def _cookie_parts(self, request: StepRequest, traces: List[TokenTrace]) -> List[str]:
+    @staticmethod
+    def _request_line(request: StepRequest) -> str:
+        return f"curl -X {request.method}"
+
+    @staticmethod
+    def _header_parts(request: StepRequest) -> List[str]:
         parts: List[str] = []
-        for cookie, value in request.cookies.items():
-            trace: Optional[TokenTrace] = self._get_trace_for_value(cookie, value, traces)
-            if trace is not None:
-                parts.append(self._trace_comment(trace))
-            parts.append(f"--cookie '{cookie}={value}'")
+        for key, value in request.headers.items():
+            quoted_header: str = shlex.quote(f"{key}: {value}")
+            parts.append(f"-H {quoted_header}")
         return parts
 
-    def _body_parts(self, request: StepRequest, traces: List[TokenTrace]) -> List[str]:
+    @staticmethod
+    def _cookie_part(request: StepRequest) -> Optional[str]:
+        if not request.cookies:
+            return None
+
+        combined_cookies: str = "; ".join(f"{key}={value}" for key, value in request.cookies.items())
+        quoted_cookies: str = shlex.quote(combined_cookies)
+        return f"--cookie {quoted_cookies}"
+
+    def _body_part(self, request: StepRequest) -> List[str]:
         body: Optional[Union[str, bytes]] = request.body
         if not body:
             return []
 
-        body_str: str = self._decode_body(body)
-        body_traces: List[TokenTrace] = [trace for trace in traces if trace.location == TokenLocation.BODY_JSON]
+        quoted_body: str = shlex.quote(self._decode_body(body))
+        return [f"--data-binary {quoted_body}"]
 
-        parts: List[str] = [self._trace_comment(trace) for trace in body_traces]
-        parts.append(f"--data-binary '{body_str}'")
-        return parts
+    @staticmethod
+    def _token_comments(tokens: List[DynamicToken]) -> List[str]:
+        return [
+            f"# Token {token.token_id} comes from response of step {token.origin_step}"
+            for token in tokens
+            if token.origin_step is not None
+        ]
 
     @staticmethod
     def _decode_body(body: Union[str, bytes]) -> str:
         return body if isinstance(body, str) else body.decode("utf-8", errors="replace")
-
-    @staticmethod
-    def _trace_comment(trace: TokenTrace) -> str:
-        return (
-            f"# Token {trace.location.value}:{trace.key} (id={trace.token_id[:8]}) "
-            f"comes from response of step {trace.origin_step}"
-        )
-
-    def _find_token_traces(self, request: StepRequest, session_store: SessionStore) -> List[TokenTrace]:
-        tokens: Dict[str, str] = session_store.state.tokens
-        registry: Dict[str, Extractor] = session_store.state.registry
-
-        traces: List[TokenTrace] = self._header_and_cookie_traces(request, tokens, registry)
-        traces.extend(self._body_traces(request, tokens, registry))
-        return traces
-
-    def _header_and_cookie_traces(
-            self,
-            request: StepRequest,
-            tokens: Dict[str, str],
-            registry: Dict[str, Extractor],
-    ) -> List[TokenTrace]:
-        traces: List[TokenTrace] = []
-        for key, value in {**request.headers, **request.cookies}.items():
-            token_id: Optional[str] = self._find_token_id_by_value(value, tokens)
-            if token_id is None:
-                continue
-
-            extractor: Optional[Extractor] = registry.get(token_id)
-            if extractor is None:
-                continue
-
-            location: TokenLocation = TokenLocation.HEADER if key in request.headers else TokenLocation.COOKIE
-            traces.append(TokenTrace(
-                token_id=token_id,
-                value=value,
-                origin_step=extractor.origin_step or 0,
-                location=location,
-                key=key,
-            ))
-        return traces
-
-    def _body_traces(
-            self,
-            request: StepRequest,
-            tokens: Dict[str, str],
-            registry: Dict[str, Extractor],
-    ) -> List[TokenTrace]:
-        body: Optional[Union[str, bytes]] = request.body
-        if not body:
-            return []
-
-        body_str: str = self._decode_body(body)
-
-        traces: List[TokenTrace] = []
-        for token_id, value in tokens.items():
-            if value not in body_str:
-                continue
-
-            extractor: Optional[Extractor] = registry.get(token_id)
-            if extractor is None:
-                continue
-
-            traces.append(TokenTrace(
-                token_id=token_id,
-                value=value,
-                origin_step=extractor.origin_step or 0,
-                location=TokenLocation.BODY_JSON,
-                key="body",
-            ))
-        return traces
-
-    @staticmethod
-    def _find_token_id_by_value(value: str, tokens: Dict[str, str]) -> Optional[str]:
-        return next((tid for tid, val in tokens.items() if val == value), None)
-
-    @staticmethod
-    def _get_trace_for_value(key: str, value: str, traces: List[TokenTrace]) -> Optional[TokenTrace]:
-        return next((trace for trace in traces if trace.key == key and trace.value == value), None)
