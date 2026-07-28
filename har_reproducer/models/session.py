@@ -18,6 +18,7 @@ class TokenLocation(str, Enum):
     BODY_JSON = "BodyJSON"
     BODY_HTML = "BodyHTML"
     SCRIPT = "Script"
+    URL_PARAM = "UrlParam"
 
 
 class TokenTrace(BaseModel):

@@ -18,9 +18,9 @@
 **Estado esperado depois:** `TokenLocation` tem um novo membro `URL_PARAM = "UrlParam"`.
 
 **Critérios de aceite:**
-- [ ] Novo membro `URL_PARAM` existe no enum, com valor de string `"UrlParam"`.
-- [ ] Nenhum outro membro do enum foi alterado ou removido.
-- [ ] O projeto ainda importa/compila normalmente (nenhum outro arquivo depende do número/ordem dos membros do enum).
+- [X] Novo membro `URL_PARAM` existe no enum, com valor de string `"UrlParam"`.
+- [X] Nenhum outro membro do enum foi alterado ou removido.
+- [X] O projeto ainda importa/compila normalmente (nenhum outro arquivo depende do número/ordem dos membros do enum).
 
 ---
 
