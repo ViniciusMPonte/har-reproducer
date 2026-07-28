@@ -12,6 +12,7 @@ class Workspace:
     real_requests: Path
     extractors: Path
     temp_extractors: Path
+    mitm_capture: Path
 
     @classmethod
     def init(cls, output_dir: Path) -> None:
@@ -48,3 +49,13 @@ class Workspace:
     def response_file(cls, index: int) -> Path:
         cls._ensure_initialized()
         return cls.real_responses / f"res_{index:04d}.json"
+
+    @classmethod
+    def mitm_capture_file(cls) -> Path:
+        cls._ensure_initialized()
+        return cls.mitm_capture / "capture.har"
+
+    @classmethod
+    def curl_file(cls, index: int) -> Path:
+        cls._ensure_initialized()
+        return cls.curls / f"req_{index:04d}.curl.sh"

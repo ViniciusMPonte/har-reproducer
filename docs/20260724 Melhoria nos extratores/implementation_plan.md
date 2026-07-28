@@ -53,10 +53,10 @@
 **Estado esperado depois:** `ProjectConfig` ganha `proxy_port: Optional[int] = None`.
 
 **Critérios de aceite:**
-- [ ] Campo `proxy_port: Optional[int] = None` adicionado a `ProjectConfig`.
-- [ ] Um `config.json` sem esse campo continua sendo parseado sem erro (campo é opcional).
-- [ ] Um `config.json` com `"proxy_port": 8080` (por exemplo) popula `ProjectConfig.proxy_port` corretamente com esse valor.
-- [ ] Nenhum comportamento de leitura do restante do `ProjectConfig` (llm, success_criteria) foi alterado.
+- [X] Campo `proxy_port: Optional[int] = None` adicionado a `ProjectConfig`.
+- [X] Um `config.json` sem esse campo continua sendo parseado sem erro (campo é opcional).
+- [X] Um `config.json` com `"proxy_port": 8080` (por exemplo) popula `ProjectConfig.proxy_port` corretamente com esse valor.
+- [X] Nenhum comportamento de leitura do restante do `ProjectConfig` (llm, success_criteria) foi alterado.
 
 ---
 
@@ -79,10 +79,10 @@
 - Novo método `Workspace.curl_file(index: int) -> Path`: retorna `cls.curls / f"req_{index:04d}.curl.sh"` — mesmo padrão de nomeação que existia hardcoded em `RequestBuilder.write_curl`.
 
 **Critérios de aceite:**
-- [ ] `WorkspaceDir.MITM_CAPTURE` existe e, ao chamar `Workspace.init(output_dir)`, o diretório correspondente é criado no disco (mesmo comportamento automático que os outros membros do enum já têm, via o loop em `Workspace.init`).
-- [ ] `Workspace.mitm_capture_file()` levanta `RuntimeError` se chamado antes de `Workspace.init()` (mesmo padrão de `_ensure_initialized()` dos outros métodos).
-- [ ] `Workspace.mitm_capture_file()` retorna sempre o mesmo `Path`, independente de quantas vezes for chamado.
-- [ ] `Workspace.curl_file(index)` retorna `Path` no formato `.../curls/req_{index:04d}.curl.sh`, com zero-padding de 4 dígitos igual aos outros métodos (`request_file`, `response_file`).
+- [X] `WorkspaceDir.MITM_CAPTURE` existe e, ao chamar `Workspace.init(output_dir)`, o diretório correspondente é criado no disco (mesmo comportamento automático que os outros membros do enum já têm, via o loop em `Workspace.init`).
+- [X] `Workspace.mitm_capture_file()` levanta `RuntimeError` se chamado antes de `Workspace.init()` (mesmo padrão de `_ensure_initialized()` dos outros métodos).
+- [X] `Workspace.mitm_capture_file()` retorna sempre o mesmo `Path`, independente de quantas vezes for chamado.
+- [X] `Workspace.curl_file(index)` retorna `Path` no formato `.../curls/req_{index:04d}.curl.sh`, com zero-padding de 4 dígitos igual aos outros métodos (`request_file`, `response_file`).
 
 ---
 
@@ -105,11 +105,11 @@ def render(self, template: str) -> str:
 **Estado esperado depois:** `render` reconhece o padrão `{{extractor:token_id}}` via regex (ex.: `\{\{extractor:([a-f0-9]+)\}\}`), substituindo cada ocorrência pelo valor correspondente em `self.state.tokens`. Se o `token_id` capturado não existir em `self.state.tokens`, o placeholder correspondente permanece **literal** no texto (sem levantar exceção). `render_dict` não precisa de nenhuma mudança de código — ele já delega para `render` em cada string encontrada recursivamente.
 
 **Critérios de aceite:**
-- [ ] `render("Bearer {{extractor:abc123}}")`, com `state.tokens = {"abc123": "real-value"}`, retorna `"Bearer real-value"`.
-- [ ] `render("{{abc123}}")` (formato antigo, sem prefixo `extractor:`) **não é resolvido** — string retorna inalterada, literal.
-- [ ] `render("{{extractor:naoexiste}}")`, com `"naoexiste"` ausente de `state.tokens`, retorna a string com o placeholder intacto, sem lançar exceção.
-- [ ] Múltiplos placeholders diferentes na mesma string são todos resolvidos numa única chamada de `render`.
-- [ ] `render_dict` (chamado sobre um dict/list aninhado contendo o novo formato) resolve corretamente em qualquer profundidade — sem alteração de código nele, só validação de que o comportamento em cascata continua funcionando com o novo regex.
+- [X] `render("Bearer {{extractor:abc123}}")`, com `state.tokens = {"abc123": "real-value"}`, retorna `"Bearer real-value"`.
+- [X] `render("{{abc123}}")` (formato antigo, sem prefixo `extractor:`) **não é resolvido** — string retorna inalterada, literal.
+- [X] `render("{{extractor:naoexiste}}")`, com `"naoexiste"` ausente de `state.tokens`, retorna a string com o placeholder intacto, sem lançar exceção.
+- [X] Múltiplos placeholders diferentes na mesma string são todos resolvidos numa única chamada de `render`.
+- [X] `render_dict` (chamado sobre um dict/list aninhado contendo o novo formato) resolve corretamente em qualquer profundidade — sem alteração de código nele, só validação de que o comportamento em cascata continua funcionando com o novo regex.
 
 ---
 
@@ -134,12 +134,12 @@ def render(self, template: str) -> str:
 - Quando uma substituição ocorre na URL, isso deveria refletir em algum campo do `DynamicToken` relacionado a localização (`destination_location` ou equivalente já existente no model) como `TokenLocation.URL_PARAM` — **checar o model `DynamicToken` (já existe, não faz parte desta task alterá-lo) para confirmar qual campo é o correto antes de implementar esse detalhe.**
 
 **Critérios de aceite:**
-- [ ] `_placeholder_for("abc123")` retorna `"{{extractor:abc123}}"`.
-- [ ] Um `DynamicToken` com `current_value` igual a uma substring dentro de `Authorization: Bearer <valor>` (num header) resulta em só o trecho `<valor>` substituído — `Bearer ` permanece intacto.
-- [ ] Dois tokens onde o valor de um é substring do valor do outro (ex.: `"abc"` e `"abc123"`) são aplicados na ordem certa (mais longo primeiro) sem corromper o placeholder do outro — testar explicitamente esse cenário.
-- [ ] Um `DynamicToken` cujo `current_value` aparece na query string de `request.url` é substituído corretamente pelo placeholder, sem afetar o resto da URL.
-- [ ] Token com `current_value` vazio continua sendo ignorado (comportamento já existente, não deve regredir).
-- [ ] Token sem extractor `verified` continua sendo ignorado (comportamento já existente, não deve regredir).
+- [X] `_placeholder_for("abc123")` retorna `"{{extractor:abc123}}"`.
+- [X] Um `DynamicToken` com `current_value` igual a uma substring dentro de `Authorization: Bearer <valor>` (num header) resulta em só o trecho `<valor>` substituído — `Bearer ` permanece intacto.
+- [X] Dois tokens onde o valor de um é substring do valor do outro (ex.: `"abc"` e `"abc123"`) são aplicados na ordem certa (mais longo primeiro) sem corromper o placeholder do outro — testar explicitamente esse cenário.
+- [X] Um `DynamicToken` cujo `current_value` aparece na query string de `request.url` é substituído corretamente pelo placeholder, sem afetar o resto da URL.
+- [X] Token com `current_value` vazio continua sendo ignorado (comportamento já existente, não deve regredir).
+- [X] Token sem extractor `verified` continua sendo ignorado (comportamento já existente, não deve regredir).
 
 ---
 

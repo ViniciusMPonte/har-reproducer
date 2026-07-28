@@ -7,3 +7,4 @@ class WorkspaceDir(str, Enum):
     REAL_REQUESTS = "real_requests"
     EXTRACTORS = "extractors"
     TEMP_EXTRACTORS = "temp_extractors"
+    MITM_CAPTURE = "mitm_capture"

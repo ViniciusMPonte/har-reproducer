@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 
-from har_reproducer.models import DynamicToken, Extractor, StepRequest
+from har_reproducer.models import DynamicToken, Extractor, StepRequest, TokenLocation
 from har_reproducer.session import SessionStore
 
 
@@ -10,8 +10,12 @@ class PlaceholderApplier:
         self.session_store: SessionStore = session_store
 
     def apply(self, request: StepRequest, tokens: List[DynamicToken]) -> None:
-        for token in tokens:
+        for token in self._ordered_by_value_length(tokens):
             self._apply_token(request, token)
+
+    @staticmethod
+    def _ordered_by_value_length(tokens: List[DynamicToken]) -> List[DynamicToken]:
+        return sorted(tokens, key=lambda token: len(token.current_value), reverse=True)
 
     def _apply_token(self, request: StepRequest, token: DynamicToken) -> None:
         if not token.current_value:
@@ -22,6 +26,7 @@ class PlaceholderApplier:
             return
 
         placeholder: str = self._placeholder_for(token.token_id)
+        self._replace_in_url(request, token.current_value, placeholder)
         self._replace_in_headers(request, token.current_value, placeholder)
         self._replace_in_cookies(request, token.current_value, placeholder)
         self._replace_in_body(request, token.current_value, placeholder)
@@ -34,7 +39,11 @@ class PlaceholderApplier:
 
     @staticmethod
     def _placeholder_for(token_id: str) -> str:
-        return f"{{{{{token_id}}}}}"
+        return f"{{{{extractor:{token_id}}}}}"
+
+    @staticmethod
+    def _replace_in_url(request: StepRequest, value: str, placeholder: str) -> None:
+        request.url = request.url.replace(value, placeholder)
 
     @staticmethod
     def _replace_in_headers(request: StepRequest, value: str, placeholder: str) -> None:

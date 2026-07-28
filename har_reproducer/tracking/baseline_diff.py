@@ -8,10 +8,17 @@ class BaselineDiff:
 
     def compare(self, step: Step, baseline: Step) -> Dict[str, str]:
         diffs: Dict[str, str] = {}
+        diffs.update(self._diff_url(step, baseline))
         diffs.update(self._diff_headers(step, baseline))
         diffs.update(self._diff_cookies(step, baseline))
         diffs.update(self._diff_body(step, baseline))
         return diffs
+
+    @staticmethod
+    def _diff_url(step: Step, baseline: Step) -> Dict[str, str]:
+        if step.request.url == baseline.request.url:
+            return {}
+        return {"url": step.request.url}
 
     @staticmethod
     def _diff_headers(step: Step, baseline: Step) -> Dict[str, str]:
@@ -60,6 +67,8 @@ class BaselineDiff:
 
     @staticmethod
     def _determine_location(path: str) -> TokenLocation:
+        if path.startswith("url"):
+            return TokenLocation.URL_PARAM
         if path.startswith("header:"):
             return TokenLocation.HEADER
         if path.startswith("cookie:"):

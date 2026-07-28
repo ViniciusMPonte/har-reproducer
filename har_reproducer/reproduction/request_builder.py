@@ -16,7 +16,7 @@ class RequestBuilder:
         req: StepRequest = step.request
 
         return StepRequest(
-            url=req.url,
+            url=self.session_store.render_dict(req.url),
             method=req.method,
             headers=self._render_headers(req.headers),
             cookies=self.session_store.render_dict(req.cookies),
