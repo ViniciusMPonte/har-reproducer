@@ -1,7 +1,5 @@
 # Tarefas
 
-- o conteudo do rep_.json precisa estar no teste enviado para llm ler, mas não no teste. Porem precisa ter a leitura do
-  arquivo la.
 - o arquivo curl gerado não deve ter o token, e sim o id. A ideia é que seja um modelo, não para ser usado (pode ser
   usado atraves de algum "resolver.py" para essa tarefa)
 - estou na duvida se essa linha esta funcionando: deterministic: List[Strategy] = self.deterministic_strategies ()
