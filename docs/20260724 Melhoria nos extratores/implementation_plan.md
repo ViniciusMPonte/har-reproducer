@@ -292,9 +292,9 @@ def run_existing(self, token_id: str) -> Optional[str]:
 `run(extractor)` existente não muda — esse método novo é aditivo, não substitui nada.
 
 **Critérios de aceite:**
-- [ ] `run_existing(token_id)` com um `token_id` cujo arquivo `extract_{token_id}.py` existe em disco executa esse script e retorna o `stdout` (mesma semântica de retorno de `run`).
-- [ ] `run_existing(token_id)` com um `token_id` cujo arquivo **não existe** retorna `None`, sem lançar exceção.
-- [ ] `run(extractor)` (método já existente) continua funcionando exatamente como antes — nenhuma regressão.
+- [X] `run_existing(token_id)` com um `token_id` cujo arquivo `extract_{token_id}.py` existe em disco executa esse script e retorna o `stdout` (mesma semântica de retorno de `run`).
+- [X] `run_existing(token_id)` com um `token_id` cujo arquivo **não existe** retorna `None`, sem lançar exceção.
+- [X] `run(extractor)` (método já existente) continua funcionando exatamente como antes — nenhuma regressão.
 
 ---
 

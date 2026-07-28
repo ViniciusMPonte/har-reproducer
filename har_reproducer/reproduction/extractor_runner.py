@@ -2,7 +2,7 @@ import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Any, ClassVar, Dict, Optional
+from typing import ClassVar, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import Extractor
@@ -15,6 +15,12 @@ class ExtractorRunner:
     def run(self, extractor: Extractor) -> Optional[str]:
         extractor_file: Path = self._write_extractor_script(extractor)
         self._cleanup_temp_file(extractor)
+        return self._execute_extractor_script(extractor_file)
+
+    def run_existing(self, token_id: str) -> Optional[str]:
+        extractor_file: Path = Workspace.extractor_file(token_id)
+        if not extractor_file.exists():
+            return None
         return self._execute_extractor_script(extractor_file)
 
     def _write_extractor_script(self, extractor: Extractor) -> Path:
