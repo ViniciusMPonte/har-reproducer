@@ -401,10 +401,10 @@ Constrói `StepResponse` diretamente do `httpx.Response`. Em erro, monta `StepRe
 - Expõe a porta resolvida e o caminho do CA (`{raiz do projeto}/mitmproxy-ca-cert.pem`, caminho padrão que o mitmproxy usa quando `confdir` aponta pra lá) para quem for construir o `CurlHttpTransport` (T12/T15).
 
 **Critérios de aceite:**
-- [ ] Instanciando o orquestrador sem porta configurada, ele sobe numa porta livre (testável verificando que a porta escolhida está de fato aceitando conexões depois do health check passar).
-- [ ] Instanciando com uma porta específica, ele sobe exatamente naquela porta.
-- [ ] Depois que a função passada termina (com sucesso ou lançando exceção), o processo `mitmdump` não está mais rodando (checar via PID/processo, não só "não deu erro").
-- [ ] O arquivo de CA (`mitmproxy-ca-cert.pem`) aparece na raiz do projeto depois da primeira subida do proxy.
+- [X] Instanciando o orquestrador sem porta configurada, ele sobe numa porta livre (testável verificando que a porta escolhida está de fato aceitando conexões depois do health check passar).
+- [X] Instanciando com uma porta específica, ele sobe exatamente naquela porta.
+- [X] Depois que a função passada termina (com sucesso ou lançando exceção), o processo `mitmdump` não está mais rodando (checar via PID/processo, não só "não deu erro").
+- [X] O arquivo de CA (`mitmproxy-ca-cert.pem`) aparece na raiz do projeto depois da primeira subida do proxy.
 
 ---
 

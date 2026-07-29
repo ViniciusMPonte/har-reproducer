@@ -2,22 +2,23 @@ import base64
 import json
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from mitmproxy.http import HTTPFlow, Request, Response
 
+from har_reproducer.reproduction.mitm_env import MitmEnv
+
 
 class MitmAddon:
-    CAPTURE_PATH_ENV_VAR: ClassVar[str] = "HAR_REPRODUCER_MITM_CAPTURE_PATH"
 
     def __init__(self) -> None:
         self.capture_path: Path = self._resolve_capture_path()
 
     def _resolve_capture_path(self) -> Path:
-        raw_path: Optional[str] = os.environ.get(self.CAPTURE_PATH_ENV_VAR)
+        raw_path: Optional[str] = os.environ.get(MitmEnv.CAPTURE_PATH_ENV_VAR)
         if raw_path is None:
             raise RuntimeError(
-                f"{self.CAPTURE_PATH_ENV_VAR} não está definida no ambiente do mitmdump."
+                f"{MitmEnv.CAPTURE_PATH_ENV_VAR} não está definida no ambiente do mitmdump."
             )
         return Path(raw_path)
 
