@@ -519,13 +519,13 @@ def handle_run(self, args: Namespace) -> None:
 **Contexto:** conferência final de que nada do que foi substituído ao longo do plano ficou esquecido para trás — item explicitamente pedido: nenhum código morto na entrega final.
 
 **Estado esperado depois de rodar esta checagem — busca no repositório inteiro, sem nenhuma ocorrência de:**
-- [ ] `TokenTrace`
-- [ ] `TokenTracker._generate_curl_template`
-- [ ] `CurlGenerator._find_token_traces`, `_header_and_cookie_traces`, `_body_traces`, `_get_trace_for_value`, `_find_token_id_by_value`, `_trace_comment`
-- [ ] Suporte ao formato antigo de placeholder (`{{token_id}}` sem prefixo) em `session_store.py`
-- [ ] `RequestBuilder.write_curl`
-- [ ] `HttpTransport` / `http_transport.py`
-- [ ] `Engine.update_session_tokens`, `_should_refresh_token`, `_refresh_token`
-- [ ] Qualquer import não utilizado deixado para trás em arquivos tocados por este plano (`curl_generator.py`, `request_builder.py`, `engine.py`, `session_store.py`, `session.py`)
+- [X] `TokenTrace`
+- [X] `TokenTracker._generate_curl_template`
+- [X] `CurlGenerator._find_token_traces`, `_header_and_cookie_traces`, `_body_traces`, `_get_trace_for_value`, `_find_token_id_by_value`, `_trace_comment`
+- [X] Suporte ao formato antigo de placeholder (`{{token_id}}` sem prefixo) em `session_store.py`
+- [X] `RequestBuilder.write_curl`
+- [X] `HttpTransport` / `http_transport.py`
+- [X] `Engine.update_session_tokens`, `_should_refresh_token`, `_refresh_token`
+- [X] Qualquer import não utilizado deixado para trás em arquivos tocados por este plano (`curl_generator.py`, `request_builder.py`, `engine.py`, `session_store.py`, `session.py`)
 
 **Critério de aceite final:** todos os itens acima confirmados ausentes do repositório.
