@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -16,3 +17,4 @@ class ProjectConfig(BaseModel):
     llm: Optional[LLMSettings] = None
     success_criteria: List[SuccessCriterion] = Field(default_factory=list)
     proxy_port: Optional[int] = None
+    ca_cert_path: Optional[Path] = None

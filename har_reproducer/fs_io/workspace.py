@@ -30,6 +30,16 @@ class Workspace:
                 "Workspace não inicializado. Chame Workspace.init(output_dir) primeiro."
             )
 
+    @staticmethod
+    def get_root_path() -> Path:
+        return Path(__file__).resolve().parent.parent
+
+    @staticmethod
+    def get_mitmproxy_ca_path() -> Path:
+        path: Path = Workspace.get_root_path().parent / ".mitmproxy"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
     @classmethod
     def temp_extractor_file(cls, safe_token_id: str) -> Path:
         cls._ensure_initialized()

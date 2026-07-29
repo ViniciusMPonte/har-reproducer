@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from pydantic import TypeAdapter
 
+from har_reproducer.config import ProjectConfigLoader
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.llm import LLMFactory
 from har_reproducer.models import (
@@ -30,6 +30,8 @@ class Engine:
             har_path: Path,
             output_dir: Path,
             config_path: Optional[Path] = None,
+            proxy_port: Optional[int] = None,
+            ca_cert_path: Optional[Path] = None,
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
@@ -44,35 +46,21 @@ class Engine:
         self.validator: Validator = Validator()
 
         self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
-        self.http_transport: CurlHttpTransport = CurlHttpTransport()
+        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
         self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
-        self.success_criteria, llm = self._load_project_config(config_path)
+        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
+        self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
+        llm: Optional[BaseChatModel] = self._build_llm(project_config)
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
 
-    def _load_project_config(
-            self, config_path: Optional[Path]
-    ) -> Tuple[List[SuccessCriterion], Optional[BaseChatModel]]:
-        if not config_path or not config_path.exists():
-            return [], None
-
-        try:
-            return self._parse_project_config(config_path)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"Error loading config: {e}")
-            return [], None
-
-    def _parse_project_config(
-            self, config_path: Path
-    ) -> Tuple[List[SuccessCriterion], Optional[BaseChatModel]]:
-        config_json: str = config_path.read_text(encoding="utf-8")
-        adapter: TypeAdapter[ProjectConfig] = TypeAdapter(ProjectConfig)
-        project_config: ProjectConfig = adapter.validate_json(config_json)
-
-        llm: Optional[BaseChatModel] = self._build_llm(project_config)
-        return project_config.success_criteria, llm
+    def _build_http_transport(
+            self, proxy_port: Optional[int], ca_cert_path: Optional[Path]
+    ) -> Optional[CurlHttpTransport]:
+        if not self.USES_NETWORK:
+            return None
+        assert proxy_port is not None
+        return CurlHttpTransport(proxy_port, ca_cert_path)
 
     def _build_llm(self, project_config: ProjectConfig) -> Optional[BaseChatModel]:
         if not project_config.llm:
@@ -158,6 +146,7 @@ class Engine:
         raise RuntimeError(f"execute_step exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step.index}")
 
     def _attempt_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
+        assert self.http_transport is not None
         final_request: StepRequest = self.request_builder.build_final_request(step)
         response: StepResponse = self.http_transport.send_request(final_request, step.index)
         return final_request, response

@@ -13,12 +13,24 @@ class EngineFactory:
     }
 
     @classmethod
+    def resolve_class(cls, mode: EngineMode) -> Type[Engine]:
+        return cls._STRATEGIES[mode]
+
+    @classmethod
     def create(
             cls,
             mode: EngineMode,
             har_path: Path,
             output_dir: Path,
             config_path: Optional[Path],
+            proxy_port: Optional[int] = None,
+            ca_cert_path: Optional[Path] = None,
     ) -> Engine:
-        engine_cls: Type[Engine] = cls._STRATEGIES[mode]
-        return engine_cls(har_path, output_dir, config_path=config_path)
+        engine_cls: Type[Engine] = cls.resolve_class(mode)
+        return engine_cls(
+            har_path,
+            output_dir,
+            config_path=config_path,
+            proxy_port=proxy_port,
+            ca_cert_path=ca_cert_path,
+        )

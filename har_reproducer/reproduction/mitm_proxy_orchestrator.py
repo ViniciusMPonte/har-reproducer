@@ -2,6 +2,7 @@ import http.client
 import os
 import socket
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Callable, ClassVar, Dict, List, Optional
@@ -19,6 +20,7 @@ class MitmProxyOrchestrator:
     PROXY_PROBE_TIMEOUT_SECONDS: ClassVar[float] = 1.0
     MITMPROXY_SERVER_HEADER_MARKER: ClassVar[str] = "mitmproxy"
     TERMINATE_TIMEOUT_SECONDS: ClassVar[float] = 5.0
+    MITMDUMP_EXECUTABLE_NAME: ClassVar[str] = "mitmdump.exe" if sys.platform == "win32" else "mitmdump"
 
     def __init__(self, proxy_port: Optional[int], project_root: Path) -> None:
         self.project_root: Path = project_root
@@ -38,6 +40,11 @@ class MitmProxyOrchestrator:
             probe_socket.bind(("127.0.0.1", 0))
             return probe_socket.getsockname()[1]
 
+    @staticmethod
+    def _resolve_mitmdump_path() -> Path:
+        executable_dir: Path = Path(sys.executable).parent
+        return executable_dir / MitmProxyOrchestrator.MITMDUMP_EXECUTABLE_NAME
+
     def run(self, callback: Callable[[], bool]) -> bool:
         self._process = self._start_process()
         try:
@@ -56,7 +63,7 @@ class MitmProxyOrchestrator:
 
     def _build_command(self) -> List[str]:
         return [
-            "mitmdump",
+            str(self._resolve_mitmdump_path()),
             "-s", str(self.ADDON_PATH),
             "--listen-port", str(self.port),
             "--set", f"confdir={self.project_root}",
