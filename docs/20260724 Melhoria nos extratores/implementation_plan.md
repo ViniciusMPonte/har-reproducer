@@ -355,10 +355,10 @@ Constrói `StepResponse` diretamente do `httpx.Response`. Em erro, monta `StepRe
 3. Remover `http_transport.py` (`HttpTransport`) — mas só depois de confirmar, em T15, que nada mais importa essa classe.
 
 **Critérios de aceite:**
-- [ ] Dado um `final_request` válido e um mock/fixture do arquivo `mitm_capture_file()` no formato HAR esperado, `send_request` retorna um `StepResponse` correto (status, headers, cookies, body) — testável sem mitmproxy real rodando, usando um arquivo de captura fixo como fixture de teste.
-- [ ] Simulando uma falha do `curl` (ex.: mockando `subprocess.run` pra retornar exit code ≠ 0), `send_request` retorna `StepResponse(status_code=0, cookies={}, ...)` no formato especificado.
-- [ ] O comando de curl montado internamente inclui `--proxy`, `--cacert`, timeout, e **não** inclui `-L`/`--location`.
-- [ ] `HttpTransport` (arquivo antigo) removido — só fechar esse critério depois de T15 confirmar que não há mais nenhuma referência a ele no projeto.
+- [X] Dado um `final_request` válido e um mock/fixture do arquivo `mitm_capture_file()` no formato HAR esperado, `send_request` retorna um `StepResponse` correto (status, headers, cookies, body) — testável sem mitmproxy real rodando, usando um arquivo de captura fixo como fixture de teste.
+- [X] Simulando uma falha do `curl` (ex.: mockando `subprocess.run` pra retornar exit code ≠ 0), `send_request` retorna `StepResponse(status_code=0, cookies={}, ...)` no formato especificado.
+- [X] O comando de curl montado internamente inclui `--proxy`, `--cacert`, timeout, e **não** inclui `-L`/`--location`.
+- [X] `HttpTransport` (arquivo antigo) removido — só fechar esse critério depois de T15 confirmar que não há mais nenhuma referência a ele no projeto.
 
 ---
 
