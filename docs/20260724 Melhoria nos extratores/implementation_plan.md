@@ -320,10 +320,10 @@ def write_curl(self, step: Step, final_request: StepRequest) -> None:
 - Atributo `self.curls_dir` no `__init__`: avaliar se ainda é usado por algo além de `write_curl` — se não for, pode ser removido também (checar antes; pelos arquivos vistos, só era usado ali).
 
 **Critérios de aceite:**
-- [ ] `write_curl` não existe mais na classe.
-- [ ] Nenhum import de `CurlGenerator` sobra neste arquivo.
-- [ ] `build_final_request` continua funcionando sem nenhuma mudança de comportamento.
-- [ ] Nenhum outro arquivo do projeto ainda chama `RequestBuilder.write_curl` (buscar no repositório inteiro — isso só pode ser confirmado depois de T15, que é quem tira a chamada de dentro do `Engine`; se T15 ainda não foi feita, deixe uma nota explícita de que essa checagem final fica pendente).
+- [X] `write_curl` não existe mais na classe.
+- [X] Nenhum import de `CurlGenerator` sobra neste arquivo.
+- [X] `build_final_request` continua funcionando sem nenhuma mudança de comportamento.
+- [X] Nenhum outro arquivo do projeto ainda chama `RequestBuilder.write_curl` (buscar no repositório inteiro — isso só pode ser confirmado depois de T15, que é quem tira a chamada de dentro do `Engine`; se T15 ainda não foi feita, deixe uma nota explícita de que essa checagem final fica pendente).
 
 ---
 

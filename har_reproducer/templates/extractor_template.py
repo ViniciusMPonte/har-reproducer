@@ -6,6 +6,10 @@ from har_reproducer.fs_io import WorkspaceDir
 class ExtractorTemplate:
 
     @staticmethod
+    def render_bash_script(script: str) -> str:
+        return f"#!/bin/bash\n{script}\n"
+
+    @staticmethod
     def render_temp_script(
             safe_token_id: str,
             code: str,

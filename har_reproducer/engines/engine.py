@@ -17,6 +17,7 @@ from har_reproducer.reproduction import HttpTransport, RequestBuilder
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
+from templates import ExtractorTemplate
 
 
 class Engine:
@@ -111,7 +112,7 @@ class Engine:
         self._persist_step(index, final_request, response)
         print(f"Step {index} completed with status {response.status_code}")
 
-        self._persist_template_curl(step)
+        self._persist_template_curl(index, step.analysis.curl_template)
 
         return response
 
@@ -119,8 +120,8 @@ class Engine:
         Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
         Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
-    def _persist_template_curl(self, step: Step) -> None:
-        self.request_builder.write_curl(step)
+    def _persist_template_curl(self, index: int, curl_template: str) -> None:
+        Workspace.curl_file(index).write_text(ExtractorTemplate.render_bash_script(curl_template), encoding="utf-8")
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if not last_response or not self.success_criteria:

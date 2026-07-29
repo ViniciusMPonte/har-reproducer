@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 from har_reproducer.models import Step, StepRequest
-from har_reproducer.reproduction.curl_generator import CurlGenerator
 from har_reproducer.session import SessionStore
 
 
@@ -34,9 +33,3 @@ class RequestBuilder:
         if isinstance(body, bytes):
             return body.decode("utf-8", errors="replace")
         return self.session_store.render(body)
-
-    def write_curl(self, step: Step) -> None:
-        curl_cmd: str = CurlGenerator().generate(step.request, step.analysis.dynamic_tokens)
-
-        curl_file: Path = self.curls_dir / f"req_{step.index:04d}.curl.sh"
-        curl_file.write_text(f"#!/bin/bash\n{curl_cmd}\n", encoding="utf-8")
