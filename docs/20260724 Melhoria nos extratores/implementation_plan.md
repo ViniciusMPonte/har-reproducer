@@ -447,12 +447,12 @@ def _attempt_step(self, step):
 6. Remover `update_session_tokens`, `_should_refresh_token`, `_refresh_token`, `self.extractor_runner` (já cobertos em T09 — só confirmar que ficaram removidos aqui).
 
 **Critérios de aceite:**
-- [ ] `Engine.USES_NETWORK` existe e vale `True`.
-- [ ] Rodando um fluxo de teste (mesmo que com mocks de `CurlHttpTransport`), o arquivo `.curl.sh` só é escrito quando `response.status_code != 0`; num cenário forçado de falha total de transporte (`status_code == 0`), nenhum arquivo de curl é escrito para aquele index.
-- [ ] O `curl_template` escrito em disco é exatamente `analysis.curl_template` retornado por `analyze_step` — sem nenhuma segunda chamada a `CurlGenerator` dentro do `Engine`.
-- [ ] `self.http_transport` é uma instância de `CurlHttpTransport`, não mais `HttpTransport`.
-- [ ] Nenhuma referência a `HttpTransport` (import ou uso) sobra em `engine.py` — feito isso, fechar o critério pendente de T12 (remoção do arquivo `http_transport.py`) e o critério pendente de T11 (nenhum outro lugar chama `write_curl`).
-- [ ] `update_session_tokens`, `_should_refresh_token`, `_refresh_token`, `self.extractor_runner` não existem mais em `Engine`.
+- [X] `Engine.USES_NETWORK` existe e vale `True`.
+- [X] Rodando um fluxo de teste (mesmo que com mocks de `CurlHttpTransport`), o arquivo `.curl.sh` só é escrito quando `response.status_code != 0`; num cenário forçado de falha total de transporte (`status_code == 0`), nenhum arquivo de curl é escrito para aquele index.
+- [X] O `curl_template` escrito em disco é exatamente `analysis.curl_template` retornado por `analyze_step` — sem nenhuma segunda chamada a `CurlGenerator` dentro do `Engine`.
+- [X] `self.http_transport` é uma instância de `CurlHttpTransport`, não mais `HttpTransport`.
+- [X] Nenhuma referência a `HttpTransport` (import ou uso) sobra em `engine.py` — feito isso, fechar o critério pendente de T12 (remoção do arquivo `http_transport.py`) e o critério pendente de T11 (nenhum outro lugar chama `write_curl`).
+- [X] `update_session_tokens`, `_should_refresh_token`, `_refresh_token`, `self.extractor_runner` não existem mais em `Engine`.
 
 ---
 

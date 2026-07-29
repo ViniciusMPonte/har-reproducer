@@ -14,9 +14,9 @@ class CurlHttpTransport:
     CAPTURE_READ_ATTEMPTS: ClassVar[int] = 5
     CAPTURE_READ_RETRY_INTERVAL_SECONDS: ClassVar[float] = 0.1
 
-    def __init__(self, port: int, ca_cert_path: Path) -> None:
+    def __init__(self, port: int, ca_cert_path: Optional[Path]) -> None:
         self.port: int = port
-        self.ca_cert_path: Path = ca_cert_path
+        self.ca_cert_path: Optional[Path] = ca_cert_path
         self.curl_generator: CurlGenerator = CurlGenerator()
 
     def send_request(self, final_request: StepRequest, step_index: int) -> StepResponse:
@@ -46,11 +46,17 @@ class CurlHttpTransport:
         curl_literal: str = self.curl_generator.generate(final_request, tokens=[])
         proxy_flags: List[str] = [
             f"--proxy http://127.0.0.1:{self.port}",
-            f"--cacert {shlex.quote(str(self.ca_cert_path))}",
+            self._tls_flag(),
             "-o /dev/null",
             "-sS",
         ]
         return " \\\n     ".join([curl_literal] + proxy_flags)
+
+    def _tls_flag(self) -> str:
+        if self.ca_cert_path is None:
+            return "--ssl-insecure"
+
+        return f"--cacert {shlex.quote(str(self.ca_cert_path))}"
 
     @staticmethod
     def _decode_stderr(completed: subprocess.CompletedProcess) -> str:

@@ -13,7 +13,7 @@ from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import HttpTransport, RequestBuilder
+from har_reproducer.reproduction import CurlHttpTransport, RequestBuilder
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
@@ -21,6 +21,7 @@ from templates import ExtractorTemplate
 
 
 class Engine:
+    USES_NETWORK: ClassVar[bool] = True
     RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = {400, 401}
     MAX_STEP_ATTEMPTS: ClassVar[int] = 2
 
@@ -43,7 +44,7 @@ class Engine:
         self.validator: Validator = Validator()
 
         self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
-        self.http_transport: HttpTransport = HttpTransport()
+        self.http_transport: CurlHttpTransport = CurlHttpTransport()
         self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
         self.success_criteria, llm = self._load_project_config(config_path)
@@ -112,7 +113,8 @@ class Engine:
         self._persist_step(index, final_request, response)
         print(f"Step {index} completed with status {response.status_code}")
 
-        self._persist_template_curl(index, step.analysis.curl_template)
+        if response.status_code != 0:
+            self._persist_template_curl(index, step.analysis.curl_template)
 
         return response
 
