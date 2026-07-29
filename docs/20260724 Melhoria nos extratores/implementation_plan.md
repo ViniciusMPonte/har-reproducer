@@ -377,10 +377,10 @@ Constrói `StepResponse` diretamente do `httpx.Response`. Em erro, monta `StepRe
 3. Escrita **síncrona**, dentro do próprio hook `response` — sem fila, sem thread, sem escrita assíncrona.
 
 **Critérios de aceite:**
-- [ ] Rodando `mitmdump -s mitm_addon.py` manualmente e fazendo uma requisição HTTP de teste através dele (ex.: `curl --proxy http://127.0.0.1:8080 http://example.com`), o arquivo de captura é criado/atualizado com um HAR válido daquela requisição.
-- [ ] O JSON gerado, quando passado para `HARParser.get_entries()` seguido de `HARParser.parse_entry(entries[0], 0)`, produz um `Step` válido sem lançar exceção — **este é o critério de aceite mais importante da task**: validar de ponta a ponta contra o parser real, não só visualmente.
-- [ ] Uma segunda requisição sobrescreve o arquivo (não acumula, não vira lista de duas entries).
-- [ ] Testar especificamente com uma URL HTTPS (não só HTTP) — exercita a parte de interceptação TLS do mitmproxy, que é o caso de uso real do projeto.
+- [X] Rodando `mitmdump -s mitm_addon.py` manualmente e fazendo uma requisição HTTP de teste através dele (ex.: `curl --proxy http://127.0.0.1:8080 http://example.com`), o arquivo de captura é criado/atualizado com um HAR válido daquela requisição.
+- [X] O JSON gerado, quando passado para `HARParser.get_entries()` seguido de `HARParser.parse_entry(entries[0], 0)`, produz um `Step` válido sem lançar exceção — **este é o critério de aceite mais importante da task**: validar de ponta a ponta contra o parser real, não só visualmente.
+- [X] Uma segunda requisição sobrescreve o arquivo (não acumula, não vira lista de duas entries).
+- [X] Testar especificamente com uma URL HTTPS (não só HTTP) — exercita a parte de interceptação TLS do mitmproxy, que é o caso de uso real do projeto.
 
 ---
 

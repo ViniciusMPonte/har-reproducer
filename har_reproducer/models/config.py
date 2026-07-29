@@ -15,4 +15,4 @@ class LLMSettings(BaseModel):
 class ProjectConfig(BaseModel):
     llm: Optional[LLMSettings] = None
     success_criteria: List[SuccessCriterion] = Field(default_factory=list)
-    proxy_port: Optional[int] = 8089
+    proxy_port: Optional[int] = None
