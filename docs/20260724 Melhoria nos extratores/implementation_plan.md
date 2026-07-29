@@ -468,9 +468,9 @@ def _attempt_step(self, step):
 **Estado esperado depois:** `DryEngine` declara `USES_NETWORK: ClassVar[bool] = False`, sobrescrevendo o valor herdado de `Engine`.
 
 **Critérios de aceite:**
-- [ ] `DryEngine.USES_NETWORK` vale `False`.
-- [ ] `Engine.USES_NETWORK` (classe base) continua valendo `True` — a sobrescrita não afeta a classe base nem qualquer outra subclasse futura que não a declare explicitamente.
-- [ ] `DryEngine.execute_step` não foi alterado nesta task (comportamento existente preservado).
+- [X] `DryEngine.USES_NETWORK` vale `False`.
+- [X] `Engine.USES_NETWORK` (classe base) continua valendo `True` — a sobrescrita não afeta a classe base nem qualquer outra subclasse futura que não a declare explicitamente.
+- [X] `DryEngine.execute_step` não foi alterado nesta task (comportamento existente preservado).
 
 ---
 
