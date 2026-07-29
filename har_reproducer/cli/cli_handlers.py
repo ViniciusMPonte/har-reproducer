@@ -42,10 +42,16 @@ class CliHandlers:
 
     def _run_with_proxy(self, mode, har_path, output_dir, config_path) -> bool:
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
-        orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(project_config.proxy_port, project_config.ca_cert_path)
+        orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+            project_config.proxy_port,
+            project_config.ca_cert_path
+        )
         engine: Engine = self._engine_factory.create(
-            mode, har_path, output_dir, config_path,
-            proxy_port=orchestrator.port, ca_cert_path=orchestrator.ca_cert_path,
+            mode,
+            har_path,
+            output_dir,
+            config_path,
+            proxy_port=orchestrator.port
         )
         return orchestrator.run(engine.run)
 

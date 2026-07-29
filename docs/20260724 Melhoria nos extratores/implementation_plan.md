@@ -505,9 +505,9 @@ def handle_run(self, args: Namespace) -> None:
 - Resto do método (mensagens de sucesso/falha) não muda.
 
 **Critérios de aceite:**
-- [ ] Rodando com `--mode dry`, nenhum processo `mitmdump` é criado (checável via lista de processos durante um teste automatizado, ou logging explícito).
-- [ ] Rodando com `--mode main` (default), o `mitmdump` sobe antes da execução e é derrubado ao final, mesmo se `engine.run()` lançar exceção.
-- [ ] O comportamento de mensagens de sucesso/falha impresso ao final continua idêntico ao atual.
+- [X] Rodando com `--mode dry`, nenhum processo `mitmdump` é criado (checável via lista de processos durante um teste automatizado, ou logging explícito).
+- [X] Rodando com `--mode main` (default), o `mitmdump` sobe antes da execução e é derrubado ao final, mesmo se `engine.run()` lançar exceção.
+- [X] O comportamento de mensagens de sucesso/falha impresso ao final continua idêntico ao atual.
 
 ---
 

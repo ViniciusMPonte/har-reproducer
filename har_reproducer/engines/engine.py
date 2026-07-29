@@ -31,7 +31,6 @@ class Engine:
             output_dir: Path,
             config_path: Optional[Path] = None,
             proxy_port: Optional[int] = None,
-            ca_cert_path: Optional[Path] = None,
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
@@ -45,11 +44,12 @@ class Engine:
         self.session_store: SessionStore = SessionStore()
         self.validator: Validator = Validator()
 
+        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
+
         self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
-        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
+        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, project_config.ca_cert_path)
         self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
-        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
         llm: Optional[BaseChatModel] = self._build_llm(project_config)
         self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)

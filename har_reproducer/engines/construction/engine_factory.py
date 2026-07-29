@@ -24,7 +24,6 @@ class EngineFactory:
             output_dir: Path,
             config_path: Optional[Path],
             proxy_port: Optional[int] = None,
-            ca_cert_path: Optional[Path] = None,
     ) -> Engine:
         engine_cls: Type[Engine] = cls.resolve_class(mode)
         return engine_cls(
@@ -32,5 +31,4 @@ class EngineFactory:
             output_dir,
             config_path=config_path,
             proxy_port=proxy_port,
-            ca_cert_path=ca_cert_path,
         )
