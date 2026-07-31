@@ -8,3 +8,4 @@ class WorkspaceDir(str, Enum):
     EXTRACTORS = "extractors"
     TEMP_EXTRACTORS = "temp_extractors"
     MITM_CAPTURE = "mitm_capture"
+    REPLAYS = "replays"

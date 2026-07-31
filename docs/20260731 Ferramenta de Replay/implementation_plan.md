@@ -42,15 +42,15 @@ execução, por `run_id`), criadas sob demanda, não todas de uma vez no `init()
   `curl_file` (`f"{index:04d}"`).
 
 **Critérios de aceite:**
-- [ ] `WorkspaceDir.REPLAYS.value == "replays"`.
-- [ ] Após `Workspace.init(tmp_path)`, `<tmp_path>/replays` existe e está vazio.
-- [ ] `Workspace.replay_run_dir("20260730_143210")` retorna
+- [X] `WorkspaceDir.REPLAYS.value == "replays"`.
+- [X] Após `Workspace.init(tmp_path)`, `<tmp_path>/replays` existe e está vazio.
+- [X] `Workspace.replay_run_dir("20260730_143210")` retorna
       `<tmp_path>/replays/20260730_143210` e cria esse diretório no disco.
-- [ ] `Workspace.replay_response_file("20260730_143210", 3)` retorna
+- [X] `Workspace.replay_response_file("20260730_143210", 3)` retorna
       `<tmp_path>/replays/20260730_143210/res_0003.json`, com o diretório pai já criado.
-- [ ] Chamar `replay_run_dir`/`replay_response_file` duas vezes com o mesmo `run_id` não
+- [X] Chamar `replay_run_dir`/`replay_response_file` duas vezes com o mesmo `run_id` não
       lança erro.
-- [ ] `curl_file`, `response_file`, `request_file`, `extractor_file`,
+- [X] `curl_file`, `response_file`, `request_file`, `extractor_file`,
       `mitm_capture_file`, `get_root_path`, `get_mitmproxy_ca_path` continuam
       funcionando exatamente como antes — nenhuma regressão.
 

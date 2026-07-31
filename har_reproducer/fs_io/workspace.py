@@ -13,6 +13,7 @@ class Workspace:
     extractors: Path
     temp_extractors: Path
     mitm_capture: Path
+    replays: Path
 
     @classmethod
     def init(cls, output_dir: Path) -> None:
@@ -69,3 +70,15 @@ class Workspace:
     def curl_file(cls, index: int) -> Path:
         cls._ensure_initialized()
         return cls.curls / f"req_{index:04d}.curl.sh"
+
+    @classmethod
+    def replay_run_dir(cls, run_id: str) -> Path:
+        cls._ensure_initialized()
+        path: Path = cls.replays / run_id
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @classmethod
+    def replay_response_file(cls, run_id: str, index: int) -> Path:
+        cls._ensure_initialized()
+        return cls.replay_run_dir(run_id) / f"res_{index:04d}.json"
