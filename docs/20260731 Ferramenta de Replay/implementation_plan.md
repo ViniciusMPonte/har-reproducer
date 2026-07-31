@@ -703,12 +703,12 @@ def handle_parse(self, args: Namespace) -> None:
   `_reset_output_dir` — tratado em T13/T14).
 
 **Critérios de aceite:**
-- [ ] `run --har x.har` (sem `--no-reset`) continua apagando/recriando `output_dir`,
+- [X] `run --har x.har` (sem `--no-reset`) continua apagando/recriando `output_dir`,
       igual hoje.
-- [ ] `run --har x.har --no-reset` NÃO apaga `output_dir` existente.
-- [ ] Mesmo comportamento pra `parse`.
-- [ ] `args.reset_output_dir` é `True` por default quando a flag não é passada.
-- [ ] Nenhuma outra parte de `handle_run`/`handle_parse` muda.
+- [X] `run --har x.har --no-reset` NÃO apaga `output_dir` existente.
+- [X] Mesmo comportamento pra `parse`.
+- [X] `args.reset_output_dir` é `True` por default quando a flag não é passada.
+- [X] Nenhuma outra parte de `handle_run`/`handle_parse` muda.
 
 ---
 

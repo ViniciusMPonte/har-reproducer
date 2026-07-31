@@ -3,8 +3,8 @@ from __future__ import annotations
 import argparse
 from argparse import ArgumentParser, _SubParsersAction
 
-from har_reproducer.engines import EngineMode
 from har_reproducer.cli.cli_handlers import CliHandlers
+from har_reproducer.engines import EngineMode
 
 
 class CliParser:
@@ -25,6 +25,13 @@ class CliParser:
         parse_parser: ArgumentParser = subparsers.add_parser("parse")
         parse_parser.add_argument("--har", required=True, help="Path to HAR file")
         parse_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
+        parse_parser.add_argument(
+            "--no-reset",
+            dest="reset_output_dir",
+            action="store_false",
+            default=True,
+            help="Não apagar/recriar o diretório de saída antes de rodar (default: apaga e recria)",
+        )
         parse_parser.set_defaults(func=self._handlers.handle_parse)
 
     def _build_run_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) -> None:
@@ -38,4 +45,11 @@ class CliParser:
             help="Engine execution mode",
         )
         run_parser.add_argument("--config", help="Path to project config (JSON)")
+        run_parser.add_argument(
+            "--no-reset",
+            dest="reset_output_dir",
+            action="store_false",
+            default=True,
+            help="Não apagar/recriar o diretório de saída antes de rodar (default: apaga e recria)",
+        )
         run_parser.set_defaults(func=self._handlers.handle_run)

@@ -23,7 +23,8 @@ class CliHandlers:
     def handle_run(self, args: Namespace) -> None:
         har_path: Path = Path(args.har)
         output_dir: Path = self._resolve_output_dir(args, har_path)
-        self._reset_output_dir(output_dir)
+        if args.reset_output_dir:
+            self._reset_output_dir(output_dir)
         config_path: Optional[Path] = Path(args.config) if args.config else None
 
         mode: EngineMode = EngineMode(args.mode)
@@ -65,7 +66,8 @@ class CliHandlers:
     def handle_parse(self, args: Namespace) -> None:
         har_path: Path = Path(args.har)
         output_dir: Path = self._resolve_output_dir(args, har_path)
-        self._reset_output_dir(output_dir)
+        if args.reset_output_dir:
+            self._reset_output_dir(output_dir)
         count: int = self._har_parser.split_har(har_path, output_dir)
         print(f"Parsed HAR into {count} steps.")
 
