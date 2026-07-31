@@ -18,3 +18,4 @@ class ProjectConfig(BaseModel):
     success_criteria: List[SuccessCriterion] = Field(default_factory=list)
     proxy_port: Optional[int] = None
     ca_cert_path: Optional[Path] = None
+    response_reference_dir: Optional[Path] = None

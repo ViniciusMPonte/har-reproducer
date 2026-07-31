@@ -89,14 +89,14 @@ class ProjectConfig(BaseModel):
   deve depender de `Workspace` já estar inicializado.
 
 **Critérios de aceite:**
-- [ ] `ProjectConfig()` continua funcionando, com `response_reference_dir is None`.
-- [ ] `ProjectConfig(response_reference_dir="/algum/caminho")` aceita e converte pra
+- [X] `ProjectConfig()` continua funcionando, com `response_reference_dir is None`.
+- [X] `ProjectConfig(response_reference_dir="/algum/caminho")` aceita e converte pra
       `Path`.
-- [ ] JSON de config sem o campo continua parseando normalmente via
+- [X] JSON de config sem o campo continua parseando normalmente via
       `ProjectConfigLoader.load` (retrocompatibilidade).
-- [ ] JSON de config com `"response_reference_dir": "/algum/caminho"` é parseado
+- [X] JSON de config com `"response_reference_dir": "/algum/caminho"` é parseado
       corretamente.
-- [ ] Nenhuma regressão nos campos existentes (`llm`, `success_criteria`, `proxy_port`,
+- [X] Nenhuma regressão nos campos existentes (`llm`, `success_criteria`, `proxy_port`,
       `ca_cert_path`).
 
 ---
