@@ -545,19 +545,19 @@ class ReplayTokenResolver:
   público sem instanciar `SessionStore`.
 
 **Critérios de aceite:**
-- [ ] Token cujo `origin_step` está em `schedule`: `run_existing` é chamado com
+- [X] Token cujo `origin_step` está em `schedule`: `run_existing` é chamado com
       `replay_run_dir`.
-- [ ] Token cujo `origin_step` NÃO está em `schedule`: `run_existing` é chamado com
+- [X] Token cujo `origin_step` NÃO está em `schedule`: `run_existing` é chamado com
       `res_refer_dir`.
-- [ ] Token sem linha de comentário correspondente (origin desconhecido): tratado como
+- [X] Token sem linha de comentário correspondente (origin desconhecido): tratado como
       "fora do schedule", usa `res_refer_dir`.
-- [ ] Mesmo `token_id` aparecendo mais de uma vez no curl: `run_existing` é chamado uma
+- [X] Mesmo `token_id` aparecendo mais de uma vez no curl: `run_existing` é chamado uma
       única vez pra esse `token_id`.
-- [ ] Dois tokens diferentes, origens diferentes (um dentro do schedule, outro fora):
+- [X] Dois tokens diferentes, origens diferentes (um dentro do schedule, outro fora):
       cada um usa o diretório correto, independentemente.
-- [ ] `run_existing` retornando `None` pra um token: `set_token` não é chamado pra esse
+- [X] `run_existing` retornando `None` pra um token: `set_token` não é chamado pra esse
       `token_id`, mas a resolução dos demais tokens do mesmo curl continua.
-- [ ] Nenhuma exceção propaga de `resolve()` mesmo se algum extractor falhar.
+- [X] Nenhuma exceção propaga de `resolve()` mesmo se algum extractor falhar.
 
 ---
 

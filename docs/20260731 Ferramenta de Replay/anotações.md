@@ -1,0 +1,1 @@
+- Não gostei muito de ter o replay/replay_token_resolver.py como um arquivo separado do tracking/token_resolver.py, no futuro acho que vou unificar.
