@@ -923,22 +923,22 @@ Ver T11 — só o cálculo de schedule existe até aqui.
   `FileNotFoundError`, que deve propagar.
 
 **Critérios de aceite:**
-- [ ] `run_all()` processa todos os steps existentes em ordem ascendente, persiste um
+- [X] `run_all()` processa todos os steps existentes em ordem ascendente, persiste um
       `res_XXXX.json` em `replays/<run_id>/` pra cada um, retorna o resultado de
       `matches_original` do último.
-- [ ] `run_slice(2, 4)` processa exatamente os steps 2, 3 e 4, nessa ordem.
-- [ ] `run_smart(2, 5)`, com step 5 dependendo de step 3: processa só 3 e 5 (nessa
+- [X] `run_slice(2, 4)` processa exatamente os steps 2, 3 e 4, nessa ordem.
+- [X] `run_smart(2, 5)`, com step 5 dependendo de step 3: processa só 3 e 5 (nessa
       ordem); nenhum arquivo é persistido pra 2 ou 4; nenhum print acontece pra 2 ou 4.
-- [ ] `run_list(caminho)` processa os steps na ordem exata do arquivo, mesmo fora de
+- [X] `run_list(caminho)` processa os steps na ordem exata do arquivo, mesmo fora de
       ordem crescente.
-- [ ] Step cujo token depende de outro step DENTRO do schedule: `resolve` é chamado com
+- [X] Step cujo token depende de outro step DENTRO do schedule: `resolve` é chamado com
       `self.replay_run_dir` pra esse token (verificável via spy/mock).
-- [ ] Step cujo token depende de um step FORA do schedule: `resolve` é chamado com
+- [X] Step cujo token depende de um step FORA do schedule: `resolve` é chamado com
       `self.res_refer_dir`.
-- [ ] Resposta com status 401 na primeira tentativa e 200 na segunda: só a resposta
+- [X] Resposta com status 401 na primeira tentativa e 200 na segunda: só a resposta
       final (200) é persistida em `replay_response_file(run_id, index)`.
-- [ ] Nenhum `req_XXXX.json` é persistido em nenhum momento pelo `ReplayRunner`.
-- [ ] O print final de validação aparece uma única vez por chamada de
+- [X] Nenhum `req_XXXX.json` é persistido em nenhum momento pelo `ReplayRunner`.
+- [X] O print final de validação aparece uma única vez por chamada de
       `run_all`/`run_slice`/`run_smart`/`run_list`, referenciando o índice do último
       step processado (não necessariamente o maior índice, no caso do modo `list`).
 

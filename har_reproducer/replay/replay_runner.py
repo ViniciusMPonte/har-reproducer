@@ -4,14 +4,92 @@ from re import Match, Pattern
 from typing import ClassVar, List, Optional, Set, Tuple
 
 from har_reproducer.fs_io import Workspace
+from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
+from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
+from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
+from har_reproducer.session.session_store import SessionStore
 
 
 class ReplayRunner:
     STEP_FILENAME_PATTERN: ClassVar[Pattern[str]] = re.compile(r"req_(\d+)\.curl\.sh")
 
-    def __init__(self, dependency_parser: CurlDependencyParser) -> None:
+    def __init__(
+            self,
+            dependency_parser: CurlDependencyParser,
+            session_store: SessionStore,
+            http_transport: CurlHttpTransport,
+            replay_token_resolver: ReplayTokenResolver,
+            retry_policy: StepRetryPolicy,
+            comparator: ReplayResultComparator,
+            run_id: str,
+            replay_run_dir: Path,
+            res_refer_dir: Path,
+    ) -> None:
         self.dependency_parser: CurlDependencyParser = dependency_parser
+        self.session_store: SessionStore = session_store
+        self.http_transport: CurlHttpTransport = http_transport
+        self.replay_token_resolver: ReplayTokenResolver = replay_token_resolver
+        self.retry_policy: StepRetryPolicy = retry_policy
+        self.comparator: ReplayResultComparator = comparator
+        self.run_id: str = run_id
+        self.replay_run_dir: Path = replay_run_dir
+        self.res_refer_dir: Path = res_refer_dir
+
+    def run_all(self) -> bool:
+        ordered_indexes, schedule = self._schedule_all()
+        return self._run_schedule(ordered_indexes, schedule)
+
+    def run_slice(self, from_index: Optional[int], to_index: Optional[int]) -> bool:
+        ordered_indexes, schedule = self._schedule_slice(from_index, to_index)
+        return self._run_schedule(ordered_indexes, schedule)
+
+    def run_smart(self, from_index: Optional[int], to_index: Optional[int]) -> bool:
+        ordered_indexes, schedule = self._schedule_smart(from_index, to_index)
+        return self._run_schedule(ordered_indexes, schedule)
+
+    def run_list(self, steps_file: Path) -> bool:
+        ordered_indexes, schedule = self._schedule_list(steps_file)
+        return self._run_schedule(ordered_indexes, schedule)
+
+    def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
+        if not ordered_indexes:
+            raise ValueError("ReplayRunner: schedule vazio — nenhum step para processar.")
+
+        last_index: int = ordered_indexes[0]
+        last_response: StepResponse = self._run_step(last_index, schedule)
+        for index in ordered_indexes[1:]:
+            last_response = self._run_step(index, schedule)
+            last_index = index
+
+        is_match: bool = self.comparator.matches_original(last_index, last_response)
+        print(
+            f"\nReplay Validation Result: {'✓ SUCCESS' if is_match else '✗ MISMATCH'} "
+            f"(step {last_index} status code vs. original)"
+        )
+        return is_match
+
+    def _run_step(self, index: int, schedule: Set[int]) -> StepResponse:
+        curl_text: str = Workspace.curl_file(index).read_text(encoding="utf-8")
+
+        def attempt() -> StepResponse:
+            self.replay_token_resolver.resolve(curl_text, schedule, self.replay_run_dir, self.res_refer_dir)
+            curl_resolved: str = self.session_store.render(curl_text)
+            return self.http_transport.send_request(curl_resolved, index)
+
+        def recover(response: StepResponse) -> bool:
+            if response.status_code not in StepRetryPolicy.RECOVERABLE_STATUS_CODES:
+                return False
+            print(f"Detected {response.status_code}. Attempting deterministic recovery (token refresh)...")
+            return True
+
+        response: StepResponse = self.retry_policy.execute(index, attempt, recover)
+        Workspace.replay_response_file(self.run_id, index).write_text(
+            response.model_dump_json(indent=2), encoding="utf-8"
+        )
+        print(f"Step {index} completed with status {response.status_code}")
+        return response
 
     def _schedule_all(self) -> Tuple[List[int], Set[int]]:
         ordered_indexes: List[int] = self._existing_step_indexes()
