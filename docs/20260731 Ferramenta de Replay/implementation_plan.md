@@ -1083,23 +1083,23 @@ def _validate_replay_mode_flags(self, args: Namespace) -> None:
   desta task, essa referência passa a resolver de verdade.
 
 **Critérios de aceite:**
-- [ ] `replay --output <workspace_válido> --mode all` roda sem erro e imprime o
+- [X] `replay --output <workspace_válido> --mode all` roda sem erro e imprime o
       resultado final via `_print_result`.
-- [ ] `replay --output <dir_sem_curls> --mode all` falha com erro claro, sem subir o
+- [X] `replay --output <dir_sem_curls> --mode all` falha com erro claro, sem subir o
       `mitmdump`.
-- [ ] `replay --output <dir_inexistente> --mode all` falha com erro claro, sem chamar
+- [X] `replay --output <dir_inexistente> --mode all` falha com erro claro, sem chamar
       `Workspace.init`.
-- [ ] `replay --output <workspace_válido> --mode all --from 2` falha com erro claro.
-- [ ] `replay --output <workspace_válido> --mode list` (sem `--steps-file`) falha com
+- [X] `replay --output <workspace_válido> --mode all --from 2` falha com erro claro.
+- [X] `replay --output <workspace_válido> --mode list` (sem `--steps-file`) falha com
       erro claro.
-- [ ] `replay --output <workspace_válido> --mode slice --from 5 --to 2` falha com erro
+- [X] `replay --output <workspace_válido> --mode slice --from 5 --to 2` falha com erro
       claro.
-- [ ] Config com `response_reference_dir` apontando pra diretório existente: esse
+- [X] Config com `response_reference_dir` apontando pra diretório existente: esse
       diretório chega como `res_refer_dir` no `ReplayRunner` construído.
-- [ ] Config com `response_reference_dir` apontando pra diretório inexistente: falha
+- [X] Config com `response_reference_dir` apontando pra diretório inexistente: falha
       com erro claro, antes de subir o proxy.
-- [ ] Config sem `response_reference_dir`: `res_refer_dir` cai pra
+- [X] Config sem `response_reference_dir`: `res_refer_dir` cai pra
       `Workspace.real_responses`.
-- [ ] `_reset_output_dir` nunca é chamado em nenhum caminho de `handle_replay`
+- [X] `_reset_output_dir` nunca é chamado em nenhum caminho de `handle_replay`
       (verificável via spy/mock).
-- [ ] `handle_run`/`handle_parse` continuam funcionando exatamente como antes.
+- [X] `handle_run`/`handle_parse` continuam funcionando exatamente como antes.
