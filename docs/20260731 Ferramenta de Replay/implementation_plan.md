@@ -614,17 +614,17 @@ class Engine:
   `retry_policy` — não precisa ser tocado.
 
 **Critérios de aceite:**
-- [ ] `Engine.RECOVERABLE_STATUS_CODES`/`Engine.MAX_STEP_ATTEMPTS` não existem mais
+- [X] `Engine.RECOVERABLE_STATUS_CODES`/`Engine.MAX_STEP_ATTEMPTS` não existem mais
       como atributos da classe.
-- [ ] `execute_step(step)` com status 200 na primeira tentativa retorna a resposta sem
+- [X] `execute_step(step)` com status 200 na primeira tentativa retorna a resposta sem
       chamar `handle_recovery`.
-- [ ] `execute_step(step)` com status 401 na primeira tentativa e sucesso na segunda:
+- [X] `execute_step(step)` com status 401 na primeira tentativa e sucesso na segunda:
       `token_resolver.resolve_all()` chamado uma vez, `_attempt_step` chamado duas
       vezes.
-- [ ] `execute_step(step)` esgotando as duas tentativas com status sempre recuperável
+- [X] `execute_step(step)` esgotando as duas tentativas com status sempre recuperável
       lança `RuntimeError("execute exhausted 2 attempts for step {step.index}")`.
-- [ ] `DryEngine.execute_step` continua funcionando sem mudança.
-- [ ] Nenhuma outra parte do `Engine` (`_reproduce`, `_process_entry`, `_persist_*`,
+- [X] `DryEngine.execute_step` continua funcionando sem mudança.
+- [X] Nenhuma outra parte do `Engine` (`_reproduce`, `_process_entry`, `_persist_*`,
       `_validate_final`, `_build_llm`, `_build_http_transport`) muda de comportamento.
 
 ---

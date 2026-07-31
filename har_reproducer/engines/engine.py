@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Set
+from typing import Any, ClassVar, Dict, List, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -13,7 +13,7 @@ from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import CurlHttpTransport
+from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
@@ -22,8 +22,6 @@ from templates import ExtractorTemplate
 
 class Engine:
     USES_NETWORK: ClassVar[bool] = True
-    RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = {400, 401}
-    MAX_STEP_ATTEMPTS: ClassVar[int] = 2
 
     def __init__(
             self,
@@ -43,6 +41,7 @@ class Engine:
 
         self.session_store: SessionStore = SessionStore()
         self.validator: Validator = Validator()
+        self.retry_policy: StepRetryPolicy = StepRetryPolicy()
 
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
 
@@ -125,7 +124,7 @@ class Engine:
         return is_success
 
     def handle_recovery(self, response: StepResponse) -> bool:
-        if response.status_code not in self.RECOVERABLE_STATUS_CODES:
+        if response.status_code not in self.retry_policy.RECOVERABLE_STATUS_CODES:
             return False
 
         print(
@@ -136,17 +135,7 @@ class Engine:
         return True
 
     def execute_step(self, step: Step) -> StepResponse:
-        for attempt in range(self.MAX_STEP_ATTEMPTS):
-            response: StepResponse = self._attempt_step(step)
-
-            is_last_attempt = attempt == self.MAX_STEP_ATTEMPTS - 1
-            if not is_last_attempt and self.handle_recovery(response):
-                print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
-                continue
-
-            return response
-
-        raise RuntimeError(f"execute_step exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step.index}")
+        return self.retry_policy.execute(step.index, lambda: self._attempt_step(step), self.handle_recovery)
 
     def _attempt_step(self, step: Step) -> StepResponse:
         assert self.http_transport is not None
