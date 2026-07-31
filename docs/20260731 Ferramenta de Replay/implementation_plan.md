@@ -145,14 +145,14 @@ class CurlDependencyParser:
   re-exportar ou não os componentes fica a critério de quem implementar).
 
 **Critérios de aceite:**
-- [ ] `parse("# Token abc123 comes from response of step 0\ncurl ...")` retorna
+- [X] `parse("# Token abc123 comes from response of step 0\ncurl ...")` retorna
       `{"abc123": 0}`.
-- [ ] `parse(texto_sem_comentario)` retorna `{}`.
-- [ ] Curl com múltiplas linhas de comentário (múltiplos tokens) retorna todas as
+- [X] `parse(texto_sem_comentario)` retorna `{}`.
+- [X] Curl com múltiplas linhas de comentário (múltiplos tokens) retorna todas as
       entradas.
-- [ ] Linha mal formada (ex. sem "comes from response of step") não gera entrada
+- [X] Linha mal formada (ex. sem "comes from response of step") não gera entrada
       espúria.
-- [ ] `token_id` aparecendo só dentro de um `{{extractor:...}}` no corpo do curl (fora
+- [X] `token_id` aparecendo só dentro de um `{{extractor:...}}` no corpo do curl (fora
       de uma linha de comentário) não interfere no resultado.
 
 ---
@@ -209,13 +209,13 @@ class ReplayResultComparator:
   com aviso.
 
 **Critérios de aceite:**
-- [ ] `matches_original(3, StepResponse(status_code=200, ...))` retorna `True` quando o
+- [X] `matches_original(3, StepResponse(status_code=200, ...))` retorna `True` quando o
       `res_0003.json` original tem `"status_code": 200`.
-- [ ] Retorna `False` quando os status codes divergem.
-- [ ] Retorna `False` (com print, sem exceção) quando o arquivo original não existe.
-- [ ] Retorna `False` (com print, sem exceção) quando o arquivo existe mas não tem
+- [X] Retorna `False` quando os status codes divergem.
+- [X] Retorna `False` (com print, sem exceção) quando o arquivo original não existe.
+- [X] Retorna `False` (com print, sem exceção) quando o arquivo existe mas não tem
       `status_code` reconhecível pela regex.
-- [ ] Não é afetado por diferenças em headers/body/cookies — só `status_code` importa.
+- [X] Não é afetado por diferenças em headers/body/cookies — só `status_code` importa.
 
 ---
 
