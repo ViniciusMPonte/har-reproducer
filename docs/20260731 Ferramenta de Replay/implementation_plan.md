@@ -977,15 +977,15 @@ def _build_replay_subparser(self, subparsers: _SubParsersAction[ArgumentParser])
   (`argparse` só guarda a referência à função, não a chama nesta task).
 
 **Critérios de aceite:**
-- [ ] `replay --output x --mode all` é aceito pelo parser sem erro de `argparse`.
-- [ ] `replay --mode all` (sem `--output`) falha com erro de `argparse`.
-- [ ] `replay --output x` (sem `--mode`) falha com erro de `argparse`.
-- [ ] `"smart"` e `"list"` estão entre os `choices` de `--mode` (checar que não foram
+- [X] `replay --output x --mode all` é aceito pelo parser sem erro de `argparse`.
+- [X] `replay --mode all` (sem `--output`) falha com erro de `argparse`.
+- [X] `replay --output x` (sem `--mode`) falha com erro de `argparse`.
+- [X] `"smart"` e `"list"` estão entre os `choices` de `--mode` (checar que não foram
       esquecidos).
-- [ ] `args.from_index`/`args.to_index` são `None` quando não passados, `int` quando
+- [X] `args.from_index`/`args.to_index` são `None` quando não passados, `int` quando
       passados.
-- [ ] `args.steps_file` é `None` quando `--steps-file` não é passado.
-- [ ] `run` e `parse` continuam funcionando exatamente como antes.
+- [X] `args.steps_file` é `None` quando `--steps-file` não é passado.
+- [X] `run` e `parse` continuam funcionando exatamente como antes.
 
 ---
 
