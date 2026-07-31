@@ -283,14 +283,14 @@ class StepRetryPolicy:
 - Esta task NÃO altera `engine.py` — só cria o componente novo (integração é T09).
 
 **Critérios de aceite:**
-- [ ] `execute(0, attempt_fn, recovery_fn)` chama `attempt_fn()` uma vez e retorna a
+- [X] `execute(0, attempt_fn, recovery_fn)` chama `attempt_fn()` uma vez e retorna a
       resposta se o status não for recuperável.
-- [ ] Status 400 na primeira tentativa + `recovery_fn` retornando `True`: `attempt_fn()`
+- [X] Status 400 na primeira tentativa + `recovery_fn` retornando `True`: `attempt_fn()`
       é chamado uma segunda vez; o retorno de `execute` é o da segunda chamada.
-- [ ] Todas as `MAX_STEP_ATTEMPTS` tentativas com status recuperável e `recovery_fn`
+- [X] Todas as `MAX_STEP_ATTEMPTS` tentativas com status recuperável e `recovery_fn`
       sempre `True`: `execute` lança `RuntimeError("execute exhausted 2 attempts for step {step_index}")`.
-- [ ] `recovery_fn` nunca é chamado na última tentativa, mesmo com status recuperável.
-- [ ] `MAX_STEP_ATTEMPTS`/`RECOVERABLE_STATUS_CODES` acessíveis via instância e via
+- [X] `recovery_fn` nunca é chamado na última tentativa, mesmo com status recuperável.
+- [X] `MAX_STEP_ATTEMPTS`/`RECOVERABLE_STATUS_CODES` acessíveis via instância e via
       classe (`StepRetryPolicy.RECOVERABLE_STATUS_CODES`).
 
 ---

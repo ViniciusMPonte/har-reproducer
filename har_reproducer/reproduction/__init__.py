@@ -3,6 +3,7 @@ from har_reproducer.reproduction.curl_http_transport import CurlHttpTransport
 from har_reproducer.reproduction.extractor_runner import ExtractorRunner
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.mitm_proxy_orchestrator import MitmProxyOrchestrator
+from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 
 __all__ = [
     "CurlGenerator",
@@ -10,4 +11,5 @@ __all__ = [
     "ExtractorRunner",
     "MitmEnv",
     "MitmProxyOrchestrator",
+    "StepRetryPolicy",
 ]
