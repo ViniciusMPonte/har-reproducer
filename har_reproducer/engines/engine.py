@@ -65,7 +65,7 @@ class Engine:
         if not project_config.llm:
             return None
 
-        llm = LLMFactory.create(project_config.llm)
+        llm: BaseChatModel = LLMFactory.create(project_config.llm)
         print(
             f"LLM fallback enabled from config: "
             f"provider={project_config.llm.provider} model={project_config.llm.model}"

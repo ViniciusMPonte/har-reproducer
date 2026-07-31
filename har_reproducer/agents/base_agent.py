@@ -1,6 +1,7 @@
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -17,6 +18,7 @@ from har_reproducer.templates import ExtractorTemplate
 
 class BaseAgent:
     MAX_LLM_ATTEMPTS: int = 5
+    RETRY_DELAY_SECONDS: int = 5
 
     def __init__(
             self,
@@ -148,6 +150,7 @@ class BaseAgent:
 
             last_error = error
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
+            time.sleep(self.RETRY_DELAY_SECONDS)
 
         self._cleanup_script(Workspace.temp_extractor_file(self.safe_token_id))
         return None
