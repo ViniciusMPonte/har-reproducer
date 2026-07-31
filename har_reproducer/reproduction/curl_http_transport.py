@@ -47,7 +47,7 @@ class CurlHttpTransport:
             "-o /dev/null",
             "-sS",
         ]
-        return " \\\n     ".join([curl_literal] + proxy_flags)
+        return " \\\n     ".join([curl_literal.strip()] + proxy_flags)
 
     def _tls_flag(self) -> str:
         if self.ca_cert_path is None:
