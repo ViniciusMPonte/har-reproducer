@@ -1,8 +1,9 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import ClassVar, Optional
+from typing import ClassVar, Dict, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import Extractor
@@ -17,11 +18,15 @@ class ExtractorRunner:
         self._cleanup_temp_file(extractor)
         return self._execute_extractor_script(extractor_file)
 
-    def run_existing(self, token_id: str) -> Optional[str]:
+    def run_existing(
+            self,
+            token_id: str,
+            response_override_dir: Optional[Path] = None,
+    ) -> Optional[str]:
         extractor_file: Path = Workspace.extractor_file(token_id)
         if not extractor_file.exists():
             return None
-        return self._execute_extractor_script(extractor_file)
+        return self._execute_extractor_script(extractor_file, response_override_dir)
 
     def _write_extractor_script(self, extractor: Extractor) -> Path:
         if extractor.origin_step is None:
@@ -44,13 +49,19 @@ class ExtractorRunner:
         if temp_file.exists():
             temp_file.unlink()
 
-    def _execute_extractor_script(self, extractor_file: Path) -> Optional[str]:
+    def _execute_extractor_script(
+            self,
+            extractor_file: Path,
+            response_override_dir: Optional[Path] = None,
+    ) -> Optional[str]:
+        env: Dict[str, str] = self._build_env(response_override_dir)
         try:
             result: CompletedProcess[str] = subprocess.run(
                 [sys.executable, str(extractor_file)],
                 capture_output=True,
                 text=True,
                 timeout=self.EXTRACTOR_TIMEOUT_SECONDS,
+                env=env,
             )
         except Exception:
             return None
@@ -58,3 +69,10 @@ class ExtractorRunner:
         if result.returncode != 0:
             return None
         return result.stdout.strip()
+
+    @staticmethod
+    def _build_env(response_override_dir: Optional[Path]) -> Dict[str, str]:
+        env: Dict[str, str] = dict(os.environ)
+        if response_override_dir is not None:
+            env["HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR"] = str(response_override_dir)
+        return env

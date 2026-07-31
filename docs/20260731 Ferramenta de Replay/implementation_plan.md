@@ -457,16 +457,16 @@ def _build_env(response_override_dir: Optional[Path]) -> Dict[str, str]:
   segundo argumento continuam funcionando (default `None` → comportamento idêntico).
 
 **Critérios de aceite:**
-- [ ] `run_existing("abc123")` (sem segundo argumento) funciona exatamente como hoje —
+- [X] `run_existing("abc123")` (sem segundo argumento) funciona exatamente como hoje —
       nenhuma env var extra é setada além do `os.environ` herdado.
-- [ ] `run_existing("abc123", Path("/tmp/algum_dir"))` seta
+- [X] `run_existing("abc123", Path("/tmp/algum_dir"))` seta
       `HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR=/tmp/algum_dir` no ambiente do subprocess.
-- [ ] Combinado com T06: `response_override_dir` apontando pra um diretório com
+- [X] Combinado com T06: `response_override_dir` apontando pra um diretório com
       `res_XXXX.json` diferente do original faz o extractor retornar o valor extraído
       da resposta alternativa.
-- [ ] `extractor_file` inexistente continua retornando `None`, com ou sem
+- [X] `extractor_file` inexistente continua retornando `None`, com ou sem
       `response_override_dir`.
-- [ ] Timeout/exit code != 0 continuam retornando `None`.
+- [X] Timeout/exit code != 0 continuam retornando `None`.
 
 ---
 
