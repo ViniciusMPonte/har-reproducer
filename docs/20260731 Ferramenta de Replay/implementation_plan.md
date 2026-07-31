@@ -799,20 +799,20 @@ class ReplayRunner:
   silenciosamente).
 
 **Critérios de aceite:**
-- [ ] `_schedule_all()` com steps 0,1,2 existentes retorna `([0,1,2], {0,1,2})`.
-- [ ] `_schedule_slice(None, None)` com steps 0..4 retorna `([0,1,2,3,4], {0,1,2,3,4})`.
-- [ ] `_schedule_slice(2, None)` com steps 0..4 retorna `([2,3,4], {2,3,4})`.
-- [ ] `_schedule_slice(None, 2)` com steps 0..4 retorna `([0,1,2], {0,1,2})`.
-- [ ] `_schedule_smart(2, 5)` com step 5 dependendo de step 3 (via comentário no curl de
+- [X] `_schedule_all()` com steps 0,1,2 existentes retorna `([0,1,2], {0,1,2})`.
+- [X] `_schedule_slice(None, None)` com steps 0..4 retorna `([0,1,2,3,4], {0,1,2,3,4})`.
+- [X] `_schedule_slice(2, None)` com steps 0..4 retorna `([2,3,4], {2,3,4})`.
+- [X] `_schedule_slice(None, 2)` com steps 0..4 retorna `([0,1,2], {0,1,2})`.
+- [X] `_schedule_smart(2, 5)` com step 5 dependendo de step 3 (via comentário no curl de
       step 5) e nenhuma outra dependência: retorna `([3, 5], {3, 5})` — steps 2 e 4 NÃO
       aparecem.
-- [ ] `_schedule_smart` com cadeia de dependência de dois níveis (5 depende de 3, que
+- [X] `_schedule_smart` com cadeia de dependência de dois níveis (5 depende de 3, que
       depende de 1, floor=0): inclui 1, 3 e 5.
-- [ ] `_schedule_smart` com floor maior que uma dependência necessária (floor=4, step 5
+- [X] `_schedule_smart` com floor maior que uma dependência necessária (floor=4, step 5
       depende de step 3): step 3 NÃO entra no schedule.
-- [ ] `_schedule_list` de um arquivo com `"2\n5\n2\n"` retorna `([2, 5, 2], {2, 5})` —
+- [X] `_schedule_list` de um arquivo com `"2\n5\n2\n"` retorna `([2, 5, 2], {2, 5})` —
       ordem do arquivo preservada na lista, duplicata não repetida no set.
-- [ ] `_schedule_list` com linhas em branco entre números ignora as linhas em branco.
+- [X] `_schedule_list` com linhas em branco entre números ignora as linhas em branco.
 
 ---
 
