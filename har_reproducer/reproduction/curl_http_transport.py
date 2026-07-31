@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
 from har_reproducer.fs_io import HARParser, Workspace
-from har_reproducer.models import Step, StepRequest, StepResponse
-from har_reproducer.reproduction.curl_generator import CurlGenerator
+from har_reproducer.models import Step, StepResponse
 
 
 class CurlHttpTransport:
@@ -17,10 +16,9 @@ class CurlHttpTransport:
     def __init__(self, port: int, ca_cert_path: Optional[Path]) -> None:
         self.port: int = port
         self.ca_cert_path: Optional[Path] = ca_cert_path
-        self.curl_generator: CurlGenerator = CurlGenerator()
 
-    def send_request(self, final_request: StepRequest, step_index: int) -> StepResponse:
-        curl_command: str = self._build_curl_command(final_request)
+    def send_request(self, curl_literal: str, step_index: int) -> StepResponse:
+        curl_command: str = self._build_curl_command(curl_literal)
 
         try:
             completed: subprocess.CompletedProcess = subprocess.run(
@@ -29,21 +27,20 @@ class CurlHttpTransport:
                 timeout=self.DEFAULT_TIMEOUT_SECONDS,
             )
         except (subprocess.TimeoutExpired, OSError) as exc:
-            return self._build_error_response(step_index, final_request, str(exc))
+            return self._build_error_response(step_index, str(exc))
 
         if completed.returncode != 0:
-            return self._build_error_response(step_index, final_request, self._decode_stderr(completed))
+            return self._build_error_response(step_index, self._decode_stderr(completed))
 
         response: Optional[StepResponse] = self._read_captured_response(step_index)
         if response is not None:
             return response
 
         return self._build_error_response(
-            step_index, final_request, "Falha ao ler a captura do mitmproxy após o curl ter sucesso."
+            step_index, "Falha ao ler a captura do mitmproxy após o curl ter sucesso."
         )
 
-    def _build_curl_command(self, final_request: StepRequest) -> str:
-        curl_literal: str = self.curl_generator.generate(final_request, tokens=[])
+    def _build_curl_command(self, curl_literal: str) -> str:
         proxy_flags: List[str] = [
             f"--proxy http://127.0.0.1:{self.port}",
             self._tls_flag(),
@@ -82,10 +79,10 @@ class CurlHttpTransport:
             return None
 
     @staticmethod
-    def _build_error_response(step_index: int, final_request: StepRequest, error_message: str) -> StepResponse:
+    def _build_error_response(step_index: int, error_message: str) -> StepResponse:
         print(
             f"Network error while executing step {step_index} "
-            f"({final_request.method} {final_request.url}): {error_message}"
+            f"message: {error_message}"
         )
         return StepResponse(
             status_code=0,

@@ -1,13 +1,12 @@
-from typing import Tuple, ClassVar
+from typing import ClassVar
 
-from har_reproducer.models import Step, StepRequest, StepResponse
 from har_reproducer.engines.engine import Engine
+from har_reproducer.models import Step, StepResponse
 
 
 class DryEngine(Engine):
     USES_NETWORK: ClassVar[bool] = False
 
-    def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
-        final_request: StepRequest = self.request_builder.build_final_request(step)
+    def execute_step(self, step: Step) -> StepResponse:
         assert step.response is not None
-        return final_request, step.response
+        return step.response

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Set
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
@@ -13,7 +13,7 @@ from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import CurlHttpTransport, RequestBuilder
+from har_reproducer.reproduction import CurlHttpTransport
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
@@ -46,8 +46,8 @@ class Engine:
 
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
 
-        self.request_builder: RequestBuilder = RequestBuilder(self.session_store, self.curls_dir)
-        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, project_config.ca_cert_path)
+        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port,
+                                                                                      project_config.ca_cert_path)
         self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
@@ -93,12 +93,13 @@ class Engine:
             first_entry: Step,
     ) -> StepResponse:
         step: Step = HARParser.parse_entry(entry, index)
+        self._persist_request_step(index, step.request)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
         self.token_resolver.resolve_all()
 
-        final_request, response = self.execute_step(step)
-        self._persist_step(index, final_request, response)
+        response: StepResponse = self.execute_step(step)
+        self._persist_response_step(index, response)
         print(f"Step {index} completed with status {response.status_code}")
 
         if response.status_code != 0:
@@ -106,8 +107,10 @@ class Engine:
 
         return response
 
-    def _persist_step(self, index: int, request: StepRequest, response: StepResponse) -> None:
+    def _persist_request_step(self, index: int, request: StepRequest) -> None:
         Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
+
+    def _persist_response_step(self, index: int, response: StepResponse) -> None:
         Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_template_curl(self, index: int, curl_template: str) -> None:
@@ -132,21 +135,21 @@ class Engine:
         self.token_resolver.resolve_all()
         return True
 
-    def execute_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
+    def execute_step(self, step: Step) -> StepResponse:
         for attempt in range(self.MAX_STEP_ATTEMPTS):
-            final_request, response = self._attempt_step(step)
+            response: StepResponse = self._attempt_step(step)
 
             is_last_attempt = attempt == self.MAX_STEP_ATTEMPTS - 1
             if not is_last_attempt and self.handle_recovery(response):
                 print(f"Deterministic recovery successful for step {step.index}. Retrying request...")
                 continue
 
-            return final_request, response
+            return response
 
         raise RuntimeError(f"execute_step exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step.index}")
 
-    def _attempt_step(self, step: Step) -> Tuple[StepRequest, StepResponse]:
+    def _attempt_step(self, step: Step) -> StepResponse:
         assert self.http_transport is not None
-        final_request: StepRequest = self.request_builder.build_final_request(step)
-        response: StepResponse = self.http_transport.send_request(final_request, step.index)
-        return final_request, response
+        curl_literal: str = self.session_store.render(step.analysis.curl_template)
+        response: StepResponse = self.http_transport.send_request(curl_literal, step.index)
+        return response
