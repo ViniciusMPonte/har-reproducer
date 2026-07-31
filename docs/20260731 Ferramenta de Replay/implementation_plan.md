@@ -370,13 +370,13 @@ if __name__ == "__main__":
   comportamento idêntico ao de hoje.
 
 **Critérios de aceite:**
-- [ ] Sem `HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR` setada no ambiente do script gerado:
+- [X] Sem `HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR` setada no ambiente do script gerado:
       lê de `real_responses/res_{step_index:04d}.json` relativo ao arquivo — igual hoje.
-- [ ] Script escrito em disco e rodado com a env var apontando pra um diretório
+- [X] Script escrito em disco e rodado com a env var apontando pra um diretório
       alternativo (com `res_{step_index:04d}.json` diferente): lê desse diretório.
-- [ ] Script escrito e rodado sem a env var, com o arquivo em `real_responses/`: ainda
+- [X] Script escrito e rodado sem a env var, com o arquivo em `real_responses/`: ainda
       funciona (regressão do comportamento atual).
-- [ ] `render_bash_script`/`render_temp_script` não mudam (fora de escopo).
+- [X] `render_bash_script`/`render_temp_script` não mudam (fora de escopo).
 
 ---
 

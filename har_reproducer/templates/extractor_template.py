@@ -40,6 +40,7 @@ if __name__ == "__main__":
             step_index: int,
     ) -> str:
         return f"""
+import os
 import sys
 import json
 from pathlib import Path
@@ -48,7 +49,11 @@ from typing import Dict
 {code}
 
 def _load_response() -> Dict:
-    response_file: Path = Path(__file__).resolve().parent.parent / "{WorkspaceDir.REAL_RESPONSES.value}" / "res_{step_index:04d}.json"
+    override_dir = os.environ.get("HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR")
+    if override_dir:
+        response_file: Path = Path(override_dir) / "res_{step_index:04d}.json"
+    else:
+        response_file: Path = Path(__file__).resolve().parent.parent / "{WorkspaceDir.REAL_RESPONSES.value}" / "res_{step_index:04d}.json"
     return json.loads(response_file.read_text(encoding="utf-8"))
 
 if __name__ == "__main__":
