@@ -7,6 +7,7 @@ from langchain_core.language_models import BaseChatModel
 
 from har_reproducer.agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
 from har_reproducer.models import DynamicToken, Extractor, TokenLocation
+from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking.response_grep import ResponseGrep
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
@@ -30,6 +31,8 @@ class CandidateResolver:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
         self.llm: Optional[BaseChatModel] = llm
+        self.extractor_runner: ExtractorRunner = ExtractorRunner()
+        self.metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
 
     def resolve(self, candidates: List[DynamicToken]) -> List[DynamicToken]:
         return [self._process_candidate(candidate) for candidate in candidates]
@@ -42,33 +45,71 @@ class CandidateResolver:
             candidate.status = "NotFound"
             return candidate
 
-        origin_step: int = origin[0]
-        candidate.origin_step = origin_step
-        candidate.token_id = self._derive_token_id(candidate.path, origin_step)
+        candidate.origin_step = origin[0]
+        candidate.token_id = self._derive_token_id(candidate.path, candidate.origin_step)
 
-        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
-        if existing is not None and existing.verified:
-            candidate.status = "Resolved"
+        if self._reuse_verified_in_memory(candidate):
             return candidate
 
+        reused: bool
+        initial_error: Optional[str]
+        reused, initial_error = self._reuse_persisted_from_disk(candidate)
+        if reused:
+            return candidate
+
+        return self._generate_new_extractor(candidate, initial_error)
+
+    def _reuse_verified_in_memory(self, candidate: DynamicToken) -> bool:
+        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
+        if existing is None or not existing.verified:
+            return False
+        candidate.status = "Resolved"
+        return True
+
+    def _reuse_persisted_from_disk(self, candidate: DynamicToken) -> Tuple[bool, Optional[str]]:
+        persisted: Optional[Extractor] = self.metadata_store.load(candidate.token_id)
+        if persisted is None:
+            return False, None
+
+        result: Optional[str] = self.extractor_runner.run_existing(candidate.token_id)
+        if result == candidate.current_value:
+            self.session_store.state.registry[candidate.token_id] = persisted
+            candidate.status = "Resolved"
+            return True, None
+
+        return False, self._mismatch_error(result, candidate.current_value)
+
+    def _generate_new_extractor(self, candidate: DynamicToken, initial_error: Optional[str]) -> DynamicToken:
         candidate.status = "UnderReview"
 
-        response_sample: Optional[Dict[str, Any]] = self._load_response(origin_step)
+        response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
         if response_sample is None:
             return candidate
 
         candidate.origin_location = TokenLocationDetector.find(candidate.current_value, response_sample)
-        self._register_extractor(candidate, response_sample)
+        self._register_extractor(candidate, response_sample, initial_error)
         return candidate
 
     @staticmethod
     def _derive_token_id(path: str, origin_step: int) -> str:
         return hashlib.md5(f"{path}:{origin_step}".encode("utf-8")).hexdigest()
 
-    def _register_extractor(self, candidate: DynamicToken, response_sample: Dict[str, Any]) -> None:
-        new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample)
+    @staticmethod
+    def _mismatch_error(result: Optional[str], expected: str) -> str:
+        if result is None:
+            return "Persisted extractor failed to execute (no output)."
+        return f"Persisted extractor output mismatch: got {result!r}, expected {expected!r}"
+
+    def _register_extractor(
+            self,
+            candidate: DynamicToken,
+            response_sample: Dict[str, Any],
+            initial_error: Optional[str] = None,
+    ) -> None:
+        new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample, initial_error)
         if new_extractor is not None:
             self.session_store.state.registry[candidate.token_id] = new_extractor
+            self.metadata_store.save(new_extractor)
             candidate.status = "Resolved"
         else:
             candidate.status = "Unresolved"
@@ -85,7 +126,10 @@ class CandidateResolver:
             return None
 
     def _generate_extractor(
-            self, candidate: DynamicToken, response_sample: Dict[str, Any]
+            self,
+            candidate: DynamicToken,
+            response_sample: Dict[str, Any],
+            initial_error: Optional[str] = None,
     ) -> Optional[Extractor]:
         agent_cls: Type[BaseAgent] = self.LOCATION_AGENTS.get(candidate.origin_location, RegexAgent)
 
@@ -97,4 +141,4 @@ class CandidateResolver:
             location=candidate.origin_location.value if candidate.origin_location else None,
             llm=self.llm,
         )
-        return agent.run_tdd_loop(origin_step=candidate.origin_step)
+        return agent.run_tdd_loop(origin_step=candidate.origin_step, initial_error=initial_error)

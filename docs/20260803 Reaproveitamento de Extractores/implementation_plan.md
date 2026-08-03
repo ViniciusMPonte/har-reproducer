@@ -376,27 +376,27 @@ class CandidateResolver:
   memória, nunca em disco.
 
 **Critérios de aceite:**
-- [ ] `token_id` sem `.meta.json` em disco: comportamento idêntico ao atual (gera do
+- [x] `token_id` sem `.meta.json` em disco: comportamento idêntico ao atual (gera do
       zero via agente, `initial_error=None`).
-- [ ] `token_id` com `.meta.json` em disco e `run_existing` retornando exatamente
+- [x] `token_id` com `.meta.json` em disco e `run_existing` retornando exatamente
       `candidate.current_value`: `registry[token_id]` é populado com o `Extractor`
       persistido, **sem** chamar `agent.run_tdd_loop`/`_generate_extractor` (verificável
       via spy/mock — chamada zero ao agente).
-- [ ] `token_id` com `.meta.json` em disco e `run_existing` retornando valor diferente
+- [x] `token_id` com `.meta.json` em disco e `run_existing` retornando valor diferente
       de `candidate.current_value`: `agent.run_tdd_loop` é chamado com
       `initial_error` não-nulo, contendo o valor obtido e o esperado.
-- [ ] `token_id` com `.meta.json` em disco e `run_existing` retornando `None`
+- [x] `token_id` com `.meta.json` em disco e `run_existing` retornando `None`
       (extractor persistido quebrado/erro de execução): mesmo caminho de correção,
       `initial_error` descreve "failed to execute".
-- [ ] Após geração/correção bem-sucedida, `Workspace.extractor_meta_file(token_id)`
+- [x] Após geração/correção bem-sucedida, `Workspace.extractor_meta_file(token_id)`
       existe em disco e é lido de volta como um `Extractor` válido.
-- [ ] `existing.verified` já `True` no `registry` em memória (dedupe intra-run, hoje já
+- [x] `existing.verified` já `True` no `registry` em memória (dedupe intra-run, hoje já
       existente): continua tendo prioridade sobre a checagem em disco — disco só é
       consultado quando `existing is None`.
-- [ ] Falha total na correção (agente esgota tentativas mesmo com `initial_error`):
+- [x] Falha total na correção (agente esgota tentativas mesmo com `initial_error`):
       `status = "Unresolved"`, `.meta.json` antigo em disco **não é sobrescrito** (ainda
       inválido, mas presente pra próxima tentativa).
-- [ ] Nenhuma regressão no fluxo de `status = "NotFound"` (quando `ResponseGrep.find`
+- [x] Nenhuma regressão no fluxo de `status = "NotFound"` (quando `ResponseGrep.find`
       não encontra origem).
 
 ---
