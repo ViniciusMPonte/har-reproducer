@@ -14,6 +14,7 @@ from har_reproducer.session.session_store import SessionStore
 
 class ReplayRunner:
     STEP_FILENAME_PATTERN: ClassVar[Pattern[str]] = re.compile(r"req_(\d+)\.curl\.sh")
+    STATIC_WARNING_SUFFIX: ClassVar[str] = " - probably static"
 
     def __init__(
             self,
@@ -74,7 +75,11 @@ class ReplayRunner:
         curl_text: str = Workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
-            self.replay_token_resolver.resolve(curl_text, schedule, self.replay_run_dir, self.res_refer_dir)
+            static_token_ids: Set[str] = self.replay_token_resolver.resolve(
+                curl_text, schedule, self.replay_run_dir, self.res_refer_dir
+            )
+            if static_token_ids:
+                self._annotate_static_tokens(index, static_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
             return self.http_transport.send_request(curl_resolved, index)
 
@@ -90,6 +95,25 @@ class ReplayRunner:
         )
         print(f"Step {index} completed with status {response.status_code}")
         return response
+
+    def _annotate_static_tokens(self, index: int, token_ids: Set[str]) -> None:
+        curl_file: Path = Workspace.curl_file(index)
+        text: str = curl_file.read_text(encoding="utf-8")
+        updated: str = text
+        for token_id in token_ids:
+            updated = self._mark_token_static(updated, token_id)
+        if updated != text:
+            curl_file.write_text(updated, encoding="utf-8")
+
+    @classmethod
+    def _mark_token_static(cls, text: str, token_id: str) -> str:
+        prefix: str = f"# Token {token_id} comes from response of step "
+        lines: List[str] = text.splitlines()
+        for i, line in enumerate(lines):
+            if line.startswith(prefix) and not line.endswith(cls.STATIC_WARNING_SUFFIX):
+                lines[i] = line + cls.STATIC_WARNING_SUFFIX
+                break
+        return "\n".join(lines) + "\n"
 
     def _schedule_all(self) -> Tuple[List[int], Set[int]]:
         ordered_indexes: List[int] = self._existing_step_indexes()

@@ -629,20 +629,20 @@ class ReplayRunner:
   reexecuções não duplicam o sufixo nem regravam o arquivo à toa quando já anotado.
 
 **Critérios de aceite:**
-- [ ] `resolve(...)` retornando conjunto vazio: `Workspace.curl_file(index)` não é
+- [x] `resolve(...)` retornando conjunto vazio: `Workspace.curl_file(index)` não é
       reescrito (sem I/O de escrita desnecessário).
-- [ ] `resolve(...)` retornando `{token_id}` presente no curl: a linha
+- [x] `resolve(...)` retornando `{token_id}` presente no curl: a linha
       `# Token {token_id} comes from response of step {n}` passa a terminar com
       `- probably static`, resto do arquivo inalterado.
-- [ ] Chamar `_annotate_static_tokens` duas vezes seguidas com o mesmo `token_id`: o
+- [x] Chamar `_annotate_static_tokens` duas vezes seguidas com o mesmo `token_id`: o
       arquivo não é reescrito na segunda vez (conteúdo idêntico ao já anotado) e a
       linha não fica com o sufixo duplicado.
-- [ ] `token_ids` com múltiplos tokens: cada linha correspondente é anotada
+- [x] `token_ids` com múltiplos tokens: cada linha correspondente é anotada
       independentemente, sem afetar as demais.
-- [ ] `token_id` que não tem linha de comentário correspondente no arquivo (caso não
+- [x] `token_id` que não tem linha de comentário correspondente no arquivo (caso não
       deveria ocorrer em uso normal, mas não pode lançar): `_mark_token_static` retorna
       o texto inalterado.
-- [ ] Execução ponta a ponta de `replay --mode all` sobre um workspace com um token já
+- [x] Execução ponta a ponta de `replay --mode all` sobre um workspace com um token já
       com `valid_count=4` em disco: depois da execução, `valid_count=5` e o curl
       correspondente aparece anotado.
 
