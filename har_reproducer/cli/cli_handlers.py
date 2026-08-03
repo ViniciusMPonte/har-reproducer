@@ -12,7 +12,13 @@ from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
-from har_reproducer.reproduction import CurlHttpTransport, ExtractorRunner, MitmProxyOrchestrator, StepRetryPolicy
+from har_reproducer.reproduction import (
+    CurlHttpTransport,
+    ExtractorMetadataStore,
+    ExtractorRunner,
+    MitmProxyOrchestrator,
+    StepRetryPolicy,
+)
 from har_reproducer.session.session_store import SessionStore
 
 
@@ -119,8 +125,10 @@ class CliHandlers:
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner()
         dependency_parser: CurlDependencyParser = CurlDependencyParser()
-        replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(session_store, extractor_runner,
-                                                                         dependency_parser)
+        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
+        replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(
+            session_store, extractor_runner, dependency_parser, metadata_store
+        )
         retry_policy: StepRetryPolicy = StepRetryPolicy()
         comparator: ReplayResultComparator = ReplayResultComparator()
         http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, project_config.ca_cert_path)

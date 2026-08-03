@@ -15,9 +15,9 @@ from har_reproducer.models import (
 )
 from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
 from har_reproducer.session import SessionStore
+from har_reproducer.templates import ExtractorTemplate
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
-from templates import ExtractorTemplate
 
 
 class Engine:

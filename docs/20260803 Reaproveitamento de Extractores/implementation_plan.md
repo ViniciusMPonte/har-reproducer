@@ -510,23 +510,23 @@ replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(
 imports já existentes desse módulo em `cli_handlers.py`).
 
 **Critérios de aceite:**
-- [ ] Primeira resolução válida de um `token_id` com `.meta.json` existente
+- [x] Primeira resolução válida de um `token_id` com `.meta.json` existente
       (`last_value is None`): `valid_count` vira `1`, `last_value` vira o valor
       resolvido, retorno `False` (ainda longe do threshold).
-- [ ] 5 resoluções seguidas com o mesmo valor (mesmo `token_id`, metadado já
+- [x] 5 resoluções seguidas com o mesmo valor (mesmo `token_id`, metadado já
       preexistente com `valid_count=4`): a 5ª chamada retorna `True`.
-- [ ] Resolução com valor diferente do `last_value` anterior: `ever_changed` vira
+- [x] Resolução com valor diferente do `last_value` anterior: `ever_changed` vira
       `True`, `valid_count` não incrementa nessa chamada, retorno `False`.
-- [ ] Depois de `ever_changed=True`, mesmo com muitas resoluções válidas subsequentes
+- [x] Depois de `ever_changed=True`, mesmo com muitas resoluções válidas subsequentes
       (mesmo valor entre elas), a função nunca mais retorna `True` para esse token.
-- [ ] `token_id` sem `.meta.json` (`persisted is None`): retorno `False`, nenhuma
+- [x] `token_id` sem `.meta.json` (`persisted is None`): retorno `False`, nenhuma
       exceção, nenhum arquivo é criado.
-- [ ] `resolve(...)` retorna o conjunto de `token_id`s (dentre os presentes no
+- [x] `resolve(...)` retorna o conjunto de `token_id`s (dentre os presentes no
       `curl_text`) cuja `_resolve_one` retornou `True` nesta chamada — vazio quando
       nenhum cruzou o threshold.
-- [ ] Token cujo `extractor_runner.run_existing` retorna `None` (falha de resolução):
+- [x] Token cujo `extractor_runner.run_existing` retorna `None` (falha de resolução):
       não entra no conjunto retornado, e `_record_observation` não é chamado pra ele.
-- [ ] `_build_replay_runner` constrói e passa `ExtractorMetadataStore()` — `replay`
+- [x] `_build_replay_runner` constrói e passa `ExtractorMetadataStore()` — `replay`
       continua funcionando ponta a ponta sem esse argumento faltando.
 
 ---
