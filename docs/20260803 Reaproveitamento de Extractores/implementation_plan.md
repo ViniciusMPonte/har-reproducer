@@ -145,14 +145,14 @@ class ExtractorMetadataStore:
   e incluir `"ExtractorMetadataStore"` em `__all__`.
 
 **Critérios de aceite:**
-- [ ] `load(token_id)` sem arquivo existente retorna `None`, sem lançar.
-- [ ] `save(extractor)` seguido de `load(extractor.token_id)` retorna um `Extractor`
+- [x] `load(token_id)` sem arquivo existente retorna `None`, sem lançar.
+- [x] `save(extractor)` seguido de `load(extractor.token_id)` retorna um `Extractor`
       igual ao salvo (round-trip via disco).
-- [ ] `load` com um `.meta.json` contendo JSON inválido (`"{ não é json"`) retorna
+- [x] `load` com um `.meta.json` contendo JSON inválido (`"{ não é json"`) retorna
       `None` e imprime aviso, não lança.
-- [ ] `load` com um `.meta.json` de schema incompatível (ex. faltando `agent_type`
+- [x] `load` com um `.meta.json` de schema incompatível (ex. faltando `agent_type`
       obrigatório) retorna `None` e imprime aviso, não lança.
-- [ ] `ExtractorMetadataStore` importável via `from har_reproducer.reproduction import
+- [x] `ExtractorMetadataStore` importável via `from har_reproducer.reproduction import
       ExtractorMetadataStore`.
 
 ---
