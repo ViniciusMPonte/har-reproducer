@@ -186,13 +186,14 @@ class BaseAgent:
             print(f"[AVISO] Timeout ao verificar extrator para {self.token_id}")
             return False, "Timeout during verification"
 
-        if result.returncode == 0 and result.stdout.strip() == self.expected_value:
+        if result.returncode != 0:
+            return False, result.stderr.strip() or "Extractor script failed with no output."
+
+        actual_value: str = result.stdout.strip()
+        if actual_value == self.expected_value:
             return True, None
 
-        error: str = result.stderr.strip() or (
-            f"Output mismatch: got {result.stdout.strip()!r}, expected {self.expected_value!r}"
-        )
-        return False, error
+        return False, f"Output mismatch: got {actual_value!r}, expected {self.expected_value!r}"
 
     def _cleanup_script(self, script_path: Path) -> None:
         if script_path.exists():
