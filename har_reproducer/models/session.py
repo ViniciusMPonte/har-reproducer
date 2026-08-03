@@ -28,6 +28,9 @@ class Extractor(BaseModel):
     agent_type: AgentType
     origin_step: Optional[int] = None
     temp_file_path: Optional[str] = None
+    valid_count: int = 0
+    last_value: Optional[str] = None
+    ever_changed: bool = False
 
 
 class DynamicToken(BaseModel):

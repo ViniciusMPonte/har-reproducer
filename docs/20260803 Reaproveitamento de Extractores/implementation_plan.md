@@ -44,15 +44,15 @@ class Extractor(BaseModel):
   indireta, ex. testes que comparam dict, não deveriam quebrar).
 
 **Critérios de aceite:**
-- [ ] `Extractor(token_id="x", code="...", agent_type=AgentType.REGEX)` continua
+- [x] `Extractor(token_id="x", code="...", agent_type=AgentType.REGEX)` continua
       funcionando sem passar os três campos novos, com `valid_count == 0`,
       `last_value is None`, `ever_changed is False`.
-- [ ] `Extractor(..., valid_count=3, last_value="abc", ever_changed=True)` aceita e
+- [x] `Extractor(..., valid_count=3, last_value="abc", ever_changed=True)` aceita e
       preserva os valores.
-- [ ] `extractor.model_dump_json()` inclui os três campos novos.
-- [ ] `Extractor.model_validate_json(extractor.model_dump_json())` reconstrói um objeto
+- [x] `extractor.model_dump_json()` inclui os três campos novos.
+- [x] `Extractor.model_validate_json(extractor.model_dump_json())` reconstrói um objeto
       igual (round-trip).
-- [ ] Nenhuma regressão em usos existentes de `Extractor` (`CandidateResolver`,
+- [x] Nenhuma regressão em usos existentes de `Extractor` (`CandidateResolver`,
       `BaseAgent.run_tdd_loop`, `TokenResolver`, `PlaceholderApplier`).
 
 ---
