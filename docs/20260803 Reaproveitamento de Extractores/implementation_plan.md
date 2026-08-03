@@ -199,14 +199,14 @@ def run_tdd_loop(
   `ExtractorPrompt.build` já aceitam `last_error` — nada muda ali.
 
 **Critérios de aceite:**
-- [ ] `run_tdd_loop()` sem `initial_error` (chamada como hoje) tem comportamento
+- [x] `run_tdd_loop()` sem `initial_error` (chamada como hoje) tem comportamento
       idêntico ao atual — regressão zero.
-- [ ] `run_tdd_loop(initial_error="algum erro")`: a primeira chamada interna de
+- [x] `run_tdd_loop(initial_error="algum erro")`: a primeira chamada interna de
       `generate_code` recebe `last_error="algum erro"` (verificável via spy/mock em
       `generate_code` ou em `_llm_strategy`).
-- [ ] Se a primeira tentativa (já com `initial_error` no prompt) tiver sucesso, o
+- [x] Se a primeira tentativa (já com `initial_error` no prompt) tiver sucesso, o
       `Extractor` retornado é idêntico em estrutura ao caso sem `initial_error`.
-- [ ] Assinatura mantém `max_attempts`/`origin_step` como estavam — só adiciona
+- [x] Assinatura mantém `max_attempts`/`origin_step` como estavam — só adiciona
       `initial_error` no fim.
 
 ---

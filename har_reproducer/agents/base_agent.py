@@ -121,13 +121,17 @@ class BaseAgent:
             return fenced.group(1).strip()
         return text.strip()
 
-    def run_tdd_loop(self, max_attempts: Optional[int] = None, origin_step: Optional[int] = None) -> Optional[
-        Extractor]:
+    def run_tdd_loop(
+            self,
+            max_attempts: Optional[int] = None,
+            origin_step: Optional[int] = None,
+            initial_error: Optional[str] = None,
+    ) -> Optional[Extractor]:
 
         strategies: List[Strategy] = self._get_strategies()
         total: int = len(strategies) if max_attempts is None else max_attempts
 
-        last_error: Optional[str] = None
+        last_error: Optional[str] = initial_error
         for attempt in range(total):
             code: Optional[str] = self.generate_code(last_error=last_error)
             if code is None:
