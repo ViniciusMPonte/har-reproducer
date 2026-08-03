@@ -27,11 +27,11 @@ class CliParser:
         parse_parser.add_argument("--har", required=True, help="Path to HAR file")
         parse_parser.add_argument("--output", default=None, help="Output directory (default: <har-dir>/output)")
         parse_parser.add_argument(
-            "--no-reset",
+            "--reset",
             dest="reset_output_dir",
-            action="store_false",
-            default=True,
-            help="Não apagar/recriar o diretório de saída antes de rodar (default: apaga e recria)",
+            action="store_true",
+            default=False,
+            help="Apagar/recriar o diretório de saída antes de rodar (default: preservar)",
         )
         parse_parser.set_defaults(func=self._handlers.handle_parse)
 
@@ -47,11 +47,11 @@ class CliParser:
         )
         run_parser.add_argument("--config", help="Path to project config (JSON)")
         run_parser.add_argument(
-            "--no-reset",
+            "--reset",
             dest="reset_output_dir",
-            action="store_false",
-            default=True,
-            help="Não apagar/recriar o diretório de saída antes de rodar (default: apaga e recria)",
+            action="store_true",
+            default=False,
+            help="Apagar/recriar o diretório de saída antes de rodar (default: preservar)",
         )
         run_parser.set_defaults(func=self._handlers.handle_run)
 

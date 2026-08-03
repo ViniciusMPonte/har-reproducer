@@ -728,13 +728,13 @@ def _build_run_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) ->
 - ⚠️ Esta task não mexe no subparser `replay` (nunca teve essa flag).
 
 **Critérios de aceite:**
-- [ ] `run --har x.har` (sem `--reset`): `output_dir` **preservado** (comportamento
+- [x] `run --har x.har` (sem `--reset`): `output_dir` **preservado** (comportamento
       novo, oposto do atual).
-- [ ] `run --har x.har --reset`: `output_dir` apagado e recriado.
-- [ ] Mesmo comportamento pra `parse`.
-- [ ] `args.reset_output_dir` é `False` por default quando nenhuma flag é passada.
-- [ ] `--no-reset` deixa de ser uma flag reconhecida (erro de `argparse` se passada).
-- [ ] Nenhuma outra parte de `_build_run_subparser`/`_build_parse_subparser` muda
+- [x] `run --har x.har --reset`: `output_dir` apagado e recriado.
+- [x] Mesmo comportamento pra `parse`.
+- [x] `args.reset_output_dir` é `False` por default quando nenhuma flag é passada.
+- [x] `--no-reset` deixa de ser uma flag reconhecida (erro de `argparse` se passada).
+- [x] Nenhuma outra parte de `_build_run_subparser`/`_build_parse_subparser` muda
       (`--har`, `--output`, `--mode`, `--config` intactos).
-- [ ] `CliHandlers.handle_run`/`handle_parse` continuam funcionando sem nenhuma
+- [x] `CliHandlers.handle_run`/`handle_parse` continuam funcionando sem nenhuma
       alteração de código.
