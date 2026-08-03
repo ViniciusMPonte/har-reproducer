@@ -86,14 +86,14 @@ def extractor_meta_file(cls, safe_token_id: str) -> Path:
   de `mkdir` adicional (o diretório pai já existe desde `Workspace.init`).
 
 **Critérios de aceite:**
-- [ ] `Workspace.extractor_meta_file("abc123")` retorna
+- [x] `Workspace.extractor_meta_file("abc123")` retorna
       `<output_dir>/extractors/extract_abc123.meta.json`.
-- [ ] Não lança erro antes de `Workspace.init` ter sido chamado (mesma regra de
+- [x] Não lança erro antes de `Workspace.init` ter sido chamado (mesma regra de
       `_ensure_initialized` dos demais métodos — deve lançar `RuntimeError`, não
       silenciar).
-- [ ] `extractor_file`/`extractor_meta_file` com o mesmo `token_id` retornam caminhos no
+- [x] `extractor_file`/`extractor_meta_file` com o mesmo `token_id` retornam caminhos no
       mesmo diretório, nomes diferentes.
-- [ ] Nenhuma regressão nos demais métodos de `Workspace`.
+- [x] Nenhuma regressão nos demais métodos de `Workspace`.
 
 ---
 
