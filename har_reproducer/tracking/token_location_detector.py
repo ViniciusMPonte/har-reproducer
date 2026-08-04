@@ -3,12 +3,13 @@ import re
 from typing import Any, Dict, Optional
 
 from har_reproducer.models import TokenLocation
+from har_reproducer.tracking.response_grep import ResponseGrep
 
 
 class TokenLocationDetector:
 
     @classmethod
-    def find(cls, value: str, response_sample: Dict[str, Any]) -> TokenLocation:
+    def find(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
         location: Optional[TokenLocation] = cls._find_in_headers(value, response_sample)
         if location is not None:
             return location
@@ -17,33 +18,42 @@ class TokenLocationDetector:
         if location is not None:
             return location
 
+        location = cls._find_in_redirect_url(value, response_sample)
+        if location is not None:
+            return location
+
         location = cls._find_in_body(value, response_sample)
         if location is not None:
             return location
 
-        print(
-            f"[AVISO] Não foi possível determinar a origem do token '{value[:30]}...' com confiança; assumindo BODY_JSON."
-        )
-        return TokenLocation.BODY_JSON
+        print(f"[AVISO] Não foi possível determinar a origem do token '{value[:30]}...'.")
+        return None
 
-    @staticmethod
-    def _find_in_headers(value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
+    @classmethod
+    def _find_in_headers(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
         for header_value in response_sample.get("headers", {}).values():
-            if value in header_value:
+            if cls._value_present(value, header_value):
                 return TokenLocation.HEADER
         return None
 
-    @staticmethod
-    def _find_in_cookies(value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
+    @classmethod
+    def _find_in_cookies(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
         for cookie_value in response_sample.get("cookies", {}).values():
-            if value in cookie_value:
+            if cls._value_present(value, cookie_value):
                 return TokenLocation.COOKIE
+        return None
+
+    @classmethod
+    def _find_in_redirect_url(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
+        redirect_url: Optional[str] = response_sample.get("redirect_url")
+        if redirect_url and cls._value_present(value, redirect_url):
+            return TokenLocation.URL_PARAM
         return None
 
     @classmethod
     def _find_in_body(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
         body: Optional[str] = response_sample.get("body")
-        if not body or value not in body:
+        if not body or not cls._value_present(value, body):
             return None
 
         mime: str = (response_sample.get("body_mime") or "").lower()
@@ -99,3 +109,7 @@ class TokenLocationDetector:
             return True
         except (json.JSONDecodeError, TypeError):
             return False
+
+    @classmethod
+    def _value_present(cls, value: str, text: str) -> bool:
+        return any(variant in text for variant in ResponseGrep.value_variants(value))

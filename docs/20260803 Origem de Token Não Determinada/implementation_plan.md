@@ -305,12 +305,12 @@ padrão (`BODY_HTML`) já existente quando não conseguem decidir. Isso é
 intencional (spec.md seção 3.3 e seção 5), não um esquecimento.
 
 **Critérios de aceite:**
-- [ ] `TokenLocationDetector.find("*/*", {"headers": {}, "cookies": {}, "body": None, "redirect_url": None})` retorna `None` (não `TokenLocation.BODY_JSON`).
-- [ ] `TokenLocationDetector.find("abc123", {"headers": {"Location": "https://x/abc123"}, "cookies": {}, "body": None, "redirect_url": None})` retorna `TokenLocation.HEADER` (comportamento já existente, não regressão).
-- [ ] `TokenLocationDetector.find("abc", {"headers": {}, "cookies": {}, "body": None, "redirect_url": "https://x.com/callback?token=abc"})` retorna `TokenLocation.URL_PARAM` (novo, via `_find_in_redirect_url`).
-- [ ] `TokenLocationDetector.find("abc", {"headers": {"X-Data": "YWJj"}, "cookies": {}, "body": None, "redirect_url": None})` retorna `TokenLocation.HEADER` (novo: `"YWJj"` é o base64 de `"abc"`, reconhecido via `_value_present`/`ResponseGrep.value_variants`; hoje retornaria `BODY_JSON` incorretamente).
-- [ ] `TokenLocationDetector.find("qualquercoisa", {"headers": {}, "cookies": {}, "body": '{"outra_chave": "outro_valor"}', "body_mime": "application/json", "redirect_url": None})` retorna `None` (valor genuinamente ausente, nem literal nem em nenhuma variante).
-- [ ] Casos já cobertos hoje continuam idênticos: valor em `body` JSON válido retorna `BODY_JSON`; valor em bloco `<script>` retorna `SCRIPT`; valor em HTML fora de `<script>` retorna `BODY_HTML`.
+- [x] `TokenLocationDetector.find("*/*", {"headers": {}, "cookies": {}, "body": None, "redirect_url": None})` retorna `None` (não `TokenLocation.BODY_JSON`).
+- [x] `TokenLocationDetector.find("abc123", {"headers": {"Location": "https://x/abc123"}, "cookies": {}, "body": None, "redirect_url": None})` retorna `TokenLocation.HEADER` (comportamento já existente, não regressão).
+- [x] `TokenLocationDetector.find("abc", {"headers": {}, "cookies": {}, "body": None, "redirect_url": "https://x.com/callback?token=abc"})` retorna `TokenLocation.URL_PARAM` (novo, via `_find_in_redirect_url`).
+- [x] `TokenLocationDetector.find("abc", {"headers": {"X-Data": "YWJj"}, "cookies": {}, "body": None, "redirect_url": None})` retorna `TokenLocation.HEADER` (novo: `"YWJj"` é o base64 de `"abc"`, reconhecido via `_value_present`/`ResponseGrep.value_variants`; hoje retornaria `BODY_JSON` incorretamente).
+- [x] `TokenLocationDetector.find("qualquercoisa", {"headers": {}, "cookies": {}, "body": '{"outra_chave": "outro_valor"}', "body_mime": "application/json", "redirect_url": None})` retorna `None` (valor genuinamente ausente, nem literal nem em nenhuma variante).
+- [x] Casos já cobertos hoje continuam idênticos: valor em `body` JSON válido retorna `BODY_JSON`; valor em bloco `<script>` retorna `SCRIPT`; valor em HTML fora de `<script>` retorna `BODY_HTML`.
 
 ## T05 — `CandidateResolver`: gerar extractor literal quando a origem não é determinada
 
