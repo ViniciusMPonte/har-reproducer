@@ -398,25 +398,30 @@ executa quando `origin_location` é `TokenLocation.URL_PARAM` (único valor do
 enum fora do dict), comportamento já existente e fora do escopo desta task.
 
 **Critérios de aceite:**
-- [ ] Candidato com `origin_location = None` e `current_value = "*/*"` e
+- [x] Candidato com `origin_location = None` e `current_value = "*/*"` e
   `origin_step = 5` gera um `Extractor` com `agent_type == AgentType.LITERAL`,
   `verified == True`, `origin_step == 5`, e `code` contendo `return '*/*'`.
-- [ ] Executar esse `code` (via `ExtractorRunner.run` ou chamando a função
+- [x] Executar esse `code` (via `ExtractorRunner.run` ou chamando a função
   gerada diretamente com qualquer `response` dict, inclusive `{}`) retorna
   exatamente `"*/*"`, sem lançar exceção — não depende do conteúdo de
   `response`.
-- [ ] Nenhuma chamada a `agent_cls(...)`/`run_tdd_loop`/LLM acontece para esse
+- [x] Nenhuma chamada a `agent_cls(...)`/`run_tdd_loop`/LLM acontece para esse
   caminho (verificável por não haver instância de `BaseAgent` envolvida).
-- [ ] Candidato com `origin_location = TokenLocation.HEADER` continua indo
+- [x] Candidato com `origin_location = TokenLocation.HEADER` continua indo
   para `HeaderAgent.run_tdd_loop` normalmente — não regressão do caminho
   existente.
-- [ ] **Regressão end-to-end**: rodar novamente `uv run python -m
+- [x] **Regressão end-to-end**: rodar novamente `uv run python -m
   har_reproducer.main run --har progressofit.har --config config.json --mode
   dry` (mesmo `output_dir` já existente, sem `--reset`) até o step 12 não deve
   imprimir nenhum `Attempt N failed` nem erro `429 RESOURCE_EXHAUSTED` para o
   candidato do header `Accept` — o step 12 deve completar direto, e o
   `extract_*.meta.json` correspondente deve existir com
-  `"agent_type": "LiteralAgent"`.
+  `"agent_type": "LiteralAgent"`. Confirmado com `progressofit.har` fornecido
+  pelo usuário (`/home/vinicius/Documentos/Trabalho/har-flow-reproducer/arquivos-har/progressofit.har`):
+  step 12 completou sem nenhum `Attempt N failed`/`429` antes dele, e três
+  extractors `LiteralAgent` foram gerados com sucesso (`origin_step=1`,
+  fragmentos da URL do Google Fonts) sem nenhuma chamada ao LLM. Resultado
+  final: `✓ SUCCESS`.
 
 ## T06 — `CurlGenerator`: comentário extra quando a origem não foi determinada
 

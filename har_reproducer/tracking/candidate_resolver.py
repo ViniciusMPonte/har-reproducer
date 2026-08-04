@@ -6,7 +6,7 @@ from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 from langchain_core.language_models import BaseChatModel
 
 from har_reproducer.agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
-from har_reproducer.models import DynamicToken, Extractor, TokenLocation
+from har_reproducer.models import AgentType, DynamicToken, Extractor, TokenLocation
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking.response_grep import ResponseGrep
@@ -131,6 +131,9 @@ class CandidateResolver:
             response_sample: Dict[str, Any],
             initial_error: Optional[str] = None,
     ) -> Optional[Extractor]:
+        if candidate.origin_location is None:
+            return self._build_literal_extractor(candidate)
+
         agent_cls: Type[BaseAgent] = self.LOCATION_AGENTS.get(candidate.origin_location, RegexAgent)
 
         agent: BaseAgent = agent_cls(
@@ -142,3 +145,14 @@ class CandidateResolver:
             llm=self.llm,
         )
         return agent.run_tdd_loop(origin_step=candidate.origin_step, initial_error=initial_error)
+
+    @staticmethod
+    def _build_literal_extractor(candidate: DynamicToken) -> Extractor:
+        safe_token_id: str = BaseAgent.sanitize_identifier(candidate.token_id)
+        return Extractor(
+            token_id=candidate.token_id,
+            code=f"def extract_{safe_token_id}(response):\n    return {candidate.current_value!r}\n",
+            verified=True,
+            agent_type=AgentType.LITERAL,
+            origin_step=candidate.origin_step,
+        )
