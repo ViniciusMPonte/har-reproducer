@@ -117,9 +117,9 @@ class AgentType(str, Enum):
 ```
 
 **Critérios de aceite:**
-- [ ] `AgentType.LITERAL_FALLBACK.value == "LiteralFallbackAgent"`.
-- [ ] `Extractor(token_id="x", code="...", agent_type=AgentType.LITERAL_FALLBACK, origin_step=1)` valida normalmente com Pydantic.
-- [ ] Os 6 membros existentes (`COOKIE`, `HEADER`, `JSONPATH`, `CSS`, `REGEX`, `LITERAL`) continuam com os mesmos valores — não regressão.
+- [x] `AgentType.LITERAL_FALLBACK.value == "LiteralFallbackAgent"`.
+- [x] `Extractor(token_id="x", code="...", agent_type=AgentType.LITERAL_FALLBACK, origin_step=1)` valida normalmente com Pydantic.
+- [x] Os 6 membros existentes (`COOKIE`, `HEADER`, `JSONPATH`, `CSS`, `REGEX`, `LITERAL`) continuam com os mesmos valores — não regressão.
 
 ## T03 — `DynamicToken`: novo campo `extraction_exhausted`
 

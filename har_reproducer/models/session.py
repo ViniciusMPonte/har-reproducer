@@ -11,6 +11,7 @@ class AgentType(str, Enum):
     CSS = "CSSAgent"
     REGEX = "RegexAgent"
     LITERAL = "LiteralAgent"
+    LITERAL_FALLBACK = "LiteralFallbackAgent"
 
 
 class TokenLocation(str, Enum):
