@@ -119,13 +119,13 @@ por convenção de uso (T04) — `attempt == 1` corresponde ao próprio `base_to
 passar por esta função; este método não precisa (nem deve) tratar `attempt == 1`.
 
 **Critérios de aceite:**
-- [ ] `CandidateResolver._fork_token_id("abc123", 2)` retorna uma string que casa
+- [x] `CandidateResolver._fork_token_id("abc123", 2)` retorna uma string que casa
   inteiramente com o regex `^[a-f0-9]+$` (32 caracteres hex, saída de md5).
-- [ ] `CandidateResolver._fork_token_id("abc123", 2) != CandidateResolver._fork_token_id("abc123", 3)`
+- [x] `CandidateResolver._fork_token_id("abc123", 2) != CandidateResolver._fork_token_id("abc123", 3)`
   (tentativas diferentes geram ids diferentes).
-- [ ] `CandidateResolver._fork_token_id("abc123", 2)` retorna o mesmo valor toda vez
+- [x] `CandidateResolver._fork_token_id("abc123", 2)` retorna o mesmo valor toda vez
   que é chamado com os mesmos argumentos (determinístico, sem estado).
-- [ ] `CandidateResolver._fork_token_id("x", 2) != CandidateResolver._fork_token_id("y", 2)`
+- [x] `CandidateResolver._fork_token_id("x", 2) != CandidateResolver._fork_token_id("y", 2)`
   (bases diferentes geram ids diferentes na mesma tentativa).
 
 ## T03 — `CandidateResolver`: `_check_slot` — validação unificada de um slot (memória → disco → execução)

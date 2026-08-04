@@ -103,6 +103,10 @@ class CandidateResolver:
         return hashlib.md5(f"{path}:{origin_step}".encode("utf-8")).hexdigest()
 
     @staticmethod
+    def _fork_token_id(base_token_id: str, attempt: int) -> str:
+        return hashlib.md5(f"{base_token_id}:{attempt}".encode("utf-8")).hexdigest()
+
+    @staticmethod
     def _mismatch_error(result: Optional[str], expected: str) -> str:
         if result is None:
             return "Persisted extractor failed to execute (no output)."
