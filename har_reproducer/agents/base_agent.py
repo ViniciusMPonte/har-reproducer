@@ -13,7 +13,7 @@ from har_reproducer.contracts import Strategy
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import AgentType, Extractor
 from har_reproducer.prompts import ExtractorPrompt
-from har_reproducer.templates import ExtractorTemplate
+from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 
 
 class BaseAgent:
@@ -30,7 +30,7 @@ class BaseAgent:
             llm: Optional[BaseChatModel] = None,
     ) -> None:
         self.token_id: str = token_id
-        self.safe_token_id: str = self.sanitize_identifier(token_id)
+        self.safe_token_id: str = IdentifierSanitizer.sanitize(token_id)
         self.response_sample: Dict[str, Any] = response_sample
         self.expected_value: str = expected_value
         self.path: Optional[str] = path
@@ -38,13 +38,6 @@ class BaseAgent:
         self.llm: Optional[BaseChatModel] = llm
         self._attempt_index: int = 0
         self._strategies: Optional[List[Strategy]] = None
-
-    @staticmethod
-    def sanitize_identifier(raw: str) -> str:
-        sanitized: str = re.sub(r"\W", "_", str(raw))
-        if sanitized and sanitized[0].isdigit():
-            sanitized = f"t_{sanitized}"
-        return sanitized or "token"
 
     @property
     def key(self) -> Optional[str]:

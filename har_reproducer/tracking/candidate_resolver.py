@@ -10,6 +10,7 @@ from har_reproducer.agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent,
 from har_reproducer.models import AgentType, DynamicToken, Extractor, TokenLocation
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
+from har_reproducer.templates import IdentifierSanitizer
 from har_reproducer.tracking.response_grep import ResponseGrep
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
 
@@ -86,6 +87,21 @@ class CandidateResolver:
             return True, None
 
         return False, self._mismatch_error(result, candidate.current_value)
+
+    def _find_slot(self, base_token_id: str, candidate: DynamicToken) -> Tuple[str, Optional[str]]:
+        attempt: int = 1
+        last_error: Optional[str] = None
+        while True:
+            slot_id: str = base_token_id if attempt == 1 else self._fork_token_id(base_token_id, attempt)
+            status: SlotStatus
+            error: Optional[str]
+            status, error = self._check_slot(slot_id, candidate)
+            if status == SlotStatus.MATCH:
+                return slot_id, None
+            if status == SlotStatus.FREE:
+                return slot_id, last_error
+            last_error = error
+            attempt += 1
 
     def _check_slot(self, slot_id: str, candidate: DynamicToken) -> Tuple[SlotStatus, Optional[str]]:
         cached: Optional[Tuple[SlotStatus, Optional[str]]] = self._check_cached_slot(slot_id, candidate)
@@ -200,7 +216,7 @@ class CandidateResolver:
 
     @staticmethod
     def _build_literal_extractor(candidate: DynamicToken, agent_type: AgentType) -> Extractor:
-        safe_token_id: str = BaseAgent.sanitize_identifier(candidate.token_id)
+        safe_token_id: str = IdentifierSanitizer.sanitize(candidate.token_id)
         return Extractor(
             token_id=candidate.token_id,
             code=f"def extract_{safe_token_id}(response):\n    return {candidate.current_value!r}\n",

@@ -253,19 +253,19 @@ primeira tentativa — nesse caso `last_error` continua `None`, idêntico ao
 comportamento de hoje para um candidato genuinamente novo).
 
 **Critérios de aceite:**
-- [ ] `base_token_id` livre (nenhum slot ocupado): retorna `(base_token_id, None)` na
+- [x] `base_token_id` livre (nenhum slot ocupado): retorna `(base_token_id, None)` na
   primeira iteração, sem chamar `_fork_token_id`.
-- [ ] `base_token_id` ocupado por um valor igual a `candidate.current_value`: retorna
+- [x] `base_token_id` ocupado por um valor igual a `candidate.current_value`: retorna
   `(base_token_id, None)` — comportamento idêntico ao reuso de hoje (não regressão do
   caso comum, sem colisão).
-- [ ] `base_token_id` ocupado por um valor diferente, nenhum fork existente ainda:
+- [x] `base_token_id` ocupado por um valor diferente, nenhum fork existente ainda:
   retorna `(_fork_token_id(base_token_id, 2), <erro do mismatch em base_token_id>)`.
-- [ ] `base_token_id` ocupado por um valor diferente **e** `_fork_token_id(base_token_id, 2)`
+- [x] `base_token_id` ocupado por um valor diferente **e** `_fork_token_id(base_token_id, 2)`
   já ocupado por um terceiro valor diferente de `candidate.current_value`: retorna
   `(_fork_token_id(base_token_id, 3), <erro do mismatch na tentativa 2>)` — a busca
   continua além da primeira tentativa de fork (regressão do caso "dois valores
   diferentes colidindo" coberto, mas o caso de três valores também precisa funcionar).
-- [ ] `base_token_id` ocupado por um valor diferente, e `_fork_token_id(base_token_id, 2)`
+- [x] `base_token_id` ocupado por um valor diferente, e `_fork_token_id(base_token_id, 2)`
   já ocupado pelo **mesmo** valor de `candidate.current_value`: retorna
   `(_fork_token_id(base_token_id, 2), None)` — reaproveita o fork já existente em vez
   de criar um terceiro desnecessariamente.
@@ -380,3 +380,60 @@ validação que faziam já está em `_check_slot`, chamada de dentro de `_find_s
   `image` — o curl do step 4 deve usar um `token_id` próprio, cujo extractor retorna
   `"image"`.
 - [ ] `py_compile har_reproducer/tracking/candidate_resolver.py` passa sem erro.
+
+## Correção adicional (fora das tasks originais) — mismatch de identificador em scripts de extractor persistidos
+
+Encontrada durante a implementação da T04, ao escrever os testes manuais de
+`_find_slot`/`_check_slot`: um bug pré-existente, anterior a esta branch, e ortogonal à
+spec, mas que interferia diretamente na validação de slots (`_check_slot` chama
+`extractor_runner.run_existing`, e este bug fazia `run_existing` retornar `None` — falso
+`MISMATCH`/erro de execução — para uma fração grande dos `token_id` possíveis).
+
+**Causa raiz**: três pontos do código geram a função Python do extractor com o nome
+`extract_{sanitize_identifier(token_id)}` (`BaseAgent.__init__`, usado pelos agents
+LLM, e `CandidateResolver._build_literal_extractor`, usado nos extractors literais) —
+`sanitize_identifier` prefixava `t_` condicionalmente, só quando o `token_id` (um hash
+md5, hex) começava por dígito. Só que `ExtractorRunner._write_extractor_script`
+(`reproduction/extractor_runner.py:31-42`), ao persistir o `.py` final em disco, montava
+a chamada da função com `safe_token_id=extractor.token_id` **cru** (sem sanitizar). Como
+hashes hex começam por dígito em ~62,5% dos casos (10 de 16 símbolos hex são dígitos),
+qualquer extractor cujo `token_id` caísse nesse caso definia `extract_t_<hash>` mas era
+chamado como `extract_<hash>` — `NameError` dentro do subprocesso, script sai com código
+1, `run_existing`/`run` retornam `None` silenciosamente (nunca uma exceção visível).
+Confirmado empiricamente construindo um extractor literal com `token_id` começando por
+dígito e rodando `ExtractorRunner.run(extractor)` sobre ele antes da correção.
+
+**Correção aplicada**:
+- Extraída a lógica de sanitização (antes duplicada implicitamente — `BaseAgent`
+  possuía o único método `sanitize_identifier`, mas `CandidateResolver` já o chamava
+  de fora como utilitário estático, um cheiro de que não era um conceito de `BaseAgent`)
+  para uma classe nova e sem dependências, `IdentifierSanitizer`
+  (`har_reproducer/templates/identifier_sanitizer.py`), reexportada em
+  `har_reproducer/templates/__init__.py`.
+- `BaseAgent.__init__` (`agents/base_agent.py`) passa a chamar
+  `IdentifierSanitizer.sanitize(token_id)`; o método `BaseAgent.sanitize_identifier`
+  foi removido (sem outros usos restantes).
+- `CandidateResolver._build_literal_extractor` (`tracking/candidate_resolver.py`) passa
+  a chamar `IdentifierSanitizer.sanitize(candidate.token_id)`.
+- `ExtractorRunner._write_extractor_script` (`reproduction/extractor_runner.py`) —
+  **o ponto do bug** — passa a chamar
+  `safe_token_id=IdentifierSanitizer.sanitize(extractor.token_id)` em vez de
+  `extractor.token_id` cru, alinhando o nome usado na chamada com o nome usado na
+  definição da função em qualquer `Extractor.code` gerado (agents ou literal).
+- `IdentifierSanitizer.sanitize` simplificado após revisão: em vez de prefixar `t_`
+  só condicionalmente (`if sanitized[0].isdigit()`), passa a prefixar `t_`
+  **incondicionalmente** (`return f"t_{sanitized}" if sanitized else "token"`). O
+  único invariante que realmente importa é que definição e chamada da função usem a
+  mesma transformação — como os três pontos de consumo sempre passam pelo mesmo
+  `IdentifierSanitizer.sanitize`, essa consistência já estava garantida antes; a
+  simplificação só remove uma ramificação desnecessária (`isdigit()`), sem mudar
+  nenhum contrato observável fora desta classe (o nome final da função é um detalhe
+  interno do script gerado, nunca comparado/persistido cru em nenhum outro lugar —
+  os arquivos em disco continuam nomeados por `token_id` bruto via `Workspace`,
+  função de `safe_token_id` não muda).
+
+**Verificação**: `py_compile` em todos os arquivos tocados; reexecução de
+`ExtractorRunner.run(extractor)`/`run_existing` sobre um extractor literal com
+`token_id` começando por dígito, confirmando `"style"` retornado corretamente (antes:
+`None`); reexecução dos scripts de teste manuais da T03/T04 após a simplificação,
+todos os critérios de aceite continuam passando.

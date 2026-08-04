@@ -7,7 +7,7 @@ from typing import ClassVar, Dict, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import Extractor
-from har_reproducer.templates import ExtractorTemplate
+from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 
 
 class ExtractorRunner:
@@ -34,7 +34,7 @@ class ExtractorRunner:
 
         extractor_file: Path = Workspace.extractor_file(extractor.token_id)
         wrapped_code: str = ExtractorTemplate.render_script(
-            safe_token_id=extractor.token_id,
+            safe_token_id=IdentifierSanitizer.sanitize(extractor.token_id),
             code=extractor.code,
             step_index=extractor.origin_step,
         )
