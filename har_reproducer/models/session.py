@@ -10,6 +10,7 @@ class AgentType(str, Enum):
     JSONPATH = "JSONPathAgent"
     CSS = "CSSAgent"
     REGEX = "RegexAgent"
+    LITERAL = "LiteralAgent"
 
 
 class TokenLocation(str, Enum):

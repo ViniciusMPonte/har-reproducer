@@ -170,11 +170,11 @@ class AgentType(str, Enum):
 ```
 
 **Critérios de aceite:**
-- [ ] `AgentType.LITERAL.value == "LiteralAgent"`.
-- [ ] `Extractor(token_id="x", code="...", agent_type=AgentType.LITERAL,
+- [x] `AgentType.LITERAL.value == "LiteralAgent"`.
+- [x] `Extractor(token_id="x", code="...", agent_type=AgentType.LITERAL,
   origin_step=1)` continua validando normalmente com Pydantic (não regressão
   no modelo `Extractor`).
-- [ ] Os 5 membros existentes (`COOKIE`, `HEADER`, `JSONPATH`, `CSS`, `REGEX`)
+- [x] Os 5 membros existentes (`COOKIE`, `HEADER`, `JSONPATH`, `CSS`, `REGEX`)
   continuam com os mesmos valores.
 
 ## T04 — `TokenLocationDetector`: checar `redirect_url` e variantes de encoding; retornar `Optional[TokenLocation]` em vez de chutar `BODY_JSON`
