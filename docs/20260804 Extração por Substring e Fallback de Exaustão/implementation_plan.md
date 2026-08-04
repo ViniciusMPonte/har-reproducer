@@ -158,9 +158,9 @@ class DynamicToken(BaseModel):
 ```
 
 **Critérios de aceite:**
-- [ ] `DynamicToken(token_id="x", path="p", current_value="v", destination_location=TokenLocation.HEADER, status="UnderReview").extraction_exhausted` é `False` por padrão.
-- [ ] Passar `extraction_exhausted=True` explicitamente no construtor reflete em `.extraction_exhausted`.
-- [ ] `BaselineDiff._build_candidate` (`baseline_diff.py:55-66`, não tocado por esta task) continua construindo `DynamicToken` sem passar esse campo, e o resultado continua validando — não regressão.
+- [x] `DynamicToken(token_id="x", path="p", current_value="v", destination_location=TokenLocation.HEADER, status="UnderReview").extraction_exhausted` é `False` por padrão.
+- [x] Passar `extraction_exhausted=True` explicitamente no construtor reflete em `.extraction_exhausted`.
+- [x] `BaselineDiff._build_candidate` (`baseline_diff.py:55-66`, não tocado por esta task) continua construindo `DynamicToken` sem passar esse campo, e o resultado continua validando — não regressão.
 
 ## T04 — `HeaderAgent`: estratégia determinística de substring na própria chave
 
