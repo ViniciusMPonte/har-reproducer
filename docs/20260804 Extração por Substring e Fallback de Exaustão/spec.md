@@ -406,7 +406,9 @@ def _context_pattern(self) -> Optional[str]:
     if pos == -1:
         return None
     prefix: str = header_value[:pos]
-    return rf"{re.escape(prefix)}({self.value_char_class()})"
+    suffix: str = header_value[pos + len(self.expected_value):]
+    boundary: str = rf"(?={re.escape(suffix[0])})" if suffix else "$"
+    return rf"{re.escape(prefix)}({self.lazy_value_char_class()}){boundary}"
 
 def _make_context_strategy(self, pattern: str) -> Strategy:
     def strategy(last_error: Optional[str] = None) -> Optional[str]:
@@ -448,6 +450,21 @@ agente, é necessidade: o código gerado roda depois, isolado, num subprocesso
 (via `ExtractorTemplate`/`ExtractorRunner`), sem acesso a métodos do `HeaderAgent`.
 Não tentar "consertar" isso extraindo uma função compartilhada dentro do código
 gerado.
+
+⚠️ **Achado durante a implementação:** um quantificador guloso sem âncora de
+fim (a versão originalmente desenhada nesta seção) falha sempre que o
+delimitador que segue o valor no header também pertence à classe de
+caracteres de `value_char_class()` (ex.: `"prefix-abc123-suffix"` com
+`expected_value="abc123"` — a classe `[\w\-.]+` inclui hífen, então o `+`
+guloso consome também o `-suffix`). Corrigido adicionando
+`BaseAgent.lazy_value_char_class()` (mesma classe de `value_char_class()`,
+quantificador preguiçoso) e ancorando o fim da captura com um lookahead
+`(?=...)` para o caractere real observado logo após o valor na response de
+origem (ou `$` quando o valor vai até o fim do header). Não embute o valor em
+si no regex — só a fronteira estrutural que o segue —, então continua
+funcionando se o valor mudar entre replays, contanto que essa fronteira se
+mantenha. Não altera `RegexAgent`/`value_char_class` (decisão 3.1,
+inalterada).
 
 ### 3.3 — `CookieAgent`: mesma estratégia, escopada a cookies
 

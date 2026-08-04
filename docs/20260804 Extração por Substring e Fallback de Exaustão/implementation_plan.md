@@ -256,7 +256,9 @@ def extract_{self.safe_token_id}(response: dict) -> str:
         if pos == -1:
             return None
         prefix: str = header_value[:pos]
-        return rf"{re.escape(prefix)}({self.value_char_class()})"
+        suffix: str = header_value[pos + len(self.expected_value):]
+        boundary: str = rf"(?={re.escape(suffix[0])})" if suffix else "$"
+        return rf"{re.escape(prefix)}({self.lazy_value_char_class()}){boundary}"
 
     def _make_context_strategy(self, pattern: str) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:
@@ -283,6 +285,19 @@ def extract_{self.safe_token_id}(response: dict) -> str:
     return match.group(1)
 """
 ```
+⚠️ **Ajuste feito durante a implementação** (o "estado esperado" original desta
+task usava `({self.value_char_class()})` sem âncora de fim): como
+`value_char_class()` para valores "normais" retorna uma classe de caracteres
+que inclui hífen/ponto (`[\w\-.]+`), um quantificador guloso sem âncora de fim
+consome além do valor real sempre que o delimitador que seguir o valor também
+pertencer a essa classe (ex.: `"prefix-abc123-suffix"` capturaria
+`"abc123-suffix"`, não `"abc123"`). A correção usa `BaseAgent.
+lazy_value_char_class()` (quantificador preguiçoso, novo método par de
+`value_char_class`) com um lookahead `(?=...)` para o caractere real que segue
+o valor na response de origem (ou `$` quando o valor vai até o fim do header)
+— isso ancora os dois lados da captura sem embutir o valor em si no regex, e
+sem alterar `RegexAgent`/`value_char_class` (fora de escopo, T01 inalterado).
+
 ⚠️ `_context_pattern` só olha o header **com a mesma chave de destino**
 (`self.key`) — nunca itera por todos os headers da response. Se a chave não
 existir na response de origem, `_header_value()` devolve `None` e nenhuma
@@ -294,18 +309,19 @@ subprocesso, sem acesso a métodos do `HeaderAgent`. Não fatorar isso num helpe
 compartilhado dentro do texto do template.
 
 **Critérios de aceite:**
-- [ ] Response de origem `{"headers": {"X-Trace": "prefix-abc123-suffix"}}`,
+- [x] Response de origem `{"headers": {"X-Trace": "prefix-abc123-suffix"}}`,
   `expected_value="abc123"`, `path="header:X-Trace"`: `_by_name` falha (valor
   inteiro não bate), a nova estratégia de contexto gera código que, executado,
   retorna exatamente `"abc123"` — `run_tdd_loop` termina com `Extractor`
-  `verified=True`.
-- [ ] Response de origem sem a chave `Sec-Fetch-Site` em `headers` (caso real da
+  `verified=True`. (Precisou do ajuste de âncora de fim descrito acima —
+  sem ele, o resultado era `"abc123-suffix"`.)
+- [x] Response de origem sem a chave `Sec-Fetch-Site` em `headers` (caso real da
   spec): `_header_value()` retorna `None`, `_context_pattern()` retorna `None`,
   `deterministic_strategies()` tem só 1 estratégia (`_by_name`) — sem exceção,
   sem estratégia espúria.
-- [ ] Caso já existente (`_by_name` bate com o valor inteiro do header) continua
+- [x] Caso já existente (`_by_name` bate com o valor inteiro do header) continua
   resolvendo pela primeira estratégia, sem precisar da nova — não regressão.
-- [ ] Fallback case-insensitive: `headers = {"x-trace": "prefix-abc123-suffix"}`,
+- [x] Fallback case-insensitive: `headers = {"x-trace": "prefix-abc123-suffix"}`,
   `path="header:X-Trace"` (case diferente) — `_header_value()` ainda encontra o
   valor via o mesmo fallback já usado por `_by_name`, e a extração por substring
   funciona igual.

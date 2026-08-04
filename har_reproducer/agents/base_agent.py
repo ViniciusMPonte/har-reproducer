@@ -59,6 +59,12 @@ class BaseAgent:
             return r"[\w\-.]+"
         return r".+?"
 
+    def lazy_value_char_class(self) -> str:
+        char_class: str = self.value_char_class()
+        if char_class.endswith("+"):
+            return f"{char_class}?"
+        return char_class
+
     def deterministic_strategies(self) -> List[Strategy]:
         return []
 
