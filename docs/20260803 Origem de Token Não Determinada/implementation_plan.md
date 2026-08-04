@@ -126,15 +126,15 @@ Só renomeação (remove o underscore inicial) e atualização do único call si
 interno (`__init__`, linha 33). Corpo do método idêntico.
 
 **Critérios de aceite:**
-- [ ] `BaseAgent.sanitize_identifier("0b7b9cc9...")` retorna
+- [x] `BaseAgent.sanitize_identifier("0b7b9cc9...")` retorna
   `"t_0b7b9cc9..."` (prefixo `t_` porque começa com dígito) — mesmo
   comportamento de hoje.
-- [ ] `BaseAgent.sanitize_identifier("abc-123")` retorna `"abc_123"` — mesmo
+- [x] `BaseAgent.sanitize_identifier("abc-123")` retorna `"abc_123"` — mesmo
   comportamento de hoje.
-- [ ] `HeaderAgent(...).safe_token_id`, `CookieAgent(...).safe_token_id`, etc.
+- [x] `HeaderAgent(...).safe_token_id`, `CookieAgent(...).safe_token_id`, etc.
   continuam sendo populados corretamente (nenhuma regressão nas subclasses,
   que herdam `__init__` sem override).
-- [ ] Nenhum ponto do código chama `BaseAgent._sanitize_identifier` (nome
+- [x] Nenhum ponto do código chama `BaseAgent._sanitize_identifier` (nome
   antigo) — só existe a versão pública `sanitize_identifier`.
 
 ## T03 — `AgentType`: novo membro `LITERAL`

@@ -30,7 +30,7 @@ class BaseAgent:
             llm: Optional[BaseChatModel] = None,
     ) -> None:
         self.token_id: str = token_id
-        self.safe_token_id: str = self._sanitize_identifier(token_id)
+        self.safe_token_id: str = self.sanitize_identifier(token_id)
         self.response_sample: Dict[str, Any] = response_sample
         self.expected_value: str = expected_value
         self.path: Optional[str] = path
@@ -40,7 +40,7 @@ class BaseAgent:
         self._strategies: Optional[List[Strategy]] = None
 
     @staticmethod
-    def _sanitize_identifier(raw: str) -> str:
+    def sanitize_identifier(raw: str) -> str:
         sanitized: str = re.sub(r"\W", "_", str(raw))
         if sanitized and sanitized[0].isdigit():
             sanitized = f"t_{sanitized}"
