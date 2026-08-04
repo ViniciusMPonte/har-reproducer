@@ -492,7 +492,9 @@ def _context_pattern(self) -> Optional[str]:
     if pos == -1:
         return None
     prefix: str = cookie_value[:pos]
-    return rf"{re.escape(prefix)}({self.value_char_class()})"
+    suffix: str = cookie_value[pos + len(self.expected_value):]
+    boundary: str = rf"(?={re.escape(suffix[0])})" if suffix else "$"
+    return rf"{re.escape(prefix)}({self.lazy_value_char_class()}){boundary}"
 
 def _make_context_strategy(self, pattern: str) -> Strategy:
     def strategy(last_error: Optional[str] = None) -> Optional[str]:

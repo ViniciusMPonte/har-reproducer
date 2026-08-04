@@ -398,7 +398,9 @@ def extract_{self.safe_token_id}(response: dict) -> str:
         if pos == -1:
             return None
         prefix: str = cookie_value[:pos]
-        return rf"{re.escape(prefix)}({self.value_char_class()})"
+        suffix: str = cookie_value[pos + len(self.expected_value):]
+        boundary: str = rf"(?={re.escape(suffix[0])})" if suffix else "$"
+        return rf"{re.escape(prefix)}({self.lazy_value_char_class()}){boundary}"
 
     def _make_context_strategy(self, pattern: str) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:
@@ -424,15 +426,23 @@ def extract_{self.safe_token_id}(response: dict) -> str:
 ⚠️ Mesma restrição da T04: `_context_pattern` só olha o cookie com a mesma
 chave de destino — nunca todos os cookies da response.
 
+⚠️ **Mesmo ajuste feito em T04** aplicado aqui desde já: quantificador guloso
+sem âncora de fim falha quando o delimitador que segue o valor no cookie
+também pertence à classe de caracteres de `value_char_class()` (mesmo
+problema do `"prefix-abc123-suffix"`). Usa `BaseAgent.lazy_value_char_class()`
+(quantificador preguiçoso) com lookahead `(?=...)` para o caractere real que
+segue o valor (ou `$` no fim do cookie) — ver `spec.md` seção 3.2/3.3 para o
+detalhamento.
+
 **Critérios de aceite:**
-- [ ] Response de origem `{"cookies": {"session": "sid=abc123;path=/"}}`,
+- [x] Response de origem `{"cookies": {"session": "sid=abc123;path=/"}}`,
   `expected_value="abc123"`, `path="cookie:session"`: `_by_name` falha, a nova
   estratégia gera código que retorna exatamente `"abc123"` — `run_tdd_loop`
   termina com `Extractor` `verified=True`.
-- [ ] Response de origem sem a chave de destino em `cookies`:
+- [x] Response de origem sem a chave de destino em `cookies`:
   `_context_pattern()` retorna `None`, `deterministic_strategies()` tem só 1
   estratégia — sem exceção.
-- [ ] Caso já existente (`_by_name` bate com o valor inteiro do cookie) continua
+- [x] Caso já existente (`_by_name` bate com o valor inteiro do cookie) continua
   resolvendo pela primeira estratégia — não regressão.
 
 ## T06 — `CandidateResolver`: fallback para extrator literal quando o Agent esgota tentativas
