@@ -628,20 +628,20 @@ primeira — `CurlDependencyParser.DEPENDENCY_PATTERN`
 (`^...$`) só na primeira linha; não tocar essa classe.
 
 **Critérios de aceite:**
-- [ ] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`,
+- [x] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`,
   `extraction_exhausted = False`: gera só a linha base — não regressão.
-- [ ] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`,
+- [x] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`,
   `extraction_exhausted = True`: gera a linha base seguida de
   `# Token {id} origin location determined but extraction exhausted — using
   literal captured value`.
-- [ ] Token com `origin_step = 5`, `origin_location = None` (independente de
+- [x] Token com `origin_step = 5`, `origin_location = None` (independente de
   `extraction_exhausted`, que fica `False` por default nesse caminho): gera a
   linha base seguida de `# Token {id} origin location undetermined — using
   literal captured value` — não regressão do comportamento da spec anterior
   (o ramo `elif` nunca executa quando `origin_location is None`, porque o `if`
   já capturou o caso).
-- [ ] Token com `origin_step = None`: nenhuma linha de comentário — não
+- [x] Token com `origin_step = None`: nenhuma linha de comentário — não
   regressão.
-- [ ] `CurlDependencyParser().parse(curl_text)` continua extraindo
+- [x] `CurlDependencyParser().parse(curl_text)` continua extraindo
   `{token_id: origin_step}` corretamente mesmo com a terceira linha extra
   presente — não regressão do parsing de dependências usado no replay.

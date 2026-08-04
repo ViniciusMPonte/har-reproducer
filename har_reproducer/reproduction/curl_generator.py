@@ -63,6 +63,11 @@ class CurlGenerator:
             lines.append(f"# Token {token.token_id} comes from response of step {token.origin_step}")
             if token.origin_location is None:
                 lines.append(f"# Token {token.token_id} origin location undetermined — using literal captured value")
+            elif token.extraction_exhausted:
+                lines.append(
+                    f"# Token {token.token_id} origin location determined but extraction exhausted — "
+                    f"using literal captured value"
+                )
         return lines
 
     @staticmethod
