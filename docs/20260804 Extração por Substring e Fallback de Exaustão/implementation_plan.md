@@ -548,19 +548,19 @@ não tocado (`_generate_new_extractor` retornando cedo quando `_load_response`
 falha).
 
 **Critérios de aceite:**
-- [ ] Candidato com `origin_location = TokenLocation.HEADER`, `origin_step = 5`,
+- [x] Candidato com `origin_location = TokenLocation.HEADER`, `origin_step = 5`,
   `current_value = "same-origin"`, e um `Agent` cujo `run_tdd_loop` (mockado)
   retorna `None`: `_generate_extractor` devolve um `Extractor` com
   `agent_type == AgentType.LITERAL_FALLBACK`, `verified == True`, `code`
   contendo `return 'same-origin'`; `candidate.extraction_exhausted` vira `True`.
-- [ ] Candidato com `origin_location = None` continua devolvendo
+- [x] Candidato com `origin_location = None` continua devolvendo
   `AgentType.LITERAL` (não `LITERAL_FALLBACK`), e `candidate.extraction_exhausted`
   permanece `False` — não regressão do caminho da spec anterior.
-- [ ] Candidato com `origin_location = TokenLocation.HEADER` e `Agent` cujo
+- [x] Candidato com `origin_location = TokenLocation.HEADER` e `Agent` cujo
   `run_tdd_loop` (mockado) devolve um `Extractor` de verdade: esse `Extractor`
   é devolvido sem alteração, `candidate.extraction_exhausted` permanece `False`
   — não regressão do caminho de sucesso normal.
-- [ ] Rodando `_register_extractor` de ponta a ponta pro cenário de exaustão:
+- [x] Rodando `_register_extractor` de ponta a ponta pro cenário de exaustão:
   `candidate.status` termina `"Resolved"` (não mais `"Unresolved"`), e o
   extractor literal de fallback é salvo em `session_store.state.registry` e via
   `metadata_store.save` — verificável relendo o `.meta.json` gerado.
@@ -572,6 +572,11 @@ falha).
   extractor cacheado (`agent_type: "LiteralFallbackAgent"` no `.meta.json`) é
   reaproveitado via `_reuse_persisted_from_disk` (inalterado), sem nenhum novo
   `Attempt N failed` pra esse token.
+  **Não executado nesta sessão** — `progressofit.har` não está presente neste
+  ambiente (só existe na máquina onde a spec foi originalmente escrita); os
+  quatro critérios anteriores (unitários, com `run_tdd_loop` mockado) cobrem a
+  mesma lógica de forma determinística. Pendente rodar manualmente com o HAR
+  real para confirmar o comportamento observado em produção.
 
 ## T07 — `CurlGenerator`: comentário distinto quando a extração foi esgotada
 

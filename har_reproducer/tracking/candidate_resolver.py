@@ -132,7 +132,7 @@ class CandidateResolver:
             initial_error: Optional[str] = None,
     ) -> Optional[Extractor]:
         if candidate.origin_location is None:
-            return self._build_literal_extractor(candidate)
+            return self._build_literal_extractor(candidate, AgentType.LITERAL)
 
         agent_cls: Type[BaseAgent] = self.LOCATION_AGENTS.get(candidate.origin_location, RegexAgent)
 
@@ -144,15 +144,22 @@ class CandidateResolver:
             location=candidate.origin_location.value if candidate.origin_location else None,
             llm=self.llm,
         )
-        return agent.run_tdd_loop(origin_step=candidate.origin_step, initial_error=initial_error)
+        extractor: Optional[Extractor] = agent.run_tdd_loop(
+            origin_step=candidate.origin_step, initial_error=initial_error
+        )
+        if extractor is not None:
+            return extractor
+
+        candidate.extraction_exhausted = True
+        return self._build_literal_extractor(candidate, AgentType.LITERAL_FALLBACK)
 
     @staticmethod
-    def _build_literal_extractor(candidate: DynamicToken) -> Extractor:
+    def _build_literal_extractor(candidate: DynamicToken, agent_type: AgentType) -> Extractor:
         safe_token_id: str = BaseAgent.sanitize_identifier(candidate.token_id)
         return Extractor(
             token_id=candidate.token_id,
             code=f"def extract_{safe_token_id}(response):\n    return {candidate.current_value!r}\n",
             verified=True,
-            agent_type=AgentType.LITERAL,
+            agent_type=agent_type,
             origin_step=candidate.origin_step,
         )
