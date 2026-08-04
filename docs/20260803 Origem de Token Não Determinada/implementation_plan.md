@@ -467,15 +467,15 @@ anexar texto ali quebraria esse regex para todo token que usa essa linha,
 inclusive os resolvidos normalmente.
 
 **Critérios de aceite:**
-- [ ] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`
+- [x] Token com `origin_step = 5`, `origin_location = TokenLocation.HEADER`
   gera só a linha `# Token {id} comes from response of step 5` — não
   regressão do formato existente.
-- [ ] Token com `origin_step = 5`, `origin_location = None` gera duas linhas:
+- [x] Token com `origin_step = 5`, `origin_location = None` gera duas linhas:
   `# Token {id} comes from response of step 5` seguida de `# Token {id} origin
   location undetermined — using literal captured value`.
-- [ ] Token com `origin_step = None` continua sem gerar nenhuma linha de
+- [x] Token com `origin_step = None` continua sem gerar nenhuma linha de
   comentário — não regressão.
-- [ ] `CurlDependencyParser().parse(curl_text)` continua extraindo
+- [x] `CurlDependencyParser().parse(curl_text)` continua extraindo
   `{token_id: origin_step}` corretamente a partir do curl gerado, mesmo
   quando a segunda linha extra está presente logo abaixo (a regex ancorada
   `^...$` com `re.MULTILINE` casa a primeira linha independente da segunda) —

@@ -56,11 +56,14 @@ class CurlGenerator:
 
     @staticmethod
     def _token_comments(tokens: List[DynamicToken]) -> List[str]:
-        return [
-            f"# Token {token.token_id} comes from response of step {token.origin_step}"
-            for token in tokens
-            if token.origin_step is not None
-        ]
+        lines: List[str] = []
+        for token in tokens:
+            if token.origin_step is None:
+                continue
+            lines.append(f"# Token {token.token_id} comes from response of step {token.origin_step}")
+            if token.origin_location is None:
+                lines.append(f"# Token {token.token_id} origin location undetermined — using literal captured value")
+        return lines
 
     @staticmethod
     def _decode_body(body: Union[str, bytes]) -> str:
