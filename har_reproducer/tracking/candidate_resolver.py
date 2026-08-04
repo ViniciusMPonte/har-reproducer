@@ -1,5 +1,6 @@
 import hashlib
 import json
+from enum import Enum
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
 
@@ -11,6 +12,12 @@ from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking.response_grep import ResponseGrep
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
+
+
+class SlotStatus(str, Enum):
+    MATCH = "Match"
+    MISMATCH = "Mismatch"
+    FREE = "Free"
 
 
 class CandidateResolver:
@@ -33,6 +40,7 @@ class CandidateResolver:
         self.llm: Optional[BaseChatModel] = llm
         self.extractor_runner: ExtractorRunner = ExtractorRunner()
         self.metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
+        self._validated_values: Dict[str, str] = {}
 
     def resolve(self, candidates: List[DynamicToken]) -> List[DynamicToken]:
         return [self._process_candidate(candidate) for candidate in candidates]

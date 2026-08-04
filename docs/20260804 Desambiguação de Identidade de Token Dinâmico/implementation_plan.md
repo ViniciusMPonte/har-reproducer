@@ -80,15 +80,15 @@ um detalhe de implementação interno a este arquivo, não um conceito de `model
 ⚠️ Nenhum outro atributo/método existente muda de posição ou de valor.
 
 **Critérios de aceite:**
-- [ ] `from har_reproducer.tracking.candidate_resolver import SlotStatus` funciona;
+- [x] `from har_reproducer.tracking.candidate_resolver import SlotStatus` funciona;
   `SlotStatus.MATCH.value == "Match"`, `SlotStatus.MISMATCH.value == "Mismatch"`,
   `SlotStatus.FREE.value == "Free"`.
-- [ ] `CandidateResolver(responses_dir, session_store, llm)._validated_values == {}`
+- [x] `CandidateResolver(responses_dir, session_store, llm)._validated_values == {}`
   logo após a construção.
-- [ ] Nenhum teste/uso existente de `CandidateResolver.__init__` quebra — os quatro
+- [x] Nenhum teste/uso existente de `CandidateResolver.__init__` quebra — os quatro
   atributos já existentes (`responses_dir`, `session_store`, `llm`, `extractor_runner`,
   `metadata_store`) continuam com os mesmos valores/tipos (não regressão).
-- [ ] `py_compile har_reproducer/tracking/candidate_resolver.py` passa sem erro.
+- [x] `py_compile har_reproducer/tracking/candidate_resolver.py` passa sem erro.
 
 ## T02 — `CandidateResolver`: `_fork_token_id` — id de fork determinístico e hex-compatível
 
