@@ -64,7 +64,8 @@ class CliHandlers:
             har_path,
             output_dir,
             config_path,
-            proxy_port=orchestrator.port
+            proxy_port=orchestrator.port,
+            ca_cert_path=orchestrator.ca_cert_path,
         )
         return orchestrator.run(engine.run)
 
@@ -94,7 +95,7 @@ class CliHandlers:
         run_id: str = datetime.now().strftime("%Y%m%d_%H%M%S")
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(project_config.proxy_port,
                                                                     project_config.ca_cert_path)
-        runner: ReplayRunner = self._build_replay_runner(project_config, orchestrator, run_id, res_refer_dir)
+        runner: ReplayRunner = self._build_replay_runner(orchestrator, run_id, res_refer_dir)
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
@@ -117,7 +118,6 @@ class CliHandlers:
 
     @staticmethod
     def _build_replay_runner(
-            project_config: ProjectConfig,
             orchestrator: MitmProxyOrchestrator,
             run_id: str,
             res_refer_dir: Path,
@@ -131,7 +131,7 @@ class CliHandlers:
         )
         retry_policy: StepRetryPolicy = StepRetryPolicy()
         comparator: ReplayResultComparator = ReplayResultComparator()
-        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, project_config.ca_cert_path)
+        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path)
 
         return ReplayRunner(
             dependency_parser=dependency_parser,

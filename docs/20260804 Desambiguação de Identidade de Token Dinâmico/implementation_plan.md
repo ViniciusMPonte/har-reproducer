@@ -358,12 +358,12 @@ validação que faziam já está em `_check_slot`, chamada de dentro de `_find_s
 `slot_id` livre encontrado por `_find_slot`, que pode ou não ser o `base_token_id`.
 
 **Critérios de aceite:**
-- [ ] `CandidateResolver._reuse_verified_in_memory`/`_reuse_persisted_from_disk` não
+- [x] `CandidateResolver._reuse_verified_in_memory`/`_reuse_persisted_from_disk` não
   existem mais na classe (`hasattr(CandidateResolver, "_reuse_verified_in_memory") is False`).
-- [ ] Candidato cujo valor já foi resolvido antes (mesmo `path`/`origin_step`, mesmo
+- [x] Candidato cujo valor já foi resolvido antes (mesmo `path`/`origin_step`, mesmo
   valor): `status == "Resolved"`, nenhuma chamada a `_generate_new_extractor` — não
   regressão do caminho de reuso comum.
-- [ ] **Caso do bug relatado, reproduzido**: dois candidatos com o mesmo `path`
+- [x] **Caso do bug relatado, reproduzido**: dois candidatos com o mesmo `path`
   (`"header:Sec-Fetch-Dest"`) e o mesmo `origin_step` (`0`), um com
   `current_value="style"` e outro com `current_value="image"`, processados nessa
   ordem — o segundo recebe um `token_id` **diferente** do primeiro
@@ -371,7 +371,7 @@ validação que faziam já está em `_check_slot`, chamada de dentro de `_find_s
   `"Unresolved"` se a geração falhar, nunca `"Resolved"` com o extractor do primeiro),
   e o `.py`/`.meta.json` do `token_id` do primeiro candidato **não é sobrescrito**
   (conteúdo idêntico ao de antes de processar o segundo candidato).
-- [ ] **Regressão end-to-end**: rodar `uv run python -m har_reproducer.main run --har
+- [x] **Regressão end-to-end**: rodar `uv run python -m har_reproducer.main run --har
   /home/vinicius/Documentos/Trabalho/har-flow-reproducer/arquivos-har/progressofit.har
   --config /home/vinicius/Documentos/Trabalho/har-flow-reproducer/har-reproducer-project/config.json
   --mode main --reset` até o fim: o `req_0004.curl.sh` gerado não deve mais referenciar
@@ -379,7 +379,7 @@ validação que faziam já está em `_check_slot`, chamada de dentro de `_find_s
   qualquer que seja o id-base equivalente nesta nova execução) para os placeholders de
   `image` — o curl do step 4 deve usar um `token_id` próprio, cujo extractor retorna
   `"image"`.
-- [ ] `py_compile har_reproducer/tracking/candidate_resolver.py` passa sem erro.
+- [x] `py_compile har_reproducer/tracking/candidate_resolver.py` passa sem erro.
 
 ## Correção adicional (fora das tasks originais) — mismatch de identificador em scripts de extractor persistidos
 
@@ -437,3 +437,109 @@ dígito e rodando `ExtractorRunner.run(extractor)` sobre ele antes da correção
 `token_id` começando por dígito, confirmando `"style"` retornado corretamente (antes:
 `None`); reexecução dos scripts de teste manuais da T03/T04 após a simplificação,
 todos os critérios de aceite continuam passando.
+
+## Correção adicional (fora das tasks originais) — `mitmdump` não encontrava o pacote `har_reproducer`
+
+Encontrada ao rodar a regressão end-to-end da T05 (`uv run python -m har_reproducer.main
+run --har .../progressofit.har --config config.json --mode main --reset`): o comando
+falhava antes de processar qualquer step, com
+`RuntimeError: mitmdump encerrou antes de ficar pronto` e, na saída do próprio
+`mitmdump`, `ModuleNotFoundError: No module named 'har_reproducer'` ao carregar
+`har_reproducer/reproduction/mitm_addon.py` (que importa
+`har_reproducer.reproduction.mitm_env`).
+
+**Causa raiz**: `har_reproducer` não é instalado como pacote no venv (`import
+har_reproducer` resolve com `__file__ is None` — um pacote de namespace resolvido só
+porque o diretório do projeto está no `sys.path` quando o processo é iniciado via
+`python -m ...`/`python -c ...` a partir da raiz do repo). `MitmProxyOrchestrator`
+(`reproduction/mitm_proxy_orchestrator.py`) inicia o `mitmdump` como um **binário
+separado** (`subprocess.Popen([str(self._resolve_mitmdump_path()), "-s",
+str(self.ADDON_PATH), ...])`), e `_build_env` (linha 72-75, antes da correção) só
+copiava `os.environ` e setava a variável de captura — nunca propagava `PYTHONPATH`.
+Sem isso, o interpretador que o `mitmdump` usa internamente para carregar o addon não
+tinha a raiz do repositório no `sys.path`, então não enxergava `har_reproducer`. Bug
+pré-existente, anterior a esta branch, e ortogonal à spec — só bloqueava a validação do
+critério de aceite E2E da T05, não o comportamento de `CandidateResolver` em si.
+
+**Correção aplicada** (`reproduction/mitm_proxy_orchestrator.py`):
+- Nova constante `PACKAGE_ROOT: ClassVar[Path] = Path(__file__).resolve().parent.parent.parent`
+  (raiz do repositório, calculada a partir do próprio arquivo, subindo de
+  `reproduction/` → `har_reproducer/` → raiz).
+- `_build_env` passa a setar `env["PYTHONPATH"] = self._prepend_package_root(env.get("PYTHONPATH"))`,
+  prependendo `PACKAGE_ROOT` a qualquer `PYTHONPATH` já existente no ambiente (novo
+  método `_prepend_package_root`, guard clause para o caso de `PYTHONPATH` ainda não
+  definido).
+
+**Verificação**: `py_compile`; smoke-test isolado rodando `mitmdump -s mitm_addon.py`
+diretamente com o `PYTHONPATH` corrigido por 5s sem tráfego real, confirmando ausência
+do erro de import; e, por fim, a própria regressão end-to-end completa da T05 (abaixo),
+que só passou a rodar depois desta correção.
+
+**Regressão end-to-end (T05) executada com sucesso** contra
+`arquivos-har/progressofit.har`: `Final Validation Result: ✓ SUCCESS`. Confirmado que os
+três valores distintos (`"style"`, `"image"`, `"script"`) que compartilham
+`path="header:Sec-Fetch-Dest"`/`origin_step=0` — o caso relatado na spec, mais um
+terceiro valor real encontrado nesta execução — resolveram para três `token_id`s
+diferentes (`b774bbe7479e9c91042c3f09a2aea7b7`, `fcc0e887d32b91f124c6bb8d3ccbdfd9`,
+`54b6cdd4b1a1cec49cba3183b763c0eb`, respectivamente), cada um com seu próprio
+`.py`/`.meta.json` em disco, nenhum sobrescrito. Verificado executando os três
+extractors persistidos diretamente via `ExtractorRunner.run_existing`, confirmando os
+três valores.
+
+## Correção adicional (fora das tasks originais) — `--cacert` do curl recebia um diretório em vez do arquivo `.pem`
+
+Encontrada a partir de um erro observado nos steps 13/14 da regressão end-to-end da T05
+(`curl: (77) error setting certificate file: .../.mitmproxy`) — perguntado pelo usuário
+se tinha relação com o certificado do `.mitmproxy` na raiz do projeto. Investigação
+confirmou que sim, e que é um bug real, pré-existente, e ortogonal à spec desta branch.
+
+**Causa raiz**: `ProjectConfig.ca_cert_path` (`models/config.py:20`) representa, por
+convenção, o **diretório** de configuração (`confdir`) do mitmproxy — quando não
+configurado em `config.json`, o default (`config/project_config_loader.py:36-37`) é
+`Workspace.get_mitmproxy_ca_path()` (`fs_io/workspace.py:39-42`), que resolve para
+`<raiz-do-projeto>/.mitmproxy`, uma pasta. `MitmProxyOrchestrator` trata esse valor
+corretamente como diretório, derivando o arquivo real em
+`self.ca_cert_path = self.project_root / self.CA_CERT_FILENAME`
+(`mitm_proxy_orchestrator.py:29`, ou seja, `.mitmproxy/mitmproxy-ca-cert.pem` — escrito
+pelo próprio `mitmdump` via `--set confdir=...`). Mas dois outros pontos do código
+recebiam o **mesmo valor cru** (`project_config.ca_cert_path`, a pasta) e o repassavam
+direto para `CurlHttpTransport`, que monta `--cacert {ca_cert_path}`
+(`curl_http_transport.py:52-56`) assumindo que já é o arquivo:
+- `Engine.__init__` (`engines/engine.py`, antes da correção) — carregava seu próprio
+  `ProjectConfig` e passava `project_config.ca_cert_path` cru para
+  `_build_http_transport`.
+- `CliHandlers._build_replay_runner` (`cli/cli_handlers.py:134`, antes da correção) —
+  mesma coisa, no caminho de `replay`.
+
+Como a maioria das requisições reproduzidas é reescrita para apontar direto ao proxy
+local (`http://127.0.0.1:<porta>/...`, sem TLS de verdade), o curl nunca chegava a abrir
+o `--cacert` nesses casos — só os steps 13/14, requisições cross-origin HTTPS reais
+(`fonts.googleapis.com`) que passam por túnel `CONNECT` através do proxy, expunham o
+bug.
+
+**Correção aplicada** — eliminar a duplicação de conhecimento sobre "confdir + nome do
+arquivo = certificado real": `MitmProxyOrchestrator.ca_cert_path` (instância, já correto)
+passa a ser a única fonte usada para `--cacert` em toda a aplicação; `project_config.ca_cert_path`
+cru continua sendo usado exclusivamente para construir o `MitmProxyOrchestrator`
+(seu significado de `confdir` nunca muda ali):
+- `EngineFactory.create` (`engines/construction/engine_factory.py`) ganhou o parâmetro
+  `ca_cert_path: Optional[Path] = None`, repassado ao `Engine`.
+- `Engine.__init__` (`engines/engine.py`) ganhou o mesmo parâmetro; `_build_http_transport`
+  passa a receber esse valor (vindo de fora) em vez de `project_config.ca_cert_path`
+  (derivado internamente).
+- `CliHandlers._run_with_proxy` (`cli/cli_handlers.py`) passa
+  `ca_cert_path=orchestrator.ca_cert_path` ao criar o `Engine`.
+- `CliHandlers._build_replay_runner` (`cli/cli_handlers.py`) passa a usar
+  `orchestrator.ca_cert_path` em vez de `project_config.ca_cert_path`; o parâmetro
+  `project_config`, que só era usado ali para isso, foi removido da assinatura do
+  método (e do único call site, em `handle_replay`) por ter ficado sem uso.
+
+**Verificação**: `py_compile` em todos os arquivos tocados; reprodução isolada do erro
+comparando `curl --cacert <diretório .mitmproxy>` (falha com exit 77, mensagem idêntica
+à observada no log) contra `curl --cacert <.mitmproxy/mitmproxy-ca-cert.pem>` (exit 0)
+usando um `.pem` real já gerado por uma execução anterior do `mitmdump`; confirmado em
+código que `MitmProxyOrchestrator(...).ca_cert_path` resolve exatamente para esse
+arquivo existente. Por fim, terceira execução completa da regressão end-to-end contra
+`progressofit.har`: steps 13 e 14 (`fonts.googleapis.com`, antes com
+`Network error ... curl: (77) error setting certificate file` e `status 0`) passam a
+completar com `status 200`; `Final Validation Result: ✓ SUCCESS` mantido.

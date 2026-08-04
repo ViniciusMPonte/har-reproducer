@@ -15,6 +15,7 @@ from har_reproducer.reproduction.proxy_readiness import ProxyReadiness
 class MitmProxyOrchestrator:
     CA_CERT_FILENAME: ClassVar[str] = "mitmproxy-ca-cert.pem"
     ADDON_PATH: ClassVar[Path] = Path(__file__).resolve().parent / "mitm_addon.py"
+    PACKAGE_ROOT: ClassVar[Path] = Path(__file__).resolve().parent.parent.parent
     HEALTH_CHECK_TIMEOUT_SECONDS: ClassVar[float] = 10.0
     HEALTH_CHECK_INTERVAL_SECONDS: ClassVar[float] = 0.2
     PROXY_PROBE_TIMEOUT_SECONDS: ClassVar[float] = 1.0
@@ -72,7 +73,14 @@ class MitmProxyOrchestrator:
     def _build_env(self) -> Dict[str, str]:
         env: Dict[str, str] = dict(os.environ)
         env[MitmEnv.CAPTURE_PATH_ENV_VAR] = str(Workspace.mitm_capture_file())
+        env["PYTHONPATH"] = self._prepend_package_root(env.get("PYTHONPATH"))
         return env
+
+    @classmethod
+    def _prepend_package_root(cls, existing: Optional[str]) -> str:
+        if not existing:
+            return str(cls.PACKAGE_ROOT)
+        return f"{cls.PACKAGE_ROOT}{os.pathsep}{existing}"
 
     def _wait_until_ready(self) -> None:
         deadline: float = time.monotonic() + self.HEALTH_CHECK_TIMEOUT_SECONDS

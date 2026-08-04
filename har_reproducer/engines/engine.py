@@ -29,6 +29,7 @@ class Engine:
             output_dir: Path,
             config_path: Optional[Path] = None,
             proxy_port: Optional[int] = None,
+            ca_cert_path: Optional[Path] = None,
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
@@ -45,8 +46,7 @@ class Engine:
 
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
 
-        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port,
-                                                                                      project_config.ca_cert_path)
+        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
         self.token_resolver: TokenResolver = TokenResolver(self.session_store)
 
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria

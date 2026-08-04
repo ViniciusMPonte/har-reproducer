@@ -55,38 +55,18 @@ class CandidateResolver:
             return candidate
 
         candidate.origin_step = origin[0]
-        candidate.token_id = self._derive_token_id(candidate.path, candidate.origin_step)
+        base_token_id: str = self._derive_token_id(candidate.path, candidate.origin_step)
 
-        if self._reuse_verified_in_memory(candidate):
-            return candidate
-
-        reused: bool
+        slot_id: str
         initial_error: Optional[str]
-        reused, initial_error = self._reuse_persisted_from_disk(candidate)
-        if reused:
+        slot_id, initial_error = self._find_slot(base_token_id, candidate)
+        candidate.token_id = slot_id
+
+        if self.session_store.state.registry.get(slot_id) is not None:
+            candidate.status = "Resolved"
             return candidate
 
         return self._generate_new_extractor(candidate, initial_error)
-
-    def _reuse_verified_in_memory(self, candidate: DynamicToken) -> bool:
-        existing: Optional[Extractor] = self.session_store.state.registry.get(candidate.token_id)
-        if existing is None or not existing.verified:
-            return False
-        candidate.status = "Resolved"
-        return True
-
-    def _reuse_persisted_from_disk(self, candidate: DynamicToken) -> Tuple[bool, Optional[str]]:
-        persisted: Optional[Extractor] = self.metadata_store.load(candidate.token_id)
-        if persisted is None:
-            return False, None
-
-        result: Optional[str] = self.extractor_runner.run_existing(candidate.token_id)
-        if result == candidate.current_value:
-            self.session_store.state.registry[candidate.token_id] = persisted
-            candidate.status = "Resolved"
-            return True, None
-
-        return False, self._mismatch_error(result, candidate.current_value)
 
     def _find_slot(self, base_token_id: str, candidate: DynamicToken) -> Tuple[str, Optional[str]]:
         attempt: int = 1
