@@ -10,7 +10,7 @@ class ResponseGrep:
 
     @classmethod
     def find(cls, responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
-        for variant in cls._build_pattern_variants(pattern):
+        for variant in cls.value_variants(pattern):
             match: Optional[Tuple[int, str]] = cls._grep_single_pattern(responses_dir, variant)
             if match is not None:
                 return match
@@ -35,12 +35,12 @@ class ResponseGrep:
         return current
 
     @classmethod
-    def _build_pattern_variants(cls, pattern: str) -> List[str]:
+    def value_variants(cls, value: str) -> List[str]:
         candidates: List[str] = [
-            pattern,
-            cls.try_decode(pattern),
-            urllib.parse.quote(pattern, safe=""),
-            base64.b64encode(pattern.encode("utf-8")).decode("ascii"),
+            value,
+            cls.try_decode(value),
+            urllib.parse.quote(value, safe=""),
+            base64.b64encode(value.encode("utf-8")).decode("ascii"),
         ]
         return cls._deduplicate(candidates)
 
@@ -57,7 +57,7 @@ class ResponseGrep:
     @classmethod
     def _grep_single_pattern(cls, responses_dir: Path, pattern: str) -> Optional[Tuple[int, str]]:
         try:
-            cmd: List[str] = ["grep", "-rl", "--include=res_*.json", pattern, str(responses_dir)]
+            cmd: List[str] = ["grep", "-rlF", "--include=res_*.json", pattern, str(responses_dir)]
             result: CompletedProcess[str] = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
             if not result.stdout:

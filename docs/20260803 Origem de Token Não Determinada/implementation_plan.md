@@ -67,19 +67,19 @@ def _build_pattern_variants(cls, pattern: str) -> List[str]:
   `_extract_step_index` ficam exatamente como estão.
 
 **Critérios de aceite:**
-- [ ] `ResponseGrep._grep_single_pattern(dir, "*/*")` não casa mais por acidente
+- [x] `ResponseGrep._grep_single_pattern(dir, "*/*")` não casa mais por acidente
   de regex com um arquivo que só contenha um `*` solto sem a substring `*/*`
   literal (verificar criando um `res_0000.json` de teste com um `*` isolado e
   confirmando que não aparece no resultado).
-- [ ] `ResponseGrep.value_variants("abc")` retorna uma lista contendo `"abc"` e
+- [x] `ResponseGrep.value_variants("abc")` retorna uma lista contendo `"abc"` e
   `"YWJj"` (base64 de `"abc"`), sem duplicatas — mesmo comportamento de hoje,
   só com nome/visibilidade novos.
-- [ ] `ResponseGrep.find(dir, pattern)` continua retornando `(step_index,
+- [x] `ResponseGrep.find(dir, pattern)` continua retornando `(step_index,
   filename)` para os mesmos casos que já funcionavam antes desta task (não
   regressão): rodar contra um `responses_dir` com um valor presente
   literalmente em algum `res_000N.json` e confirmar que o step certo ainda é
   encontrado.
-- [ ] Nenhum outro ponto do código chama `ResponseGrep._build_pattern_variants`
+- [x] Nenhum outro ponto do código chama `ResponseGrep._build_pattern_variants`
   (nome antigo) — só existe a versão pública `value_variants`.
 
 ## T02 — `BaseAgent`: expor `sanitize_identifier` publicamente
