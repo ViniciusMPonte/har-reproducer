@@ -193,22 +193,22 @@ ramo do cache em memória (`cached_value` nunca é `None` ali, só é populado d
 próprio `if result == candidate.current_value`).
 
 **Critérios de aceite:**
-- [ ] Slot sem `.meta.json` em disco e sem entrada em `_validated_values`: retorna
+- [x] Slot sem `.meta.json` em disco e sem entrada em `_validated_values`: retorna
   `(SlotStatus.FREE, None)`.
-- [ ] Slot com `.meta.json`/`.py` em disco cujo extractor retorna exatamente
+- [x] Slot com `.meta.json`/`.py` em disco cujo extractor retorna exatamente
   `candidate.current_value`: retorna `(SlotStatus.MATCH, None)`; após a chamada,
   `session_store.state.registry[slot_id]` está populado com o `Extractor` carregado,
   `session_store.state.tokens[slot_id] == candidate.current_value`, e
   `self._validated_values[slot_id] == candidate.current_value`.
-- [ ] Slot com `.meta.json`/`.py` em disco cujo extractor retorna um valor diferente de
+- [x] Slot com `.meta.json`/`.py` em disco cujo extractor retorna um valor diferente de
   `candidate.current_value`: retorna `(SlotStatus.MISMATCH, <mensagem de erro não
   vazia>)`; `session_store.state.registry` **não** é alterado para esse `slot_id`.
-- [ ] Chamar `_check_slot` duas vezes seguidas para o mesmo `slot_id` que já bateu
+- [x] Chamar `_check_slot` duas vezes seguidas para o mesmo `slot_id` que já bateu
   (`MATCH`) na primeira chamada: a segunda chamada retorna `(SlotStatus.MATCH, None)`
   **sem** invocar `extractor_runner.run_existing` de novo (verificável checando que o
   resultado vem do branch de `cached_value`, não do branch de disco) — não regressão
   de custo (spec seção 3.4).
-- [ ] Extractor em disco que falha na execução (`extractor_runner.run_existing`
+- [x] Extractor em disco que falha na execução (`extractor_runner.run_existing`
   retorna `None`): retorna `(SlotStatus.MISMATCH, "Persisted extractor failed to
   execute (no output).")` — mesma mensagem que `_mismatch_error(None, ...)` já produz
   hoje (não regressão de comportamento de erro).

@@ -87,6 +87,39 @@ class CandidateResolver:
 
         return False, self._mismatch_error(result, candidate.current_value)
 
+    def _check_slot(self, slot_id: str, candidate: DynamicToken) -> Tuple[SlotStatus, Optional[str]]:
+        cached: Optional[Tuple[SlotStatus, Optional[str]]] = self._check_cached_slot(slot_id, candidate)
+        if cached is not None:
+            return cached
+        return self._check_persisted_slot(slot_id, candidate)
+
+    def _check_cached_slot(
+            self, slot_id: str, candidate: DynamicToken
+    ) -> Optional[Tuple[SlotStatus, Optional[str]]]:
+        cached_value: Optional[str] = self._validated_values.get(slot_id)
+        if cached_value is None:
+            return None
+        if cached_value == candidate.current_value:
+            return SlotStatus.MATCH, None
+        return SlotStatus.MISMATCH, self._mismatch_error(cached_value, candidate.current_value)
+
+    def _check_persisted_slot(self, slot_id: str, candidate: DynamicToken) -> Tuple[SlotStatus, Optional[str]]:
+        persisted: Optional[Extractor] = self.metadata_store.load(slot_id)
+        if persisted is None:
+            return SlotStatus.FREE, None
+
+        result: Optional[str] = self.extractor_runner.run_existing(slot_id)
+        if result != candidate.current_value:
+            return SlotStatus.MISMATCH, self._mismatch_error(result, candidate.current_value)
+
+        self._accept_persisted_slot(slot_id, persisted, result)
+        return SlotStatus.MATCH, None
+
+    def _accept_persisted_slot(self, slot_id: str, persisted: Extractor, result: str) -> None:
+        self.session_store.state.registry[slot_id] = persisted
+        self.session_store.set_token(slot_id, result)
+        self._validated_values[slot_id] = result
+
     def _generate_new_extractor(self, candidate: DynamicToken, initial_error: Optional[str]) -> DynamicToken:
         candidate.status = "UnderReview"
 
