@@ -54,6 +54,11 @@ class BaseAgent:
             return self.path.split(":", 1)[1]
         return self.path
 
+    def value_char_class(self) -> str:
+        if re.fullmatch(r"[\w\-.]+", self.expected_value):
+            return r"[\w\-.]+"
+        return r".+?"
+
     def deterministic_strategies(self) -> List[Strategy]:
         return []
 

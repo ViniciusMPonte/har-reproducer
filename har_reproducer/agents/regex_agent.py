@@ -21,7 +21,7 @@ class RegexAgent(BaseAgent):
         key: Optional[str] = self.key
         if not key or key == "body":
             return None
-        return rf"{re.escape(key)}['\"]?\s*[:=]\s*['\"]?({self._value_char_class()})"
+        return rf"{re.escape(key)}['\"]?\s*[:=]\s*['\"]?({self.value_char_class()})"
 
     def _context_pattern(self) -> Optional[str]:
         body: Optional[str] = self.response_sample.get("body")
@@ -33,13 +33,7 @@ class RegexAgent(BaseAgent):
         prefix: str = body[max(0, pos - 20):pos]
         if not prefix.strip():
             return None
-        return rf"{re.escape(prefix)}({self._value_char_class()})"
-
-    def _value_char_class(self) -> str:
-
-        if re.fullmatch(r"[\w\-.]+", self.expected_value):
-            return r"[\w\-.]+"
-        return r".+?"
+        return rf"{re.escape(prefix)}({self.value_char_class()})"
 
     def _make_strategy(self, pattern: str) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:

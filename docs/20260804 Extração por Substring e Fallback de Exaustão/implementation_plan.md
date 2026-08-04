@@ -76,10 +76,10 @@ def _context_pattern(self) -> Optional[str]:
 import. Nenhuma outra lógica de `RegexAgent` muda.
 
 **Critérios de aceite:**
-- [ ] `BaseAgent(token_id="x", response_sample={}, expected_value="abc-123").value_char_class()` retorna `r"[\w\-.]+"`.
-- [ ] `BaseAgent(token_id="x", response_sample={}, expected_value="a b?c").value_char_class()` retorna `r".+?"` (contém caractere fora de `\w\-.`).
-- [ ] `RegexAgent(...)._key_pattern()`/`_context_pattern()` continuam produzindo exatamente o mesmo regex de antes pra um mesmo `key`/`body`/`expected_value` fixo — não regressão.
-- [ ] Nenhum ponto do código chama `RegexAgent._value_char_class` (nome antigo) — só existe `BaseAgent.value_char_class`.
+- [x] `BaseAgent(token_id="x", response_sample={}, expected_value="abc-123").value_char_class()` retorna `r"[\w\-.]+"`.
+- [x] `BaseAgent(token_id="x", response_sample={}, expected_value="a b?c").value_char_class()` retorna `r".+?"` (contém caractere fora de `\w\-.`).
+- [x] `RegexAgent(...)._key_pattern()`/`_context_pattern()` continuam produzindo exatamente o mesmo regex de antes pra um mesmo `key`/`body`/`expected_value` fixo — não regressão.
+- [x] Nenhum ponto do código chama `RegexAgent._value_char_class` (nome antigo) — só existe `BaseAgent.value_char_class`.
 
 ## T02 — `AgentType`: novo membro `LITERAL_FALLBACK`
 
