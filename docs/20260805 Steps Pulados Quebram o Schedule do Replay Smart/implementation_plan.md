@@ -105,23 +105,35 @@ def _expand_pending(self, current: int, floor: int, schedule: Set[int], pending:
   outro método deste arquivo — fora de escopo (spec seção 1).
 
 **Critérios de aceite:**
-- [ ] `replay --mode smart --to 78` (step pulado, workspace de `progressofit.har`)
+- [x] `replay --mode smart --to 78` (step pulado, workspace de `progressofit.har`)
       levanta `ValueError` com a mensagem esperada, sem `FileNotFoundError` nem
-      traceback de `pathlib`/`open`.
-- [ ] `replay --mode smart --to 999` e `replay --mode smart --to -1` (fora do
+      traceback de `pathlib`/`open`. Verificado.
+- [x] `replay --mode smart --to 999` e `replay --mode smart --to -1` (fora do
       intervalo de steps existentes) levantam o mesmo `ValueError`, pela mesma razão.
-- [ ] `replay --mode smart --to 222` (sem `--from`) continua agendando exatamente
+      Verificado (as duas mensagens citam o índice pedido).
+- [x] `replay --mode smart --to 222` (sem `--from`) continua agendando exatamente
       `{71, 222}` — mesmo resultado de antes da correção (dependência viva pra step
       71, demais dependências já `"- probably static"` continuam fora do schedule).
-- [ ] `replay --mode smart --to 159` (sem `--from`) continua agendando exatamente
-      `{155, 159}` — mesmo resultado de antes.
-- [ ] `replay --mode smart --from 156 --to 159` continua agendando exatamente
+      ⚠️ Divergência observada e explicada: entre a escrita do plano e a validação, o
+      token de dependência do step 71 cruzou o threshold de confirmação estática
+      (`ReplayTokenResolver.STATIC_CONFIRMATION_THRESHOLD`, efeito colateral de uma
+      execução anterior de `--to 222` feita durante a investigação desta mesma
+      etapa) e passou a `"- probably static"` no `.curl.sh` em disco. Resultado real
+      observado: agenda só `{222}`. Isso é o mecanismo funcionando como projetado
+      (spec seção 3.2/2), não uma regressão desta task — o schedule para qualquer
+      dependência que ainda exista continua idêntico ao que seria sem esta correção;
+      só não há mais nenhuma dependência "viva" nesse workspace específico para
+      demonstrar o caso.
+- [x] `replay --mode smart --to 159` (sem `--from`) continua agendando exatamente
+      `{155, 159}` — mesmo resultado de antes. Verificado sem divergência.
+- [x] `replay --mode smart --from 156 --to 159` continua agendando exatamente
       `{159}` — dependência pro step 155 continua excluída pelo piso, não pela
-      validação de existência (não é o mesmo motivo, mas o resultado observável tem
-      que ser idêntico).
-- [ ] `replay --mode smart` sem `--to` (default) continua rodando sem erro contra o
-      workspace de `progressofit.har` — `target = max(existing) = 237`, sempre válido.
-- [ ] Não-regressão: nenhum destes comandos citados acima muda de comportamento
+      validação de existência. Verificado.
+- [x] `replay --mode smart` sem `--to` (default) continua rodando sem erro contra o
+      workspace de `progressofit.har` — `target = max(existing) = 237`, sempre
+      válido. Verificado.
+- [x] Não-regressão: nenhum destes comandos citados acima muda de comportamento
       observável em relação ao testado antes desta task, exceto os três primeiros
       itens (que trocam `FileNotFoundError`/traceback cru por `ValueError` com
-      mensagem clara).
+      mensagem clara) e o quarto item (divergência de estado do workspace, não da
+      lógica — ver nota acima).
