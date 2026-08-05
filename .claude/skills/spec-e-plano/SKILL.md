@@ -215,3 +215,34 @@ doc: marcando tasks concluídas
 
 Esse commit sinaliza "plano encerrado". Se alguma task ficou com critério de aceite
 não verificado, não marcar — avisar o usuário antes de considerar o plano fechado.
+
+## Passo 5 — Retro de convenção e arquitetura
+
+Depois do commit de fechamento (Passo 4), antes de considerar a etapa encerrada,
+parar um momento e perguntar duas coisas. Não é obrigatório que a resposta seja
+"sim" — a maioria das specs não gera nenhuma atualização aqui, e isso é o esperado,
+não uma falha do processo.
+
+1. **Surgiu uma convenção de processo nova, ou uma correção a algo já escrito
+   nesta skill?** (ex.: um formato de nome, uma regra de quando dividir uma task em
+   duas, um caso de commit que a seção de mensagens não cobria). Se sim, e se for
+   algo que se repetiria em qualquer feature futura — não específico do domínio
+   desta spec — propor um diff para este arquivo (`spec-e-plano/SKILL.md`).
+2. **Surgiu uma decisão de arquitetura/domínio que reflete (ou viola) o princípio
+   de genericidade do projeto, ou documenta um ponto de dívida técnica novo ou já
+   conhecido?** Se sim, propor um diff para [[arquitetura-e-fundamentos]].
+
+Critério para decidir se algo "vale" propor (evita inflar as skills com a decisão
+de um caso só):
+- **Vale**: algo que um novo colaborador — ou uma nova sessão do Claude, sem ter
+  visto esta conversa — precisaria saber para não repetir o mesmo erro ou
+  redescobrir a mesma decisão do zero.
+- **Não vale**: detalhe específico de uma classe/feature isolada que já está
+  documentado na própria spec/plano da etapa (`docs/AAAAMMDD .../spec.md`) — isso já
+  tem um lugar, não precisa duplicar na skill.
+
+⚠️ Nunca editar `spec-e-plano/SKILL.md` nem `arquitetura-e-fundamentos/SKILL.md`
+sem antes mostrar o diff proposto e esperar aprovação explícita do usuário — mesmo
+já tendo aprovação da spec/plano da etapa, ela não se estende a mudanças nas skills
+que governam o processo. Se o usuário não responder ou recusar, a etapa fecha
+normalmente, sem a atualização.
