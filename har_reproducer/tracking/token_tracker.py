@@ -30,7 +30,7 @@ class TokenTracker:
     def analyze_step(self, step: Step, baseline_step: Step) -> StepAnalysis:
         diffs: Dict[str, str] = self.baseline_diff.compare(step, baseline_step)
         candidates: List[DynamicToken] = self.baseline_diff.detect_candidates(diffs)
-        tokens: List[DynamicToken] = self.candidate_resolver.resolve(candidates)
+        tokens: List[DynamicToken] = self.candidate_resolver.resolve(candidates, step.index)
         self.placeholder_applier.apply(step.request, tokens)
         template: str = CurlGenerator().generate(step.request, tokens)
         static_values: Dict[str, str] = self.baseline_diff.extract_static_values(step, baseline_step)
