@@ -10,9 +10,29 @@ sequenciais, sempre dentro de uma pasta nova em `docs/`: primeiro uma **spec** (
 quê" e o "porquê", ancorada no código real), depois um **plano de implementação** (o
 "como", quebrado em tasks autocontidas), depois a **implementação task a task**, cada
 uma virando um commit padronizado. Ninguém implementa nada antes de ambos os
-documentos existirem e a spec estar aprovada.
+documentos existirem e **ambos** — spec e plano — estarem aprovados.
 
 Todo código citado em qualquer um dos dois documentos segue [[guia-de-estilo]].
+
+⚠️ **Sequência completa da etapa, na ordem exata** (erro já cometido mais de uma vez:
+inverter/pular um destes pontos — cada um é um portão, não uma sugestão):
+
+1. Criar pasta + branch (Passo 0).
+2. Escrever `spec.md` → **parar e esperar aprovação do usuário.**
+3. Escrever `implementation_plan.md` → **parar e esperar aprovação do usuário.**
+4. Só agora, com os dois aprovados: **um commit só**, `doc: criação de spec e plano`,
+   contendo `spec.md` + `implementation_plan.md` juntos e nada de código.
+5. Por task: implementar → validar critérios de aceite → commit da task (`feat:`/
+   `fix:`/`refactor:` + `T0N`). Repetir para cada task do plano.
+6. Depois da última task: marcar os checkboxes do plano → commit
+   `doc: marcando tasks concluídas`.
+7. `git checkout master` → `git merge --no-ff <branch-da-etapa>`.
+8. Retro de convenção/arquitetura (Passo 5) — pode acontecer antes ou depois do
+   passo 7, não tem ordem rígida em relação ao merge.
+
+Nenhum código de task entra no commit do item 4 desta lista, e nenhum documento de
+spec/plano fica sem commit antes do primeiro commit de task (item 5) — os dois
+documentos são sempre commitados juntos, de uma vez, depois de ambos aprovados.
 
 ## Passo 0 — pasta da etapa e branch
 
@@ -146,10 +166,26 @@ Regras ao preencher:
 - Cada task referencia a seção da spec que a originou quando ajuda a rastrear o
   "porquê" (ex.: "spec seção 3.3").
 
+Regra de processo: **apresentar o plano inteiro (todas as tasks) e esperar aprovação
+do usuário antes de começar a implementação (Passo 3).** É uma aprovação separada da
+aprovação da spec (Passo 1) — aprovar a spec não aprova automaticamente o plano.
+
+Só depois que **os dois** documentos (spec e plano) existem e estão aprovados,
+commitá-los juntos, num único commit, antes de tocar em qualquer código:
+
+```
+doc: criação de spec e plano
+```
+
+⚠️ Este commit nunca leva código — só os dois arquivos markdown. E nunca existe um
+commit da spec sozinha esperando pelo plano: se a spec já foi aprovada mas o plano
+ainda não foi escrito/aprovado, ainda não é hora de commitar nada.
+
 ## Passo 3 — Implementação: uma task, um commit
 
-Depois do plano aprovado, a implementação segue a ordem das tasks (`T01`, `T02`, ...)
-do `implementation_plan.md`. Cada task vira **exatamente um commit** — não acumular
+Depois do plano aprovado e do commit `doc: criação de spec e plano` (Passo 2), a
+implementação segue a ordem das tasks (`T01`, `T02`, ...) do
+`implementation_plan.md`. Cada task vira **exatamente um commit** — não acumular
 várias tasks num commit só, mesmo que pareçam pequenas ou relacionadas (excessão: duas
 tasks triviais, sequenciais e do mesmo componente podem ir juntas — usar com
 moderação, não como padrão).
@@ -215,6 +251,20 @@ doc: marcando tasks concluídas
 
 Esse commit sinaliza "plano encerrado". Se alguma task ficou com critério de aceite
 não verificado, não marcar — avisar o usuário antes de considerar o plano fechado.
+
+Em seguida, sem esperar uma confirmação adicional (a aprovação já foi dada na
+spec/plano — a menos que o usuário peça explicitamente pra revisar antes), fechar o
+ciclo da etapa voltando pra `master` e trazendo a branch de volta:
+
+```bash
+git checkout master
+git merge --no-ff AAAAMMDD-slug-do-nome-da-feature
+```
+
+`--no-ff` sempre, mesmo quando daria fast-forward — é o que garante o commit de
+merge explícito (`Merge branch '...' into master`), o mesmo padrão de todo o
+histórico do repo (`git log --merges`). Só depois deste merge a próxima etapa do dia
+deveria criar uma branch nova a partir da `master` (Passo 0).
 
 ## Passo 5 — Retro de convenção e arquitetura
 
