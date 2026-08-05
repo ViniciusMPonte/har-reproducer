@@ -125,7 +125,10 @@ Arquivo JSON passado via `--config`, com todos os campos opcionais:
   ],
   "proxy_port": null,
   "ca_cert_path": null,
-  "response_reference_dir": null
+  "response_reference_dir": null,
+  "skip_rules": {
+    "methods": ["OPTIONS"]
+  }
 }
 ```
 
@@ -144,3 +147,4 @@ Arquivo JSON passado via `--config`, com todos os campos opcionais:
 - **`proxy_port`** — porta fixa para o `mitmproxy`. Se omitido, uma porta livre é escolhida automaticamente.
 - **`ca_cert_path`** — diretório de configuração do `mitmproxy` (`confdir`), de onde é lido o certificado `mitmproxy-ca-cert.pem` usado nas requisições (`--cacert`). Se omitido, usa `.mitmproxy/` na raiz do projeto.
 - **`response_reference_dir`** — diretório de respostas reais usado como referência pelo `replay` ao resolver tokens de passos fora do schedule atual. Se omitido, usa `<output>/real_responses/` do próprio workspace; quando a resposta de um passo específico não existir ali (ex.: workspace que só rodou `dry`), o `replay` cai automaticamente para `<output>/original_responses/`.
+- **`skip_rules`** — regras de steps que são pulados (sem análise de tokens nem tentativa de requisição). `methods`: lista de métodos HTTP pulados; padrão `["OPTIONS"]`. Steps cujo protocolo não é `http`/`https` (ex.: `ws`/`wss`, capturados de upgrades de WebSocket) são sempre pulados, independente desta configuração — o transporte via `curl` não tem como executá-los.
