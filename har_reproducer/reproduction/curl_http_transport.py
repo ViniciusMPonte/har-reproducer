@@ -51,7 +51,7 @@ class CurlHttpTransport:
 
     def _tls_flag(self) -> str:
         if self.ca_cert_path is None:
-            return "--ssl-insecure"
+            return "--insecure"
 
         return f"--cacert {shlex.quote(str(self.ca_cert_path))}"
 
