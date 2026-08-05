@@ -122,25 +122,25 @@ def _eligible_response_files(cls, responses_dir: Path, before_step_index: int) -
   mudam.
 
 **Critérios de aceite:**
-- [ ] Com um `responses_dir` de teste contendo `res_0000.json`...`res_0011.json`
+- [x] Com um `responses_dir` de teste contendo `res_0000.json`...`res_0011.json`
   (sem o valor) e `res_0075.json` (contendo `"http://127.0.0.1:8080"`),
   `ResponseGrep.find(dir, "http://127.0.0.1:8080", 12)` retorna `None` —
   reproduz e corrige exatamente o bug da spec.
-- [ ] No mesmo diretório, `ResponseGrep.find(dir, "http://127.0.0.1:8080", 80)`
+- [x] No mesmo diretório, `ResponseGrep.find(dir, "http://127.0.0.1:8080", 80)`
   retorna `(75, "res_0075.json")` — a mesma origem passa a ser encontrada
   quando o step que pergunta é posterior a ela (não regressão do caso
   legítimo de referência para trás).
-- [ ] `ResponseGrep._eligible_response_files(dir, 12)` retorna exatamente os
+- [x] `ResponseGrep._eligible_response_files(dir, 12)` retorna exatamente os
   paths de `res_0000.json` a `res_0011.json` (12 arquivos), sem
   `res_0075.json`.
-- [ ] `ResponseGrep._eligible_response_files(dir, 0)` retorna lista vazia, e
+- [x] `ResponseGrep._eligible_response_files(dir, 0)` retorna lista vazia, e
   `ResponseGrep.find(dir, "qualquer coisa", 0)` retorna `None` sem lançar
   exceção (nenhum arquivo elegível, nenhuma chamada a `grep`).
-- [ ] Não regressão: `ResponseGrep.find(dir, "valor_ausente", 238)` continua
+- [x] Não regressão: `ResponseGrep.find(dir, "valor_ausente", 238)` continua
   retornando `None` quando o valor não existe em nenhum arquivo (mesmo
   comportamento de "não achei nada" de antes, incluindo o tratamento de
   `CalledProcessError` com `returncode == 1`).
-- [ ] Não regressão: `ResponseGrep.value_variants("abc")` e
+- [x] Não regressão: `ResponseGrep.value_variants("abc")` e
   `ResponseGrep.try_decode(...)` continuam com o mesmo comportamento/retorno
   de antes desta task.
 
@@ -242,21 +242,21 @@ def _find_origin(self, value: str, step_index: int) -> Optional[Tuple[int, str]]
   operar sobre um `origin_step` já garantidamente causal.
 
 **Critérios de aceite:**
-- [ ] `CandidateResolver.resolve([candidate], step_index=12)` para um
+- [x] `CandidateResolver.resolve([candidate], step_index=12)` para um
   candidato cujo `current_value` só existe em `res_0075.json` retorna o
   candidato com `status == "NotFound"` e `origin_step is None` — nenhum
   extractor é gerado nem registrado em `session_store.state.registry`.
-- [ ] `CandidateResolver.resolve([candidate], step_index=80)` para o mesmo
+- [x] `CandidateResolver.resolve([candidate], step_index=80)` para o mesmo
   valor (mesmo `responses_dir` de teste) segue o fluxo normal de resolução
   (`origin_step == 75`, `status` avança para `"UnderReview"`/`"Resolved"` via
   `_generate_new_extractor`) — não regressão do caso de referência legítima
   para trás.
-- [ ] Chamar `_find_origin("valor", 12)` (retorna `None`, valor só existe no
+- [x] Chamar `_find_origin("valor", 12)` (retorna `None`, valor só existe no
   step 20) e depois `_find_origin("valor", 30)` no mesmo `CandidateResolver`
   retorna `(20, "res_0020.json")` na segunda chamada — comprova que a cache
   por `(value, step_index)` não reaproveita incorretamente o resultado
   negativo do step 12 para o step 30.
-- [ ] Não regressão: um candidato cujo `origin_step` já era menor que o step
+- [x] Não regressão: um candidato cujo `origin_step` já era menor que o step
   atual antes desta task (caso comum, ex.: token de sessão extraído do login)
   continua percorrendo `_find_slot`/`_check_persisted_slot` normalmente e
   reaproveitando um extractor já persistido em disco quando o valor bate.
@@ -310,11 +310,11 @@ def analyze_step(self, step: Step, baseline_step: Step) -> StepAnalysis:
   Nada mais neste método muda.
 
 **Critérios de aceite:**
-- [ ] `TokenTracker.analyze_step` chama `self.candidate_resolver.resolve` com
+- [x] `TokenTracker.analyze_step` chama `self.candidate_resolver.resolve` com
   dois argumentos posicionais, o segundo sendo `step.index`.
-- [ ] Não regressão: `StepAnalysis.step_index`, `static_values` e
+- [x] Não regressão: `StepAnalysis.step_index`, `static_values` e
   `curl_template` continuam calculados exatamente como antes desta task.
-- [ ] **Verificação fim a fim do bug original:** rodar
+- [x] **Verificação fim a fim do bug original:** rodar
   `uv run python -m har_reproducer.main run --har <har original> --output <dir novo> --mode dry`
   contra o HAR que reproduziu o bug da spec (238 steps, header `Origin` do
   browser ecoado pela primeira vez numa response só no step 75) e confirmar:
