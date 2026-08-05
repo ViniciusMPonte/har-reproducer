@@ -79,21 +79,21 @@ def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
   (`session_store.py:39`).
 
 **Critérios de aceite:**
-- [ ] `resolve_all()` chamado sem argumento (`force` no valor padrão) não reexecuta o
+- [x] `resolve_all()` chamado sem argumento (`force` no valor padrão) não reexecuta o
   extractor de um `token_id` já presente em `session_store.state.tokens` — verificável
   isolando `ExtractorRunner.run`/`_refresh_token` com um spy em teste manual, ou por
   leitura do fluxo (guard clause antes de `_should_refresh_token`).
-- [ ] `resolve_all()` chamado sem argumento continua processando (chamando
+- [x] `resolve_all()` chamado sem argumento continua processando (chamando
   `_refresh_token`) qualquer `token_id` que esteja no `registry` mas ainda não em
   `session_store.state.tokens` — nenhuma regressão para tokens recém-registrados.
-- [ ] `resolve_all(force=True)` reprocessa **todo** o registry que satisfaz
+- [x] `resolve_all(force=True)` reprocessa **todo** o registry que satisfaz
   `_should_refresh_token`, independente de já estar em `session_store.state.tokens` —
   comportamento idêntico ao `resolve_all()` de antes desta task, sem exceção.
-- [ ] Um `token_id` cuja `_refresh_token` falhou (exceção capturada ou arquivo de
+- [x] Um `token_id` cuja `_refresh_token` falhou (exceção capturada ou arquivo de
   origem inexistente) continua fora de `session_store.state.tokens` e, portanto,
   continua sendo reprocessado em toda chamada seguinte com `force=False` — nenhuma
   mudança nesse comportamento de retry implícito.
-- [ ] `python -m py_compile har_reproducer/tracking/token_resolver.py` sem erros.
+- [x] `python -m py_compile har_reproducer/tracking/token_resolver.py` sem erros.
 
 ---
 
@@ -148,13 +148,13 @@ def handle_recovery(self, response: StepResponse) -> bool:
   está correta como está: sem argumento, herda o novo padrão `force=False` de T01.
 
 **Critérios de aceite:**
-- [ ] `handle_recovery` chama `self.token_resolver.resolve_all(force=True)` — todo o
+- [x] `handle_recovery` chama `self.token_resolver.resolve_all(force=True)` — todo o
   registry é reprocessado na recuperação de 400/401, mesmo para `token_id` já presente
   em `session_store.state.tokens`, exatamente como o comportamento anterior a T01.
-- [ ] `handle_recovery` continua retornando `True`/`False` na mesma condição
+- [x] `handle_recovery` continua retornando `True`/`False` na mesma condição
   (`response.status_code` em `RECOVERABLE_STATUS_CODES`) — nenhuma mudança de fluxo de
   controle.
-- [ ] `Engine._process_entry` continua chamando `resolve_all()` sem argumento (não
+- [x] `Engine._process_entry` continua chamando `resolve_all()` sem argumento (não
   `force=True`) — não-regressão: o call site por-step usa o novo padrão de T01, só
   `handle_recovery` é forçado.
-- [ ] `python -m py_compile har_reproducer/engines/engine.py` sem erros.
+- [x] `python -m py_compile har_reproducer/engines/engine.py` sem erros.
