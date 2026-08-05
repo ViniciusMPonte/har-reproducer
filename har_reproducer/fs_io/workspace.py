@@ -78,6 +78,11 @@ class Workspace:
         return cls.mitm_capture / "capture.har"
 
     @classmethod
+    def mitm_log_file(cls) -> Path:
+        cls._ensure_initialized()
+        return cls.mitm_capture / "mitmdump.log"
+
+    @classmethod
     def curl_file(cls, index: int) -> Path:
         cls._ensure_initialized()
         return cls.curls / f"req_{index:04d}.curl.sh"
