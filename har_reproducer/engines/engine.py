@@ -48,7 +48,7 @@ class Engine:
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
 
         self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
-        self.token_resolver: TokenResolver = TokenResolver(self.session_store)
+        self.token_resolver: TokenResolver = TokenResolver(self.tracking_responses_dir, self.session_store)
 
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
         llm: Optional[BaseChatModel] = self._build_llm(project_config)

@@ -1,13 +1,14 @@
+from pathlib import Path
 from typing import Optional
 
-from har_reproducer.fs_io import Workspace
 from har_reproducer.models import Extractor
 from har_reproducer.reproduction import ExtractorRunner
 from har_reproducer.session import SessionStore
 
 
 class TokenResolver:
-    def __init__(self, session_store: SessionStore) -> None:
+    def __init__(self, responses_dir: Path, session_store: SessionStore) -> None:
+        self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = ExtractorRunner()
 
@@ -20,11 +21,11 @@ class TokenResolver:
         return extractor.verified and extractor.origin_step is not None
 
     def _refresh_token(self, token_id: str, extractor: Extractor) -> None:
-        if not Workspace.response_file(extractor.origin_step).exists():
+        if not (self.responses_dir / f"res_{extractor.origin_step:04d}.json").exists():
             return
 
         try:
-            value: Optional[str] = self.extractor_runner.run(extractor)
+            value: Optional[str] = self.extractor_runner.run(extractor, self.responses_dir)
         except Exception as e:
             print(f"Failed to refresh token '{token_id}': {e}")
             return

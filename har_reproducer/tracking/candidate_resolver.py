@@ -104,7 +104,7 @@ class CandidateResolver:
         if persisted is None:
             return SlotStatus.FREE, None
 
-        result: Optional[str] = self.extractor_runner.run_existing(slot_id)
+        result: Optional[str] = self.extractor_runner.run_existing(slot_id, self.responses_dir)
         if result != candidate.current_value:
             return SlotStatus.MISMATCH, self._mismatch_error(result, candidate.current_value)
 

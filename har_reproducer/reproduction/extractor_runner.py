@@ -13,10 +13,10 @@ from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 class ExtractorRunner:
     EXTRACTOR_TIMEOUT_SECONDS: ClassVar[int] = 5
 
-    def run(self, extractor: Extractor) -> Optional[str]:
+    def run(self, extractor: Extractor, response_override_dir: Optional[Path] = None) -> Optional[str]:
         extractor_file: Path = self._write_extractor_script(extractor)
         self._cleanup_temp_file(extractor)
-        return self._execute_extractor_script(extractor_file)
+        return self._execute_extractor_script(extractor_file, response_override_dir)
 
     def run_existing(
             self,
