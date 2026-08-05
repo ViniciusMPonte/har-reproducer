@@ -13,11 +13,44 @@ existirem e a spec estar aprovada.
 
 Todo código citado em qualquer um dos dois documentos segue [[guia-de-estilo]].
 
-## Passo 0 — pasta da etapa
+## Passo 0 — pasta da etapa e branch
 
 Criar `docs/AAAAMMDD Nome da Feature/` (data de hoje + nome curto em title case,
 mesmo padrão de `docs/20260803 Reaproveitamento de Extractores/`). Os dois arquivos
 (`spec.md` e `implementation_plan.md`) vivem lá dentro.
+
+Na sequência, criar o branch de trabalho a partir da `master`, **sempre**, nunca
+implementar direto na `master` nem usar prefixos como `fix/`, `feature/` etc. O nome
+do branch é derivado 1:1 do nome da pasta que acabou de ser criada:
+
+```
+AAAAMMDD-slug-do-nome-da-feature
+```
+
+Onde `slug-do-nome-da-feature` é o "Nome da Feature" da pasta: minúsculo, sem
+acentos/cedilha (á→a, ã→a, ç→c, ...), espaços e demais separadores trocados por
+hífen. Exemplos reais já usados no repo:
+
+| Pasta em `docs/`                                                  | Branch                                                        |
+|---------------------------------------------------------------------|----------------------------------------------------------------|
+| `20260803 Reaproveitamento de Extractores`                          | `20260803-reaproveitamento-de-extractores`                      |
+| `20260804 Desambiguação de Identidade de Token Dinâmico`             | `20260804-desambiguacao-de-identidade-de-token-dinamico`        |
+| `20260804 Extração por Substring e Fallback de Exaustão`            | `20260804-extracao-por-substring-e-fallback-de-exaustao`        |
+
+Se já existir branch com a mesma data para outra feature (duas etapas no mesmo dia),
+inserir um número sequencial entre a data e o slug: `AAAAMMDD-2-slug-...` (ver
+`20260623-2-Atualização-do-readme`).
+
+Comando (a partir da `master` atualizada):
+
+```bash
+git checkout master
+git checkout -b AAAAMMDD-slug-do-nome-da-feature
+```
+
+⚠️ Não inventar um nome "descritivo" alternativo (ex.: `fix/colisao-...`) — o slug
+tem que casar com o nome da pasta, mesmo que outro nome pareça mais claro. É isso que
+permite achar o branch de uma feature só olhando `docs/`.
 
 ## Passo 1 — `spec.md`
 
