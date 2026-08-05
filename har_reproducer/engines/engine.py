@@ -97,7 +97,8 @@ class Engine:
         self._persist_original_response_step(index, step.response)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
-        self.token_resolver.resolve_all()
+        if self.USES_NETWORK:
+            self.token_resolver.resolve_all()
 
         response: StepResponse = self.execute_step(step)
         self._persist_response_step(index, response)
