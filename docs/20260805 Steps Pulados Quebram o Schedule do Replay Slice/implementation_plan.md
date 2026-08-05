@@ -55,20 +55,20 @@ def _schedule_slice(self, from_index: Optional[int], to_index: Optional[int]) ->
   adicional necessário (spec seção 5).
 
 **Critérios de aceite:**
-- [ ] Com um workspace onde `curls/` tem os índices `{0, 1, 2}` (sem buraco),
+- [x] Com um workspace onde `curls/` tem os índices `{0, 1, 2}` (sem buraco),
   `_schedule_slice(None, None)` retorna `([0, 1, 2], {0, 1, 2})` — idêntico ao
   comportamento anterior à mudança (garantia de não-regressão para o caso comum).
-- [ ] Com um workspace onde `curls/` tem os índices `{0, 1, 3, 4}` (índice 2
+- [x] Com um workspace onde `curls/` tem os índices `{0, 1, 3, 4}` (índice 2
   pulado/inexistente), `_schedule_slice(None, None)` retorna `([0, 1, 3, 4], {0, 1, 3,
   4})` — o índice 2 nunca aparece em `ordered_indexes` nem em `schedule`.
-- [ ] Mesmo workspace, `_schedule_slice(0, 2)` retorna `([0, 1], {0, 1})` — o índice 2
+- [x] Mesmo workspace, `_schedule_slice(0, 2)` retorna `([0, 1], {0, 1})` — o índice 2
   (dentro do intervalo pedido, mas sem curl file) é filtrado, sem lançar exceção.
-- [ ] Mesmo workspace, `_schedule_slice(3, 4)` retorna `([3, 4], {3, 4})`.
-- [ ] Mesmo workspace, `_schedule_slice(10, 20)` (intervalo fora de qualquer índice
+- [x] Mesmo workspace, `_schedule_slice(3, 4)` retorna `([3, 4], {3, 4})`.
+- [x] Mesmo workspace, `_schedule_slice(10, 20)` (intervalo fora de qualquer índice
   existente) retorna `([], set())` — `run_slice` propaga isso para `_run_schedule`,
   que levanta `ValueError("ReplayRunner: schedule vazio — nenhum step para
   processar.")`, sem `FileNotFoundError`.
-- [ ] Reprodução ponta a ponta: rodando `replay --mode slice` (sem `--from`/`--to`)
+- [x] Reprodução ponta a ponta: rodando `replay --mode slice` (sem `--from`/`--to`)
   contra o workspace de `arquivos-har/progressofit.har` (steps 78, 90, 166 pulados
   por serem `ws://`), o comando percorre todos os steps existentes até o 237 sem
   lançar `FileNotFoundError`, e imprime o resultado final de `Replay Validation
