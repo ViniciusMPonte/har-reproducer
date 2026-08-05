@@ -9,8 +9,6 @@ from har_reproducer.models import Step, StepRequest, StepResponse
 
 class HARParser:
 
-    SKIPPABLE_METHODS: set[str] = {"OPTIONS"}
-
     @staticmethod
     def load_har(path: Path) -> Dict[str, Any]:
 
@@ -55,15 +53,12 @@ class HARParser:
         if post_data:
             req_body = post_data.get("text")
 
-        is_skippable: bool = req_data["method"] in HARParser.SKIPPABLE_METHODS
-
         request: StepRequest = StepRequest(
             url=req_data["url"],
             method=req_data["method"],
             headers=req_headers,
             cookies=req_cookies,
             body=req_body,
-            is_skippable=is_skippable
         )
 
         res_headers: Dict[str, str] = {v["name"]: v["value"] for v in res_data.get("headers", [])}
