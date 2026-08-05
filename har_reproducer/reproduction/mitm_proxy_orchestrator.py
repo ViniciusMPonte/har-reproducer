@@ -5,7 +5,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Callable, ClassVar, Dict, List, Optional
+from typing import Callable, ClassVar, Dict, IO, List, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.reproduction.mitm_env import MitmEnv
@@ -28,6 +28,7 @@ class MitmProxyOrchestrator:
         self.port: int = self._resolve_port(proxy_port)
         self.ca_cert_path: Path = self.project_root / self.CA_CERT_FILENAME
         self._process: Optional[subprocess.Popen] = None
+        self._log_file: Optional[IO[str]] = None
 
     @staticmethod
     def _resolve_port(proxy_port: Optional[int]) -> int:
@@ -55,10 +56,11 @@ class MitmProxyOrchestrator:
             self._terminate()
 
     def _start_process(self) -> subprocess.Popen:
+        self._log_file = open(Workspace.mitm_log_file(), "w", encoding="utf-8")
         return subprocess.Popen(
             self._build_command(),
             env=self._build_env(),
-            stdout=subprocess.PIPE,
+            stdout=self._log_file,
             stderr=subprocess.STDOUT,
         )
 
@@ -108,9 +110,8 @@ class MitmProxyOrchestrator:
 
     def _build_early_exit_message(self) -> str:
         assert self._process is not None
-        output: str = ""
-        if self._process.stdout is not None:
-            output = self._process.stdout.read().decode("utf-8", errors="replace")
+        log_path: Path = Workspace.mitm_log_file()
+        output: str = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
         return f"mitmdump encerrou antes de ficar pronto (exit code {self._process.returncode}):\n{output}"
 
     def _probe_proxy(self) -> ProxyReadiness:
@@ -165,3 +166,7 @@ class MitmProxyOrchestrator:
             self._process.kill()
             self._process.wait()
         self._process = None
+
+        if self._log_file is not None:
+            self._log_file.close()
+            self._log_file = None
