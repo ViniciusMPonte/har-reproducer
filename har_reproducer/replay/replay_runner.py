@@ -130,22 +130,30 @@ class ReplayRunner:
 
     def _schedule_smart(self, from_index: Optional[int], to_index: Optional[int]) -> Tuple[List[int], Set[int]]:
         existing: List[int] = self._existing_step_indexes()
+        existing_set: Set[int] = set(existing)
         floor: int = from_index if from_index is not None else 0
         target: int = to_index if to_index is not None else max(existing)
+        if target not in existing_set:
+            raise ValueError(
+                f"ReplayRunner: step alvo {target} não existe no workspace (nenhum curl file em disco) — "
+                f"provavelmente foi pulado por skip_rules ou está fora do intervalo de steps existentes."
+            )
 
         schedule: Set[int] = {target}
         pending: Set[int] = {target}
         while pending:
             current: int = pending.pop()
-            self._expand_pending(current, floor, schedule, pending)
+            self._expand_pending(current, floor, existing_set, schedule, pending)
 
         return sorted(schedule), schedule
 
-    def _expand_pending(self, current: int, floor: int, schedule: Set[int], pending: Set[int]) -> None:
+    def _expand_pending(
+            self, current: int, floor: int, existing_set: Set[int], schedule: Set[int], pending: Set[int]
+    ) -> None:
         curl_text: str = Workspace.curl_file(current).read_text(encoding="utf-8")
         dependencies = self.dependency_parser.parse(curl_text)
         for origin_step in dependencies.values():
-            if origin_step >= floor and origin_step not in schedule:
+            if origin_step >= floor and origin_step not in schedule and origin_step in existing_set:
                 schedule.add(origin_step)
                 pending.add(origin_step)
 
