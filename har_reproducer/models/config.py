@@ -13,9 +13,14 @@ class LLMSettings(BaseModel):
     extra: Dict[str, Any] = Field(default_factory=dict)
 
 
+class SkipRulesConfig(BaseModel):
+    methods: List[str] = Field(default_factory=lambda: ["OPTIONS"])
+
+
 class ProjectConfig(BaseModel):
     llm: Optional[LLMSettings] = None
     success_criteria: List[SuccessCriterion] = Field(default_factory=list)
     proxy_port: Optional[int] = None
     ca_cert_path: Optional[Path] = None
     response_reference_dir: Optional[Path] = None
+    skip_rules: SkipRulesConfig = Field(default_factory=SkipRulesConfig)

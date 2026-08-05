@@ -1,5 +1,5 @@
 from har_reproducer.models.analysis import StepAnalysis
-from har_reproducer.models.config import LLMSettings, ProjectConfig
+from har_reproducer.models.config import LLMSettings, ProjectConfig, SkipRulesConfig
 from har_reproducer.models.criteria import (
     BodyContainsCriterion,
     HtmlElementPresentCriterion,
@@ -25,6 +25,7 @@ __all__ = [
     "LLMSettings",
     "ProjectConfig",
     "SessionState",
+    "SkipRulesConfig",
     "Step",
     "StepAnalysis",
     "StepRequest",
