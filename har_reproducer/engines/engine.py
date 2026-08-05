@@ -36,7 +36,8 @@ class Engine:
 
         Workspace.init(output_dir)
         self.curls_dir: Path = Workspace.curls
-        self.real_responses_dir: Path = Workspace.real_responses
+        self.original_responses_dir: Path = Workspace.original_responses
+        self.tracking_responses_dir: Path = Workspace.real_responses if self.USES_NETWORK else Workspace.original_responses
         self.extractors_dir: Path = Workspace.extractors
         self.temp_extractors_dir: Path = Workspace.temp_extractors
 
@@ -51,7 +52,7 @@ class Engine:
 
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
         llm: Optional[BaseChatModel] = self._build_llm(project_config)
-        self.tracker: TokenTracker = TokenTracker(self.real_responses_dir, self.session_store, llm=llm)
+        self.tracker: TokenTracker = TokenTracker(self.tracking_responses_dir, self.session_store, llm=llm)
 
     def _build_http_transport(
             self, proxy_port: Optional[int], ca_cert_path: Optional[Path]
