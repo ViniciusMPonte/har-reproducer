@@ -13,7 +13,7 @@ from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
+from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy, StepSkipEvaluator
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import ExtractorTemplate
 from har_reproducer.tracking import TokenResolver, TokenTracker
@@ -46,6 +46,8 @@ class Engine:
         self.retry_policy: StepRetryPolicy = StepRetryPolicy()
 
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
+
+        self.skip_evaluator: StepSkipEvaluator = StepSkipEvaluator(project_config.skip_rules)
 
         self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
         self.token_resolver: TokenResolver = TokenResolver(self.tracking_responses_dir, self.session_store)
@@ -82,7 +84,9 @@ class Engine:
 
         last_response: Optional[StepResponse] = None
         for index, entry in enumerate(entries):
-            last_response = self._process_entry(index, entry, first_entry)
+            response: StepResponse = self._process_entry(index, entry, first_entry)
+            if not response.skipped:
+                last_response = response
 
         return self._validate_final(last_response)
 
@@ -93,8 +97,14 @@ class Engine:
             first_entry: Step,
     ) -> StepResponse:
         step: Step = HARParser.parse_entry(entry, index)
+        skip_reason: Optional[str] = self.skip_evaluator.skip_reason(step.request)
+        step.request.is_skippable = skip_reason is not None
+
         self._persist_request_step(index, step.request)
         self._persist_original_response_step(index, step.response)
+
+        if skip_reason is not None:
+            return self._skip_entry(index, skip_reason)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
         if self.USES_NETWORK:
@@ -107,6 +117,12 @@ class Engine:
         if response.status_code != 0:
             self._persist_template_curl(index, step.analysis.curl_template)
 
+        return response
+
+    def _skip_entry(self, index: int, reason: str) -> StepResponse:
+        response: StepResponse = StepResponse(status_code=0, skipped=True, skip_reason=reason)
+        self._persist_response_step(index, response)
+        print(f"Step {index} skipped ({reason})")
         return response
 
     def _persist_request_step(self, index: int, request: StepRequest) -> None:
