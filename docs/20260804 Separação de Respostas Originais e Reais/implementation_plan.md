@@ -96,11 +96,11 @@ automaticamente.
 `response_file` — só o diretório-base muda. Não introduzir prefixo/sufixo diferente.
 
 **Critérios de aceite:**
-- [ ] `WorkspaceDir.ORIGINAL_RESPONSES.value == "original_responses"`.
-- [ ] Após `Workspace.init(tmp_path)`, `Workspace.original_responses == tmp_path / "original_responses"` e o diretório existe em disco.
-- [ ] `Workspace.original_response_file(3) == Workspace.original_responses / "res_0003.json"`.
-- [ ] Chamar `Workspace.original_response_file(0)` antes de `Workspace.init` levanta `RuntimeError` (mesmo comportamento de `_ensure_initialized` que `response_file`/`request_file` já têm).
-- [ ] Não regressão: `Workspace.response_file`/`Workspace.request_file`/demais helpers e os 7 diretórios já existentes continuam com os mesmos paths de antes.
+- [x] `WorkspaceDir.ORIGINAL_RESPONSES.value == "original_responses"`.
+- [x] Após `Workspace.init(tmp_path)`, `Workspace.original_responses == tmp_path / "original_responses"` e o diretório existe em disco.
+- [x] `Workspace.original_response_file(3) == Workspace.original_responses / "res_0003.json"`.
+- [x] Chamar `Workspace.original_response_file(0)` antes de `Workspace.init` levanta `RuntimeError` (mesmo comportamento de `_ensure_initialized` que `response_file`/`request_file` já têm).
+- [x] Não regressão: `Workspace.response_file`/`Workspace.request_file`/demais helpers e os 7 diretórios já existentes continuam com os mesmos paths de antes.
 
 ## T02 — `Engine`: persistência incondicional da resposta original do HAR
 
@@ -188,16 +188,16 @@ populado por `HARParser.parse_entry` no fluxo real).
 `_persist_response_step`).
 
 **Critérios de aceite:**
-- [ ] Rodando `run --mode dry` sobre um HAR de N entries, `original_responses/`
+- [x] Rodando `run --mode dry` sobre um HAR de N entries, `original_responses/`
   contém `res_0000.json` .. `res_{N-1:04d}.json`, cada um com o conteúdo exato de
   `step.response` daquele índice (igual ao que `HARParser.parse_entry` monta a partir
   do HAR).
-- [ ] Rodando `run --mode main`, `original_responses/` é populado com o mesmo
+- [x] Rodando `run --mode main`, `original_responses/` é populado com o mesmo
   conteúdo (a resposta original do HAR), independente do resultado da chamada HTTP
   real.
-- [ ] Rodar `run` duas vezes seguidas sobre o mesmo `output_dir` e mesmo HAR não
+- [x] Rodar `run` duas vezes seguidas sobre o mesmo `output_dir` e mesmo HAR não
   altera o conteúdo de `original_responses/` entre as duas execuções (idempotente).
-- [ ] Não regressão: `real_requests/`/`curls/` continuam sendo gravados exatamente
+- [x] Não regressão: `real_requests/`/`curls/` continuam sendo gravados exatamente
   como antes; `_persist_response_step`/`real_responses/` inalterados por esta task
   (a mudança de comportamento de `real_responses/` é da T03).
 
@@ -255,14 +255,14 @@ outra chamada a `_persist_response_step` (`engine.py:101`, dentro de
 `_process_entry`) muda; o polimorfismo já resolve isso.
 
 **Critérios de aceite:**
-- [ ] Rodando `run --mode dry` sobre um `output_dir` novo (ainda sem
+- [x] Rodando `run --mode dry` sobre um `output_dir` novo (ainda sem
   `real_responses/` populado), ao final `real_responses/` existe (criado por
   `Workspace.init`) mas está **vazio** — nenhum `res_XXXX.json` é criado ali.
-- [ ] Rodando `run --mode main` e, na sequência, `run --mode dry` sobre o mesmo
+- [x] Rodando `run --mode main` e, na sequência, `run --mode dry` sobre o mesmo
   `output_dir`, os arquivos em `real_responses/` gravados pelo `main` continuam
   presentes e com o mesmo conteúdo depois do `dry` rodar (não são apagados nem
   sobrescritos).
-- [ ] Não regressão: `run --mode main` continua gravando `real_responses/`
+- [x] Não regressão: `run --mode main` continua gravando `real_responses/`
   normalmente (comportamento de `Engine._persist_response_step`, não tocado por
   esta task).
 
@@ -357,16 +357,16 @@ aqui como discriminador, nenhum flag novo é criado. `_persist_request_step`/
 diretamente — não são afetados por este atributo.
 
 **Critérios de aceite:**
-- [ ] `Engine(...).tracking_responses_dir == Workspace.real_responses` (modo
+- [x] `Engine(...).tracking_responses_dir == Workspace.real_responses` (modo
   `main`).
-- [ ] `DryEngine(...).tracking_responses_dir == Workspace.original_responses` (modo
+- [x] `DryEngine(...).tracking_responses_dir == Workspace.original_responses` (modo
   `dry`).
-- [ ] Rodando `run --mode dry` sobre um HAR onde um valor dinâmico do step 2
+- [x] Rodando `run --mode dry` sobre um HAR onde um valor dinâmico do step 2
   reaparece no step 5, a resolução do candidato no step 5 encontra `origin_step=2`
   corretamente (via `ResponseGrep.find` sobre `original_responses/`, que agora tem o
   conteúdo do step 2 graças à T02) — mesmo resultado de antes da mudança, só que
   lendo de outro diretório.
-- [ ] Não regressão: rodando `run --mode main`, a resolução de tokens continua
+- [x] Não regressão: rodando `run --mode main`, a resolução de tokens continua
   encontrando `origin_step` normalmente via `real_responses/` (nenhuma mudança de
   comportamento para `main`).
 
@@ -424,15 +424,15 @@ são alterados** por esta task — continuam existindo como último recurso para
 rodar o script gerado manualmente fora da aplicação.
 
 **Critérios de aceite:**
-- [ ] Rodando `run --mode dry` duas vezes seguidas sobre o mesmo `output_dir` e
+- [x] Rodando `run --mode dry` duas vezes seguidas sobre o mesmo `output_dir` e
   mesmo HAR (segunda vez reaproveitando extractors persistidos da primeira), a
   segunda execução resolve os mesmos tokens com `status="Resolved"` sem cair em
   `_generate_new_extractor` — ou seja, `_check_persisted_slot` consegue ler
   `original_responses/` corretamente e retorna `MATCH`.
-- [ ] Não regressão: o mesmo cenário rodando `run --mode main` duas vezes seguidas
+- [x] Não regressão: o mesmo cenário rodando `run --mode main` duas vezes seguidas
   continua funcionando igual (reaproveitamento de extractors via `real_responses/`,
   comportamento inalterado).
-- [ ] `_load_response` (linha 158-167, não tocada por esta task) continua recebendo
+- [x] `_load_response` (linha 158-167, não tocada por esta task) continua recebendo
   `self.responses_dir` do mesmo jeito que antes.
 
 ## T06 — `ReplayTokenResolver`: fallback para `original_responses/` na resolução de tokens fora do schedule
@@ -543,19 +543,19 @@ sempre `res_refer_dir` primeiro (config explícita ou `real_responses/`),
 existe em `res_refer_dir`.
 
 **Critérios de aceite:**
-- [ ] `_reference_dir_for_step(2, res_refer_dir, original_responses_dir)` retorna
+- [x] `_reference_dir_for_step(2, res_refer_dir, original_responses_dir)` retorna
   `res_refer_dir` quando `res_refer_dir / "res_0002.json"` existe.
-- [ ] `_reference_dir_for_step(2, res_refer_dir, original_responses_dir)` retorna
+- [x] `_reference_dir_for_step(2, res_refer_dir, original_responses_dir)` retorna
   `original_responses_dir` quando `res_refer_dir / "res_0002.json"` **não** existe
   (ex.: `res_refer_dir == Workspace.real_responses` vazio, workspace só rodou
   `dry`).
-- [ ] `_reference_dir_for_step(None, res_refer_dir, original_responses_dir)` retorna
+- [x] `_reference_dir_for_step(None, res_refer_dir, original_responses_dir)` retorna
   `res_refer_dir` (não regressão do caso `origin_step` desconhecido).
-- [ ] Em um workspace que só rodou `dry` (portanto `real_responses/` vazio,
+- [x] Em um workspace que só rodou `dry` (portanto `real_responses/` vazio,
   `original_responses/` populado pela T02), `replay --mode smart` consegue resolver
   um token cujo `origin_step` está fora do schedule, lendo de `original_responses/`
   via este fallback.
-- [ ] Não regressão: em um workspace que rodou `main` (portanto `real_responses/`
+- [x] Não regressão: em um workspace que rodou `main` (portanto `real_responses/`
   populado), o mesmo cenário continua resolvendo via `real_responses/`
   (`res_refer_dir`), sem cair no fallback.
 
@@ -627,17 +627,17 @@ inalterado para workspaces que já rodaram `main`), `original_responses/` só é
 quando o arquivo daquele step não existe no primeiro.
 
 **Critérios de aceite:**
-- [ ] Em um workspace com `real_responses/res_0005.json` presente,
+- [x] Em um workspace com `real_responses/res_0005.json` presente,
   `matches_original(5, response)` lê exatamente esse arquivo — comportamento
   idêntico ao de antes desta task.
-- [ ] Em um workspace só com `dry` (portanto `real_responses/res_0005.json`
+- [x] Em um workspace só com `dry` (portanto `real_responses/res_0005.json`
   ausente, mas `original_responses/res_0005.json` presente),
   `matches_original(5, response)` lê o conteúdo de `original_responses/` em vez de
   retornar `False` de imediato.
-- [ ] Em um workspace sem nenhum dos dois arquivos para o índice, `matches_original`
+- [x] Em um workspace sem nenhum dos dois arquivos para o índice, `matches_original`
   retorna `False` e imprime a mensagem mencionando os dois diretórios checados
   (não regressão de "sempre falha de forma visível", só muda a mensagem).
-- [ ] Não regressão: `STATUS_CODE_PATTERN`/a lógica de comparação de `status_code`
+- [x] Não regressão: `STATUS_CODE_PATTERN`/a lógica de comparação de `status_code`
   em si não mudam.
 
 ## T08 — `ReplayRunner`/`CliHandlers`: fio de ligação passando `original_responses_dir`
@@ -799,12 +799,12 @@ já vem direto de `Workspace.replay_run_dir(run_id)` na mesma chamada. Só
 `_resolve_response_reference_dir`, não tocado por esta task).
 
 **Critérios de aceite:**
-- [ ] `ReplayRunner(...).original_responses_dir == Workspace.original_responses`
+- [x] `ReplayRunner(...).original_responses_dir == Workspace.original_responses`
   após construído via `CliHandlers._build_replay_runner`.
-- [ ] Um `replay --mode all` de ponta a ponta, sobre um workspace que só rodou
+- [x] Um `replay --mode all` de ponta a ponta, sobre um workspace que só rodou
   `dry`, completa sem o erro "Failed to resolve token" para tokens cujo
   `origin_step` está fora do schedule (fallback da T06 alcançado através deste fio
   de ligação).
-- [ ] Não regressão: `replay` sobre um workspace que rodou `main` continua
+- [x] Não regressão: `replay` sobre um workspace que rodou `main` continua
   funcionando exatamente como antes (mesma resolução via `real_responses/`, mesma
   comparação final).

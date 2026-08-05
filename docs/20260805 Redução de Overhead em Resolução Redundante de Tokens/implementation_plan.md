@@ -66,16 +66,16 @@ def _process_entry(
   (`False`/`True`, respectivamente) já são exatamente os desejados para este gate.
 
 **Critérios de aceite:**
-- [ ] Rodando `run --mode dry`, `token_resolver.resolve_all()` nunca é chamado dentro de
+- [x] Rodando `run --mode dry`, `token_resolver.resolve_all()` nunca é chamado dentro de
   `_process_entry` (verificável por instrumentação/print temporário durante o teste
   manual, ou por leitura do código — `self.USES_NETWORK` é `False` em `DryEngine`).
-- [ ] Rodando `run --mode main`, `token_resolver.resolve_all()` continua sendo chamado
+- [x] Rodando `run --mode main`, `token_resolver.resolve_all()` continua sendo chamado
   exatamente uma vez por step dentro de `_process_entry`, na mesma posição do fluxo
   (depois de `analyze_step`, antes de `execute_step`) — comportamento idêntico ao atual,
   sem regressão.
-- [ ] `handle_recovery` continua chamando `resolve_all()` normalmente em qualquer modo,
+- [x] `handle_recovery` continua chamando `resolve_all()` normalmente em qualquer modo,
   sem nenhuma mudança de condição.
-- [ ] `python -m py_compile har_reproducer/engines/engine.py` sem erros.
+- [x] `python -m py_compile har_reproducer/engines/engine.py` sem erros.
 
 ---
 
@@ -157,15 +157,15 @@ def _process_candidate(self, candidate: DynamicToken) -> DynamicToken:
   o cache nunca vai de fato evitar regrep para valores não encontrados).
 
 **Critérios de aceite:**
-- [ ] Duas chamadas a `_process_candidate` com candidatos de `current_value` idêntico
+- [x] Duas chamadas a `_process_candidate` com candidatos de `current_value` idêntico
   (mesmo que `path` diferente) resultam em uma única chamada real a
   `ResponseGrep.find`/`grep` (verificável isolando `ResponseGrep.find` com um mock/spy em
   teste manual, ou por leitura do fluxo).
-- [ ] Um valor que não é encontrado por `ResponseGrep.find` (`origin is None`) é
+- [x] Um valor que não é encontrado por `ResponseGrep.find` (`origin is None`) é
   cacheado como `None` e a segunda consulta com o mesmo valor não dispara novo `grep`.
-- [ ] `candidate.status` resultante ("NotFound", "Resolved", "UnderReview",
+- [x] `candidate.status` resultante ("NotFound", "Resolved", "UnderReview",
   "Unresolved") para qualquer candidato é idêntico ao que seria produzido sem o cache
   (nenhuma mudança de resultado, só de quantidade de trabalho repetido) — não-regressão
   do fluxo de resolução completo (`resolve()` → `_process_candidate` →
   `_find_slot`/`_check_slot`).
-- [ ] `python -m py_compile har_reproducer/tracking/candidate_resolver.py` sem erros.
+- [x] `python -m py_compile har_reproducer/tracking/candidate_resolver.py` sem erros.
