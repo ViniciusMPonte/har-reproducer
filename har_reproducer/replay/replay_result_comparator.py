@@ -10,10 +10,8 @@ class ReplayResultComparator:
     STATUS_CODE_PATTERN: ClassVar[Pattern[str]] = re.compile(r'"status_code"\s*:\s*(\d+)')
 
     def matches_original(self, index: int, response: StepResponse) -> bool:
-        try:
-            original_text: str = Workspace.response_file(index).read_text(encoding="utf-8")
-        except Exception as e:
-            print(f"Could not read original response for step {index} to compare: {e}")
+        original_text: Optional[str] = self._read_reference_text(index)
+        if original_text is None:
             return False
 
         match: Optional[Match[str]] = self.STATUS_CODE_PATTERN.search(original_text)
@@ -21,3 +19,16 @@ class ReplayResultComparator:
             print(f"Could not find status_code in original response for step {index} to compare.")
             return False
         return int(match.group(1)) == response.status_code
+
+    @staticmethod
+    def _read_reference_text(index: int) -> Optional[str]:
+        for candidate in (Workspace.response_file(index), Workspace.original_response_file(index)):
+            try:
+                return candidate.read_text(encoding="utf-8")
+            except Exception:
+                continue
+        print(
+            f"Could not read reference response for step {index} to compare "
+            f"(checked real_responses/ and original_responses/)."
+        )
+        return None
