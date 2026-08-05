@@ -125,7 +125,7 @@ class ReplayRunner:
         existing: List[int] = self._existing_step_indexes()
         effective_from: int = from_index if from_index is not None else 0
         effective_to: int = to_index if to_index is not None else max(existing)
-        ordered_indexes: List[int] = list(range(effective_from, effective_to + 1))
+        ordered_indexes: List[int] = [index for index in existing if effective_from <= index <= effective_to]
         return ordered_indexes, set(ordered_indexes)
 
     def _schedule_smart(self, from_index: Optional[int], to_index: Optional[int]) -> Tuple[List[int], Set[int]]:
