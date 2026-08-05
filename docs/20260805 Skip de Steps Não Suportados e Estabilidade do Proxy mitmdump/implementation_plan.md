@@ -30,11 +30,11 @@
 - ⚠️ Não alterar `ProjectConfigLoader` — o carregamento via `TypeAdapter(ProjectConfig).validate_json(...)` já lida com campos novos com default automaticamente, nenhuma mudança necessária lá.
 
 **Critérios de aceite:**
-- [ ] `ProjectConfig().skip_rules.methods == ["OPTIONS"]` (default sem nenhum `config.json`).
-- [ ] `ProjectConfig.model_validate({"skip_rules": {"methods": ["OPTIONS", "HEAD"]}}).skip_rules.methods == ["OPTIONS", "HEAD"]`.
-- [ ] `ProjectConfig.model_validate({"skip_rules": {"methods": []}}).skip_rules.methods == []`.
-- [ ] `from har_reproducer.models import SkipRulesConfig` funciona.
-- [ ] Um `config.json` sem a chave `skip_rules` (ex.: o `config.json` atual do projeto) continua carregando sem erro, com `skip_rules.methods == ["OPTIONS"]`.
+- [x] `ProjectConfig().skip_rules.methods == ["OPTIONS"]` (default sem nenhum `config.json`).
+- [x] `ProjectConfig.model_validate({"skip_rules": {"methods": ["OPTIONS", "HEAD"]}}).skip_rules.methods == ["OPTIONS", "HEAD"]`.
+- [x] `ProjectConfig.model_validate({"skip_rules": {"methods": []}}).skip_rules.methods == []`.
+- [x] `from har_reproducer.models import SkipRulesConfig` funciona.
+- [x] Um `config.json` sem a chave `skip_rules` (ex.: o `config.json` atual do projeto) continua carregando sem erro, com `skip_rules.methods == ["OPTIONS"]`.
 
 ## [T02] — `StepResponse`: novos campos `skipped`/`skip_reason`
 
@@ -71,10 +71,10 @@ class StepResponse(BaseModel):
 - ⚠️ Não tocar em `StepRequest` nesta task — `is_skippable` já existe lá (`models/http.py:13`) e continua como está; só passa a ser efetivamente escrito por `Engine` em vez de `HARParser` (T04/T05).
 
 **Critérios de aceite:**
-- [ ] `StepResponse(status_code=200).skipped is False` e `.skip_reason is None` (defaults).
-- [ ] `StepResponse(status_code=0, skipped=True, skip_reason="unsupported scheme 'ws'").model_dump()` inclui as duas novas chaves.
-- [ ] `StepResponse.model_validate_json('{"status_code": 200}')` continua funcionando (JSON antigo, sem as novas chaves, carrega com os defaults).
-- [ ] Nenhum teste de serialização de um `StepResponse` já existente (ex.: um `res_XXXX.json` de uma run anterior) quebra ao ser recarregado.
+- [x] `StepResponse(status_code=200).skipped is False` e `.skip_reason is None` (defaults).
+- [x] `StepResponse(status_code=0, skipped=True, skip_reason="unsupported scheme 'ws'").model_dump()` inclui as duas novas chaves.
+- [x] `StepResponse.model_validate_json('{"status_code": 200}')` continua funcionando (JSON antigo, sem as novas chaves, carrega com os defaults).
+- [x] Nenhum teste de serialização de um `StepResponse` já existente (ex.: um `res_XXXX.json` de uma run anterior) quebra ao ser recarregado.
 
 ## [T03] — `StepSkipEvaluator`: novo componente que decide se um step deve ser pulado
 
@@ -109,12 +109,12 @@ class StepSkipEvaluator:
 - ⚠️ `skip_reason` retorna `None` (não pula) quando nem scheme nem método batem — esse é o caso comum (qualquer request `http`/`https` com método não listado em `skip_rules.methods`).
 
 **Critérios de aceite:**
-- [ ] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="ws://x/y", method="GET"))` retorna `"unsupported scheme 'ws'"`.
-- [ ] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="https://x/y", method="OPTIONS"))` retorna `"skippable method 'OPTIONS'"`.
-- [ ] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="https://x/y", method="GET"))` retorna `None`.
-- [ ] `StepSkipEvaluator(SkipRulesConfig(methods=[])).skip_reason(StepRequest(url="https://x/y", method="OPTIONS"))` retorna `None` (lista de métodos vazia desliga o skip por método, protocolo continua valendo).
-- [ ] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="wss://x/y", method="OPTIONS"))` retorna o motivo de **scheme**, não o de método.
-- [ ] `from har_reproducer.reproduction import StepSkipEvaluator` funciona.
+- [x] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="ws://x/y", method="GET"))` retorna `"unsupported scheme 'ws'"`.
+- [x] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="https://x/y", method="OPTIONS"))` retorna `"skippable method 'OPTIONS'"`.
+- [x] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="https://x/y", method="GET"))` retorna `None`.
+- [x] `StepSkipEvaluator(SkipRulesConfig(methods=[])).skip_reason(StepRequest(url="https://x/y", method="OPTIONS"))` retorna `None` (lista de métodos vazia desliga o skip por método, protocolo continua valendo).
+- [x] `StepSkipEvaluator(SkipRulesConfig()).skip_reason(StepRequest(url="wss://x/y", method="OPTIONS"))` retorna o motivo de **scheme**, não o de método.
+- [x] `from har_reproducer.reproduction import StepSkipEvaluator` funciona.
 
 ## [T04] — `HARParser`: remove cálculo morto de `is_skippable`
 
@@ -167,10 +167,10 @@ class HARParser:
 - ⚠️ Não alterar nenhum outro método de `HARParser` (`load_har`, `get_entries`, `decode_body`, `split_har`) — mudança isolada a `parse_entry` e à constante removida.
 
 **Critérios de aceite:**
-- [ ] `HARParser` não tem mais o atributo `SKIPPABLE_METHODS`.
-- [ ] `HARParser.parse_entry(entry, 0).request.is_skippable is False` para qualquer `entry` (default do modelo, já que o parser não seta mais esse campo) — incluindo uma entry com `method: "OPTIONS"`.
-- [ ] `CurlHttpTransport._try_read_capture` (que chama `HARParser.parse_entry(entries[0], step_index)` só para ler `.response`) continua funcionando sem nenhuma mudança — garantia de não-regressão.
-- [ ] `HARParser.split_har` continua produzindo `req_XXXX.json`/`res_XXXX.json` idênticos ao comportamento atual, exceto pela ausência de `is_skippable=True` em entries `OPTIONS` (que já era, na prática, um valor nunca consumido).
+- [x] `HARParser` não tem mais o atributo `SKIPPABLE_METHODS`.
+- [x] `HARParser.parse_entry(entry, 0).request.is_skippable is False` para qualquer `entry` (default do modelo, já que o parser não seta mais esse campo) — incluindo uma entry com `method: "OPTIONS"`.
+- [x] `CurlHttpTransport._try_read_capture` (que chama `HARParser.parse_entry(entries[0], step_index)` só para ler `.response`) continua funcionando sem nenhuma mudança — garantia de não-regressão.
+- [x] `HARParser.split_har` continua produzindo `req_XXXX.json`/`res_XXXX.json` idênticos ao comportamento atual, exceto pela ausência de `is_skippable=True` em entries `OPTIONS` (que já era, na prática, um valor nunca consumido).
 
 ## [T05] — `Engine`: pula análise e execução de rede para steps skippable; validação final ignora respostas puladas
 
@@ -285,12 +285,12 @@ def _skip_entry(self, index: int, reason: str) -> StepResponse:
 - `DryEngine` não precisa de nenhuma mudança — herda o novo `_process_entry`/`_reproduce` da base sem overrides.
 
 **Critérios de aceite:**
-- [ ] Uma entry com `request.url` começando em `wss://` produz `Step {index} skipped (unsupported scheme 'wss')` no output e um `StepResponse` persistido com `skipped=True`, `skip_reason="unsupported scheme 'wss'"`, sem nenhuma chamada a `execute_step`/`tracker.analyze_step`.
-- [ ] Uma entry com `method="OPTIONS"` (config default) produz o mesmo comportamento de skip, com `skip_reason="skippable method 'OPTIONS'"`.
-- [ ] Com `config.json` definindo `"skip_rules": {"methods": []}`, a mesma entry `OPTIONS` **não** é pulada e segue o fluxo normal (`analyze_step`/`execute_step`).
-- [ ] Nenhum `req_XXXX.curl.sh` é criado em `Workspace.curls` para um índice pulado.
-- [ ] Se a **última** entry do HAR for pulada, `_validate_final` recebe a última resposta **não** pulada anterior (não o `StepResponse` de skip) — verificável rodando um HAR onde a última entry é `ws://` e checando que a validação final reflete o penúltimo step.
-- [ ] Uma run completa contra um HAR sem nenhuma entry pulável produz exatamente o mesmo output (`Step N completed with status X` para todo N, mesmos arquivos persistidos) que a versão anterior a esta task — garantia de não-regressão.
+- [x] Uma entry com `request.url` começando em `wss://` produz `Step {index} skipped (unsupported scheme 'wss')` no output e um `StepResponse` persistido com `skipped=True`, `skip_reason="unsupported scheme 'wss'"`, sem nenhuma chamada a `execute_step`/`tracker.analyze_step`.
+- [x] Uma entry com `method="OPTIONS"` (config default) produz o mesmo comportamento de skip, com `skip_reason="skippable method 'OPTIONS'"`.
+- [x] Com `config.json` definindo `"skip_rules": {"methods": []}`, a mesma entry `OPTIONS` **não** é pulada e segue o fluxo normal (`analyze_step`/`execute_step`).
+- [x] Nenhum `req_XXXX.curl.sh` é criado em `Workspace.curls` para um índice pulado.
+- [x] Se a **última** entry do HAR for pulada, `_validate_final` recebe a última resposta **não** pulada anterior (não o `StepResponse` de skip) — verificável rodando um HAR onde a última entry é `ws://` e checando que a validação final reflete o penúltimo step.
+- [x] Uma run completa contra um HAR sem nenhuma entry pulável produz exatamente o mesmo output (`Step N completed with status X` para todo N, mesmos arquivos persistidos) que a versão anterior a esta task — garantia de não-regressão.
 
 ## [T06] — `CurlHttpTransport`: corrige flag de TLS inválida (`--ssl-insecure` → `--insecure`)
 
@@ -320,9 +320,9 @@ def _tls_flag(self) -> str:
 - ⚠️ Mudança de uma linha só — o branch `ca_cert_path is not None` (o caminho realmente usado hoje em toda run com o `MitmProxyOrchestrator`, que sempre popula `ca_cert_path`) não muda.
 
 **Critérios de aceite:**
-- [ ] `CurlHttpTransport(port=1234, ca_cert_path=None)._tls_flag() == "--insecure"`.
-- [ ] `CurlHttpTransport(port=1234, ca_cert_path=Path("/tmp/x.pem"))._tls_flag() == "--cacert /tmp/x.pem"` (comportamento não mudou nesse branch).
-- [ ] `bash -c "curl --insecure https://example.com -o /dev/null -sS"` retorna exit code 0 neste ambiente (validação manual de que a flag é reconhecida pelo `curl` instalado).
+- [x] `CurlHttpTransport(port=1234, ca_cert_path=None)._tls_flag() == "--insecure"`.
+- [x] `CurlHttpTransport(port=1234, ca_cert_path=Path("/tmp/x.pem"))._tls_flag() == "--cacert /tmp/x.pem"` (comportamento não mudou nesse branch).
+- [x] `bash -c "curl --insecure https://example.com -o /dev/null -sS"` retorna exit code 0 neste ambiente (validação manual de que a flag é reconhecida pelo `curl` instalado).
 
 ## [T07] — `Workspace`: novo `mitm_log_file()`
 
@@ -352,9 +352,9 @@ def mitm_log_file(cls) -> Path:
 - ⚠️ Não criar uma nova entrada em `WorkspaceDir` — reaproveita o diretório `mitm_capture` já existente, mesmo padrão de `mitm_capture_file`.
 
 **Critérios de aceite:**
-- [ ] Depois de `Workspace.init(output_dir)`, `Workspace.mitm_log_file() == output_dir / "mitm_capture" / "mitmdump.log"`.
-- [ ] Chamar `Workspace.mitm_log_file()` antes de `Workspace.init(...)` levanta `RuntimeError` (mesmo comportamento de `_ensure_initialized` já usado por todo método equivalente, ex.: `mitm_capture_file`).
-- [ ] `Workspace.mitm_capture_file()` continua retornando `mitm_capture/capture.har`, sem nenhuma mudança — garantia de não-regressão.
+- [x] Depois de `Workspace.init(output_dir)`, `Workspace.mitm_log_file() == output_dir / "mitm_capture" / "mitmdump.log"`.
+- [x] Chamar `Workspace.mitm_log_file()` antes de `Workspace.init(...)` levanta `RuntimeError` (mesmo comportamento de `_ensure_initialized` já usado por todo método equivalente, ex.: `mitm_capture_file`).
+- [x] `Workspace.mitm_capture_file()` continua retornando `mitm_capture/capture.har`, sem nenhuma mudança — garantia de não-regressão.
 
 ## [T08] — `MitmProxyOrchestrator`: redireciona stdout/stderr do `mitmdump` para arquivo em disco em vez de `subprocess.PIPE`
 
@@ -456,11 +456,11 @@ def _terminate(self) -> None:
 - ⚠️ O arquivo é reaberto (truncado) a cada `_start_process` — cada `run`/`replay` novo começa com um `mitmdump.log` limpo, mesmo sem `--reset` (mesmo padrão que `mitm_addon.py` já usa para `capture.har`).
 
 **Critérios de aceite:**
-- [ ] Depois de `orchestrator.run(callback)` completar (ou falhar) normalmente, `Workspace.mitm_log_file()` existe em disco e contém a saída do `mitmdump` daquela execução.
-- [ ] Rodar mais de 187 requests sequenciais através do proxy (o volume que travava o pipe antes desta task) não produz nenhum "timed out after 30.0 seconds" — reproduzir com o HAR `arquivos-har/progressofit.har` completo e confirmar zero ocorrências de timeout de rede não relacionadas a `ws`/`wss`.
-- [ ] Se o `mitmdump` morrer antes de ficar pronto (ex.: porta já ocupada por outro processo não-mitmproxy), a mensagem de erro (`_build_early_exit_message`) ainda inclui a saída relevante do `mitmdump`, lida do arquivo de log.
-- [ ] `_terminate()` chamado duas vezes seguidas (idempotência, já garantida hoje por `self._process = None` na primeira chamada) não levanta exceção mesmo com o `_log_file` já fechado.
-- [ ] O restante do fluxo de `run --mode main`/`replay` (captura de resposta via `Workspace.mitm_capture_file()`, health check via `_wait_until_ready`) continua funcionando sem nenhuma mudança de comportamento — garantia de não-regressão.
+- [x] Depois de `orchestrator.run(callback)` completar (ou falhar) normalmente, `Workspace.mitm_log_file()` existe em disco e contém a saída do `mitmdump` daquela execução.
+- [x] Rodar mais de 187 requests sequenciais através do proxy (o volume que travava o pipe antes desta task) não produz nenhum "timed out after 30.0 seconds" — reproduzir com o HAR `arquivos-har/progressofit.har` completo e confirmar zero ocorrências de timeout de rede não relacionadas a `ws`/`wss`.
+- [x] Se o `mitmdump` morrer antes de ficar pronto (ex.: porta já ocupada por outro processo não-mitmproxy), a mensagem de erro (`_build_early_exit_message`) ainda inclui a saída relevante do `mitmdump`, lida do arquivo de log.
+- [x] `_terminate()` chamado duas vezes seguidas (idempotência, já garantida hoje por `self._process = None` na primeira chamada) não levanta exceção mesmo com o `_log_file` já fechado.
+- [x] O restante do fluxo de `run --mode main`/`replay` (captura de resposta via `Workspace.mitm_capture_file()`, health check via `_wait_until_ready`) continua funcionando sem nenhuma mudança de comportamento — garantia de não-regressão.
 
 ## [T09] — `README.md`: documenta o novo campo `skip_rules`
 
@@ -512,6 +512,6 @@ seguido da lista de bullets `**llm**`, `**success_criteria**`, `**proxy_port**`,
 - ⚠️ Não alterar nenhuma outra parte do `README.md` — mudança isolada à seção "Configuração (`config.json`)".
 
 **Critérios de aceite:**
-- [ ] O bloco de exemplo JSON da seção "Configuração (`config.json`)" inclui `skip_rules` com o mesmo shape aceito por `ProjectConfig` (T01).
-- [ ] O novo bullet de `skip_rules` menciona explicitamente que o skip por protocolo (`ws`/`wss`) não é configurável.
-- [ ] Nenhum outro trecho do `README.md` (seções de `run`/`replay`/instalação) é alterado.
+- [x] O bloco de exemplo JSON da seção "Configuração (`config.json`)" inclui `skip_rules` com o mesmo shape aceito por `ProjectConfig` (T01).
+- [x] O novo bullet de `skip_rules` menciona explicitamente que o skip por protocolo (`ws`/`wss`) não é configurável.
+- [x] Nenhum outro trecho do `README.md` (seções de `run`/`replay`/instalação) é alterado.
