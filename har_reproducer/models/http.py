@@ -20,6 +20,8 @@ class StepResponse(BaseModel):
     body: Optional[Union[str, bytes]] = None
     body_mime: Optional[str] = None
     redirect_url: Optional[str] = None
+    skipped: bool = False
+    skip_reason: Optional[str] = None
 
 
 class Step(BaseModel):
