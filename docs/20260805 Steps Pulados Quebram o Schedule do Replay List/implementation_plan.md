@@ -120,36 +120,36 @@ def _schedule_list(self, steps_file: Path) -> Tuple[List[int], Set[int]]:
   (spec seção 1).
 
 **Critérios de aceite:**
-- [ ] `replay --mode list --steps-file <arquivo com "78">` (step pulado, workspace de
+- [x] `replay --mode list --steps-file <arquivo com "78">` (step pulado, workspace de
       `progressofit.har`) levanta `ValueError` listando `[78]`, sem
       `FileNotFoundError` nem traceback de `pathlib`/`open`, e sem nenhum step
       executado (nenhuma linha `Step N completed with status ...` impressa).
-- [ ] `replay --mode list --steps-file <arquivo com "9999">` (fora do intervalo
+- [x] `replay --mode list --steps-file <arquivo com "9999">` (fora do intervalo
       existente) levanta o mesmo tipo de `ValueError`, citando `[9999]`.
-- [ ] `replay --mode list --steps-file <arquivo com "1\n2\n78\n3">` levanta o
+- [x] `replay --mode list --steps-file <arquivo com "1\n2\n78\n3">` levanta o
       `ValueError` **antes** de imprimir qualquer `Step N completed` — nenhuma
       requisição real dos steps 1/2/3 é disparada (verificação do agravante da spec
       seção 1, comparando com o comportamento atual que executa 1 e 2 antes de
       quebrar).
-- [ ] `replay --mode list --steps-file <arquivo com "1\n78\n2\n166">` (múltiplos
+- [x] `replay --mode list --steps-file <arquivo com "1\n78\n2\n166">` (múltiplos
       índices inexistentes) levanta um único `ValueError` citando `[78, 166]`
       (ordenados), não um erro por tentativa.
-- [ ] Não-regressão: `replay --mode list --steps-file <arquivo com "0\n1\n2">`
+- [x] Não-regressão: `replay --mode list --steps-file <arquivo com "0\n1\n2">`
       continua funcionando exatamente como antes (schedule `([0, 1, 2], {0, 1, 2})`,
       os três steps executam e o resultado final é impresso).
-- [ ] Não-regressão: `replay --mode list --steps-file <arquivo com "5\n2\n1">`
+- [x] Não-regressão: `replay --mode list --steps-file <arquivo com "5\n2\n1">`
       (ordem customizada) continua executando na ordem do arquivo, não ordenado.
-- [ ] Não-regressão: `replay --mode list --steps-file <arquivo com "1\n1\n2">`
+- [x] Não-regressão: `replay --mode list --steps-file <arquivo com "1\n1\n2">`
       (duplicatas) continua reexecutando a linha duplicada — comportamento
       inalterado por esta task.
-- [ ] Não-regressão: `replay --mode smart --to 78` (step pulado) continua levantando
+- [x] Não-regressão: `replay --mode smart --to 78` (step pulado) continua levantando
       `ValueError` (agora via `_require_all_existing`, mensagem "step(s) [78] não
       existem..." em vez de "step alvo 78 não existe...") — mesma classe de erro,
       texto ligeiramente reformulado, sem `FileNotFoundError`.
-- [ ] Não-regressão: `replay --mode smart` sem `--to` (default, `target =
+- [x] Não-regressão: `replay --mode smart` sem `--to` (default, `target =
       max(existing)`) continua rodando sem erro contra o workspace de
       `progressofit.har` — o helper nunca levanta para o caminho default.
-- [ ] Não-regressão: `replay --mode smart --to 222` e `--to 159` (índices existentes,
+- [x] Não-regressão: `replay --mode smart --to 222` e `--to 159` (índices existentes,
       com dependências recursivas via `_expand_pending`) continuam agendando
       exatamente o mesmo schedule de antes desta task — a mudança em `_schedule_smart`
       não altera `_expand_pending` nem a lógica de expansão, só a validação inicial do
