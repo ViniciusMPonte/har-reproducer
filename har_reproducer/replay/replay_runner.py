@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 from re import Match, Pattern
-from typing import ClassVar, List, Optional, Set, Tuple
+from typing import ClassVar, Iterable, List, Optional, Set, Tuple
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse
@@ -133,11 +133,7 @@ class ReplayRunner:
         existing_set: Set[int] = set(existing)
         floor: int = from_index if from_index is not None else 0
         target: int = to_index if to_index is not None else max(existing)
-        if target not in existing_set:
-            raise ValueError(
-                f"ReplayRunner: step alvo {target} não existe no workspace (nenhum curl file em disco) — "
-                f"provavelmente foi pulado por skip_rules ou está fora do intervalo de steps existentes."
-            )
+        self._require_all_existing({target}, existing_set)
 
         schedule: Set[int] = {target}
         pending: Set[int] = {target}
@@ -158,9 +154,20 @@ class ReplayRunner:
                 pending.add(origin_step)
 
     def _schedule_list(self, steps_file: Path) -> Tuple[List[int], Set[int]]:
+        existing_set: Set[int] = set(self._existing_step_indexes())
         lines: List[str] = steps_file.read_text(encoding="utf-8").splitlines()
         ordered_indexes: List[int] = [int(line.strip()) for line in lines if line.strip()]
+        self._require_all_existing(ordered_indexes, existing_set)
         return ordered_indexes, set(ordered_indexes)
+
+    @staticmethod
+    def _require_all_existing(indexes: Iterable[int], existing_set: Set[int]) -> None:
+        missing: List[int] = sorted({index for index in indexes if index not in existing_set})
+        if missing:
+            raise ValueError(
+                f"ReplayRunner: step(s) {missing} não existem no workspace (nenhum curl file em disco) — "
+                f"provavelmente foram pulados por skip_rules ou estão fora do intervalo de steps existentes."
+            )
 
     def _existing_step_indexes(self) -> List[int]:
         indexes: List[int] = []
