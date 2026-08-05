@@ -143,6 +143,7 @@ class CliHandlers:
             run_id=run_id,
             replay_run_dir=Workspace.replay_run_dir(run_id),
             res_refer_dir=res_refer_dir,
+            original_responses_dir=Workspace.original_responses,
         )
 
     @staticmethod

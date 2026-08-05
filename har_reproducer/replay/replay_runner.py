@@ -27,6 +27,7 @@ class ReplayRunner:
             run_id: str,
             replay_run_dir: Path,
             res_refer_dir: Path,
+            original_responses_dir: Path,
     ) -> None:
         self.dependency_parser: CurlDependencyParser = dependency_parser
         self.session_store: SessionStore = session_store
@@ -37,6 +38,7 @@ class ReplayRunner:
         self.run_id: str = run_id
         self.replay_run_dir: Path = replay_run_dir
         self.res_refer_dir: Path = res_refer_dir
+        self.original_responses_dir: Path = original_responses_dir
 
     def run_all(self) -> bool:
         ordered_indexes, schedule = self._schedule_all()
@@ -76,7 +78,7 @@ class ReplayRunner:
 
         def attempt() -> StepResponse:
             static_token_ids: Set[str] = self.replay_token_resolver.resolve(
-                curl_text, schedule, self.replay_run_dir, self.res_refer_dir
+                curl_text, schedule, self.replay_run_dir, self.res_refer_dir, self.original_responses_dir
             )
             if static_token_ids:
                 self._annotate_static_tokens(index, static_token_ids)
