@@ -93,6 +93,7 @@ class Engine:
     ) -> StepResponse:
         step: Step = HARParser.parse_entry(entry, index)
         self._persist_request_step(index, step.request)
+        self._persist_original_response_step(index, step.response)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
         self.token_resolver.resolve_all()
@@ -108,6 +109,10 @@ class Engine:
 
     def _persist_request_step(self, index: int, request: StepRequest) -> None:
         Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
+
+    def _persist_original_response_step(self, index: int, response: Optional[StepResponse]) -> None:
+        assert response is not None
+        Workspace.original_response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_response_step(self, index: int, response: StepResponse) -> None:
         Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
