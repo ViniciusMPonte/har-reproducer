@@ -154,7 +154,7 @@ class Engine:
             f"Detected {response.status_code}. "
             f"Attempting deterministic recovery (token refresh)..."
         )
-        self.token_resolver.resolve_all()
+        self.token_resolver.resolve_all(force=True)
         return True
 
     def execute_step(self, step: Step) -> StepResponse:
