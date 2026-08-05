@@ -12,8 +12,10 @@ class TokenResolver:
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = ExtractorRunner()
 
-    def resolve_all(self) -> None:
+    def resolve_all(self, force: bool = False) -> None:
         for token_id, extractor in self.session_store.state.registry.items():
+            if not force and token_id in self.session_store.state.tokens:
+                continue
             if self._should_refresh_token(extractor):
                 self._refresh_token(token_id, extractor)
 
