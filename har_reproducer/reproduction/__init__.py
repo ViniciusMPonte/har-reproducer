@@ -5,6 +5,7 @@ from har_reproducer.reproduction.extractor_runner import ExtractorRunner
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.mitm_proxy_orchestrator import MitmProxyOrchestrator
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
+from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 
 __all__ = [
     "CurlGenerator",
@@ -14,4 +15,5 @@ __all__ = [
     "MitmEnv",
     "MitmProxyOrchestrator",
     "StepRetryPolicy",
+    "StepSkipEvaluator",
 ]
