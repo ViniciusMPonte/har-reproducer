@@ -1,15 +1,16 @@
 ---
 name: spec-e-plano
-description: Fluxo de planejamento deste projeto — spec.md seguido de implementation_plan.md com tasks no formato padrão. Use SEMPRE que o usuário pedir para planejar uma feature/mudança nova, escrever uma spec, ou quebrar um plano em tasks de implementação.
+description: Fluxo de planejamento e implementação deste projeto — spec.md, depois implementation_plan.md com tasks no formato padrão, depois implementação task a task com um commit padronizado por task. Use SEMPRE que o usuário pedir para planejar uma feature/mudança nova, escrever uma spec, quebrar um plano em tasks, implementar tasks de um plano já aprovado, ou fazer commit de progresso de uma feature.
 ---
 
-# Spec + Plano de Implementação — fluxo de planejamento do projeto
+# Spec + Plano de Implementação — fluxo de planejamento e execução do projeto
 
-Este projeto planeja toda feature ou mudança não trivial em duas etapas sequenciais,
-sempre dentro de uma pasta nova em `docs/`: primeiro uma **spec** (o "o quê" e o
-"porquê", ancorada no código real), depois um **plano de implementação** (o "como",
-quebrado em tasks autocontidas). Ninguém implementa nada antes de ambos os documentos
-existirem e a spec estar aprovada.
+Este projeto planeja e executa toda feature ou mudança não trivial em etapas
+sequenciais, sempre dentro de uma pasta nova em `docs/`: primeiro uma **spec** (o "o
+quê" e o "porquê", ancorada no código real), depois um **plano de implementação** (o
+"como", quebrado em tasks autocontidas), depois a **implementação task a task**, cada
+uma virando um commit padronizado. Ninguém implementa nada antes de ambos os
+documentos existirem e a spec estar aprovada.
 
 Todo código citado em qualquer um dos dois documentos segue [[guia-de-estilo]].
 
@@ -144,3 +145,73 @@ Regras ao preencher:
   garantia explícita de não-regressão quando a task toca código existente.
 - Cada task referencia a seção da spec que a originou quando ajuda a rastrear o
   "porquê" (ex.: "spec seção 3.3").
+
+## Passo 3 — Implementação: uma task, um commit
+
+Depois do plano aprovado, a implementação segue a ordem das tasks (`T01`, `T02`, ...)
+do `implementation_plan.md`. Cada task vira **exatamente um commit** — não acumular
+várias tasks num commit só, mesmo que pareçam pequenas ou relacionadas (excessão: duas
+tasks triviais, sequenciais e do mesmo componente podem ir juntas — usar com
+moderação, não como padrão).
+
+Ao terminar uma task (código + validação dos critérios de aceite), commitar
+imediatamente e seguir para a próxima. Não empilhar tasks sem commitar entre elas, e
+não pedir confirmação a cada commit — a aprovação já foi dada na spec/plano; commitar
+faz parte de implementar a task. Só parar para perguntar se um critério de aceite não
+passar ou exigir uma decisão fora do que o plano previu.
+
+### Mensagem de commit
+
+```
+<tipo>: T0N — Componente/Método: resumo objetivo da mudança em uma linha
+
+[Corpo opcional — 1 a 3 linhas, só quando o assunto não é suficiente para entender
+o "porquê". Reaproveitar a explicação do "Contexto"/"Estado esperado depois" da
+task, nunca reescrever do zero.]
+```
+
+- `<tipo>` segue Conventional Commits e **nunca é omitido**:
+  - `feat:` — a task adiciona/altera comportamento observável.
+  - `fix:` — corrige um bug descoberto durante a implementação, fora do escopo das
+    tasks do plano (não leva `T0N`, é um commit à parte).
+  - `refactor:` — task é puramente estrutural, sem mudança de comportamento
+    observável.
+- `T0N` é o ID exato da task no plano — permite achar a task original só lendo
+  `git log --oneline`.
+- `Componente/Método` repete o nome do cabeçalho da task
+  (`## [T0N] — \`Componente\`: ...`) — não abreviar nem trocar por sinônimo.
+- O resumo do assunto descreve **o que muda**, nunca "implementa T0N" — quem lê o
+  log sem abrir o plano precisa entender a mudança sem contexto adicional.
+- Corpo é opcional, mas preferível a inflar o assunto quando a task tem um "porquê"
+  não óbvio (motivo de uma decisão de arquitetura, efeito colateral em outro
+  componente, trade-off descartado).
+
+Exemplo sem corpo (assunto já basta):
+```
+feat: T05 — CookieAgent: estratégia determinística de substring na própria chave
+```
+
+Exemplo com corpo (o "porquê" ajuda quem lê depois):
+```
+feat: T06 — CandidateResolver: fallback para extrator literal quando o Agent esgota tentativas
+
+Evita reprocessar a mesma extração indefinidamente quando o Agent já esgotou as
+tentativas configuradas — cai para o extrator literal em vez de repetir a chamada
+ao LLM a cada resolução (spec seção 3.2).
+```
+
+⚠️ Nunca commitar uma task sem o prefixo de tipo (ex. `T08 — Componente: ...` sem
+`feat:`) — já aconteceu no histórico e quebra o hábito de filtrar o log por tipo.
+
+## Passo 4 — Fechamento do plano
+
+Depois que a última task foi commitada e todos os critérios de aceite do plano foram
+verificados, marcar todos os checkboxes de "Critérios de aceite" do
+`implementation_plan.md` como `[x]` e commitar essa atualização separada, como `doc:`:
+
+```
+doc: marcando tasks concluídas
+```
+
+Esse commit sinaliza "plano encerrado". Se alguma task ficou com critério de aceite
+não verificado, não marcar — avisar o usuário antes de considerar o plano fechado.
