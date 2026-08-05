@@ -42,7 +42,7 @@ class CandidateResolver:
         self.extractor_runner: ExtractorRunner = ExtractorRunner()
         self.metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
         self._validated_values: Dict[str, str] = {}
-        self._origin_cache: Dict[Tuple[str, int], Optional[Tuple[int, str]]] = {}
+        self._origin_cache: Dict[str, Tuple[int, str]] = {}
 
     def resolve(self, candidates: List[DynamicToken], step_index: int) -> List[DynamicToken]:
         return [self._process_candidate(candidate, step_index) for candidate in candidates]
@@ -68,11 +68,12 @@ class CandidateResolver:
         return self._generate_new_extractor(candidate, initial_error)
 
     def _find_origin(self, value: str, step_index: int) -> Optional[Tuple[int, str]]:
-        cache_key: Tuple[str, int] = (value, step_index)
-        if cache_key in self._origin_cache:
-            return self._origin_cache[cache_key]
+        cached_origin: Optional[Tuple[int, str]] = self._origin_cache.get(value)
+        if cached_origin is not None:
+            return cached_origin
         origin: Optional[Tuple[int, str]] = ResponseGrep.find(self.responses_dir, value, step_index)
-        self._origin_cache[cache_key] = origin
+        if origin is not None:
+            self._origin_cache[value] = origin
         return origin
 
     def _find_slot(self, base_token_id: str, candidate: DynamicToken) -> Tuple[str, Optional[str]]:
