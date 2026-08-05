@@ -76,7 +76,7 @@ uv run python -m har_reproducer.main run --har caminho/para/arquivo.har [--mode 
 | `--output` | Diretório de saída (padrão: `<pasta-do-har>/output`) |
 | `--reset` | Apaga e recria o diretório de saída antes de rodar (padrão: preserva) |
 
-Gera em `<output>/`: `real_requests/`, `real_responses/`, `curls/` (um `.curl.sh` por passo) e `extractors/` (extratores gerados para os tokens dinâmicos). Esse workspace é o que o `replay` reutiliza depois.
+Gera em `<output>/`: `real_requests/` (requests tal como no HAR), `original_responses/` (respostas originais do HAR — sempre gravadas, em qualquer modo), `real_responses/` (respostas reais obtidas via HTTP — só populado em modo `main`; em modo `dry` fica vazio), `curls/` (um `.curl.sh` por passo) e `extractors/` (extratores gerados para os tokens dinâmicos). Esse workspace é o que o `replay` reutiliza depois.
 
 ### `replay` — reexecutar passos de um workspace já gerado
 
@@ -106,7 +106,7 @@ Modos de replay:
   7
   ```
 
-Ao final, o `replay` compara a resposta do último passo executado com a resposta original daquele passo (status code) e reporta sucesso ou divergência.
+Ao final, o `replay` compara a resposta do último passo executado com a resposta de referência daquele passo (status code, lida de `real_responses/` ou, na ausência dela, de `original_responses/`) e reporta sucesso ou divergência.
 
 ## Configuração (`config.json`)
 
@@ -143,4 +143,4 @@ Arquivo JSON passado via `--config`, com todos os campos opcionais:
   Se a lista estiver vazia (padrão), o fluxo é considerado bem-sucedido sem validação adicional.
 - **`proxy_port`** — porta fixa para o `mitmproxy`. Se omitido, uma porta livre é escolhida automaticamente.
 - **`ca_cert_path`** — diretório de configuração do `mitmproxy` (`confdir`), de onde é lido o certificado `mitmproxy-ca-cert.pem` usado nas requisições (`--cacert`). Se omitido, usa `.mitmproxy/` na raiz do projeto.
-- **`response_reference_dir`** — diretório de respostas reais usado como referência pelo `replay` ao resolver tokens estáticos. Se omitido, usa `<output>/real_responses/` do próprio workspace.
+- **`response_reference_dir`** — diretório de respostas reais usado como referência pelo `replay` ao resolver tokens de passos fora do schedule atual. Se omitido, usa `<output>/real_responses/` do próprio workspace; quando a resposta de um passo específico não existir ali (ex.: workspace que só rodou `dry`), o `replay` cai automaticamente para `<output>/original_responses/`.
