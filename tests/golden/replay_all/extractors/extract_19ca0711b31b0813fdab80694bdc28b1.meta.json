@@ -1,0 +1,11 @@
+{
+  "token_id": "19ca0711b31b0813fdab80694bdc28b1",
+  "code": "def extract_t_19ca0711b31b0813fdab80694bdc28b1(response):\n    return 'PLAINVAL777'\n",
+  "verified": true,
+  "agent_type": "LiteralAgent",
+  "origin_step": 5,
+  "temp_file_path": null,
+  "valid_count": 1,
+  "last_value": "PLAINVAL777",
+  "ever_changed": false
+}

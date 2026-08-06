@@ -1,0 +1,10 @@
+Failed to resolve token 'ade6a53080262635799eb7ec66e824e8' during replay: extractor returned no value.
+Network error while executing step 4 message: curl: (3) nested brace in URL position 30:
+http://127.0.0.1:<PORT>/item/{{extractor:ade6a53080262635799eb7ec66e824e8}}
+                             ^
+Step 4 completed with status 0
+Step 3 completed with status 200
+
+Replay Validation Result: ✓ SUCCESS (step 3 status code vs. original)
+
+Reproduction SUCCESSFUL: Target state reached.

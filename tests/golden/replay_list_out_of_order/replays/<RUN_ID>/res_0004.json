@@ -1,0 +1,10 @@
+{
+  "status_code": 0,
+  "headers": {},
+  "cookies": {},
+  "body": "curl: (3) nested brace in URL position 30:\nhttp://127.0.0.1:<PORT>/item/{{extractor:ade6a53080262635799eb7ec66e824e8}}\n                             ^",
+  "body_mime": null,
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

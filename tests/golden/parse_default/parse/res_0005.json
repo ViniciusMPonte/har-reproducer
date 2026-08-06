@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/plain"
+  },
+  "cookies": {},
+  "body": "PLAINVAL777",
+  "body_mime": "text/plain",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

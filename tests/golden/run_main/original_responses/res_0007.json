@@ -1,0 +1,14 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/html"
+  },
+  "cookies": {
+    "PREFS": "xyz789"
+  },
+  "body": "<html><body>prefs</body></html>",
+  "body_mime": "text/html",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

@@ -1,0 +1,11 @@
+{
+  "token_id": "b3defec11e606afd97c5430602861f32",
+  "code": "def extract_t_b3defec11e606afd97c5430602861f32(response):\n    return 'abc123sess'\n",
+  "verified": true,
+  "agent_type": "LiteralFallbackAgent",
+  "origin_step": 0,
+  "temp_file_path": null,
+  "valid_count": 1,
+  "last_value": "abc123sess",
+  "ever_changed": false
+}

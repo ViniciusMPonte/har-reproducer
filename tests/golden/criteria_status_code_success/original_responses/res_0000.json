@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/html"
+  },
+  "cookies": {},
+  "body": "<html><body><div id=\"marker\">pronto</div></body></html>",
+  "body_mime": "text/html",
+  "redirect_url": "http://127.0.0.1:<PORT>/done?ok=1",
+  "skipped": false,
+  "skip_reason": null
+}

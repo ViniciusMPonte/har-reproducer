@@ -1,0 +1,18 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Server": "<SERVER>",
+    "Date": "<DATE>",
+    "Content-Type": "text/html",
+    "Set-Cookie": "PREFS=xyz789; Path=/",
+    "Content-Length": "31"
+  },
+  "cookies": {
+    "PREFS": "xyz789"
+  },
+  "body": "<html><body>prefs</body></html>",
+  "body_mime": "text/html",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

@@ -1,0 +1,8 @@
+{
+  "url": "wss://127.0.0.1:<PORT>/ws",
+  "method": "OPTIONS",
+  "headers": {},
+  "cookies": {},
+  "body": null,
+  "is_skippable": true
+}

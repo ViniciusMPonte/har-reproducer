@@ -1,0 +1,14 @@
+{
+  "url": "http://127.0.0.1:<PORT>/api/do",
+  "method": "POST",
+  "headers": {
+    "Accept": "text/html",
+    "Content-Type": "application/json",
+    "X-Csrf": "tok_CSS_1"
+  },
+  "cookies": {
+    "SESSIONID": "abc123sess"
+  },
+  "body": "{\"csrf\": \"tok_CSS_1\"}",
+  "is_skippable": false
+}
