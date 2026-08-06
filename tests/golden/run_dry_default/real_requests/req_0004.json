@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:<PORT>/item/4242",
+  "method": "GET",
+  "headers": {
+    "Accept": "text/html",
+    "X-Trace": "4242",
+    "nonce": "scr_NONCE_2"
+  },
+  "cookies": {},
+  "body": null,
+  "is_skippable": false
+}

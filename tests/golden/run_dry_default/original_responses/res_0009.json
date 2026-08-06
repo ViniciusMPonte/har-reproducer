@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/html"
+  },
+  "cookies": {},
+  "body": "<html><body>done</body></html>",
+  "body_mime": "text/html",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

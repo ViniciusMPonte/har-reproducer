@@ -1,0 +1,13 @@
+Step 0 completed with status 200
+Step 1 skipped (unsupported scheme 'wss')
+Step 2 skipped (skippable method 'OPTIONS')
+Step 3 skipped (skippable method 'POST')
+Step 4 completed with status 200
+Step 5 completed with status 200
+[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.
+Step 6 completed with status 200
+Step 7 completed with status 200
+Step 8 completed with status 200
+Step 9 skipped (skippable method 'POST')
+
+Reproduction SUCCESSFUL: Target state reached.
