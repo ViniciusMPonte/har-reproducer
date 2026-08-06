@@ -11,6 +11,7 @@ from tests.support.golden_normalizer import GoldenNormalizer
 class GoldenWorkspace:
 
     DIRECTORY_MARKER: ClassVar[str] = "<EMPTY_DIR>"
+    GIT_KEEP_FILENAME: ClassVar[str] = ".gitkeep"
     MITM_CAPTURE_DIR_NAME: ClassVar[str] = "mitm_capture"
     UPDATE_GOLDEN_ENV_VAR: ClassVar[str] = "HAR_REPRODUCER_UPDATE_GOLDEN"
     RUN_ID_PATH_PATTERN: ClassVar[Pattern[str]] = re.compile(r"replays/\d{8}_\d{6}")
@@ -37,16 +38,25 @@ class GoldenWorkspace:
         if reference_dir.exists():
             shutil.rmtree(reference_dir)
         reference_dir.mkdir(parents=True)
-        for relative, content in self.snapshot().items():
-            self._write_reference_entry(reference_dir, relative, content)
+        entries: Dict[str, str] = self.snapshot()
+        for relative, content in entries.items():
+            self._write_reference_entry(reference_dir, relative, content, entries)
 
-    def _write_reference_entry(self, reference_dir: Path, relative: str, content: str) -> None:
+    def _write_reference_entry(
+            self, reference_dir: Path, relative: str, content: str, entries: Dict[str, str],
+    ) -> None:
         target: Path = reference_dir / relative
         if content == self.DIRECTORY_MARKER:
             target.mkdir(parents=True, exist_ok=True)
+            if self._is_leaf_directory(relative, entries):
+                target.joinpath(self.GIT_KEEP_FILENAME).touch()
             return
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+
+    def _is_leaf_directory(self, relative: str, entries: Dict[str, str]) -> bool:
+        prefix: str = f"{relative}/"
+        return not any(key.startswith(prefix) for key in entries)
 
     def _capture(self, base: Path) -> Dict[str, str]:
         entries: Dict[str, str] = {}
@@ -65,6 +75,8 @@ class GoldenWorkspace:
     def _add_entry(self, entries: Dict[str, str], path: Path, relative: str) -> None:
         if path.is_dir():
             entries[relative] = self.DIRECTORY_MARKER
+            return
+        if path.name == self.GIT_KEEP_FILENAME:
             return
         if self._is_under_mitm_capture(relative):
             return
