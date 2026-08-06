@@ -101,16 +101,16 @@ anteriores — sempre `NotFound` (defeito §6.4). A cobertura de substituição 
 da entry 3, cujo token de `X-Csrf` resolve e é substituído também no corpo.
 
 **Critérios de aceite:**
-- [ ] `uv run python -m har_reproducer.main run --har <synthetic com __PORT__ trocado por 9999> --mode dry --output <dir virgem>` termina com `Reproduction SUCCESSFUL` e gera **exatamente 7** arquivos `extractors/*.meta.json`.
-- [ ] Os 7 pares `token_id` → `agent_type`/`origin_step` são exatamente: `cd0419ee5764374946a627cd3912b819` → `CookieAgent`/7; `47ee3e04bc14c64ddd36aae983d6cb84` → `CSSAgent`/0; `3a2dd5b363bd0701c13a2da19b03abc9` → `HeaderAgent`/3; `ade6a53080262635799eb7ec66e824e8` → `JSONPathAgent`/3; `19ca0711b31b0813fdab80694bdc28b1` → `LiteralAgent`/5; `b3defec11e606afd97c5430602861f32` → `LiteralFallbackAgent`/0; `f04743b512e6241375b3226e7f7c69d3` → `RegexAgent`/0.
-- [ ] O `stdout` contém **exatamente uma** linha `Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...` (um `sleep`, rodada em ~5,7 s).
-- [ ] O `stdout` contém `Step 1 skipped (unsupported scheme 'wss')` — e **não** `skippable method`, provando que esquema vence método em `StepSkipEvaluator.skip_reason` (`reproduction/step_skip_evaluator.py:14-18`).
-- [ ] O `stdout` contém `Step 2 skipped (skippable method 'OPTIONS')` e a linha `[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.`
-- [ ] `curls/req_0003.curl.sh` contém `--data-binary '{"csrf": "{{extractor:47ee3e04bc14c64ddd36aae983d6cb84}}"}'` (substituição em corpo).
-- [ ] `curls/req_0004.curl.sh` contém `/item/{{extractor:ade6a53080262635799eb7ec66e824e8}}` (substituição em URL).
-- [ ] `curls/` tem 8 arquivos (steps 1 e 2 ausentes); `original_responses/` e `real_requests/` têm 10 cada; `real_responses/` está **vazio**.
-- [ ] Duas rodadas em `--output` virgens produzem 48 arquivos/dirs cada (`rglob` cru) e são idênticas exceto o campo `temp_file_path` dos `.meta.json`.
-- [ ] `run --mode dry` sobre `minimal_flow.har` com config `{"success_criteria":[{"type":"status_code","expected":200}]}` imprime `Final Validation Result: ✓ SUCCESS`, e com `expected: 500` imprime `✗ FAILURE` — e nos dois casos `extractors/` fica **vazio** e a rodada custa <1 s.
+- [x] `uv run python -m har_reproducer.main run --har <synthetic com __PORT__ trocado por 9999> --mode dry --output <dir virgem>` termina com `Reproduction SUCCESSFUL` e gera **exatamente 7** arquivos `extractors/*.meta.json`.
+- [x] Os 7 pares `token_id` → `agent_type`/`origin_step` são exatamente: `cd0419ee5764374946a627cd3912b819` → `CookieAgent`/7; `47ee3e04bc14c64ddd36aae983d6cb84` → `CSSAgent`/0; `3a2dd5b363bd0701c13a2da19b03abc9` → `HeaderAgent`/3; `ade6a53080262635799eb7ec66e824e8` → `JSONPathAgent`/3; `19ca0711b31b0813fdab80694bdc28b1` → `LiteralAgent`/5; `b3defec11e606afd97c5430602861f32` → `LiteralFallbackAgent`/0; `f04743b512e6241375b3226e7f7c69d3` → `RegexAgent`/0.
+- [x] O `stdout` contém **exatamente uma** linha `Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...` (um `sleep`, rodada em ~5,7 s).
+- [x] O `stdout` contém `Step 1 skipped (unsupported scheme 'wss')` — e **não** `skippable method`, provando que esquema vence método em `StepSkipEvaluator.skip_reason` (`reproduction/step_skip_evaluator.py:14-18`).
+- [x] O `stdout` contém `Step 2 skipped (skippable method 'OPTIONS')` e a linha `[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.`
+- [x] `curls/req_0003.curl.sh` contém `--data-binary '{"csrf": "{{extractor:47ee3e04bc14c64ddd36aae983d6cb84}}"}'` (substituição em corpo).
+- [x] `curls/req_0004.curl.sh` contém `/item/{{extractor:ade6a53080262635799eb7ec66e824e8}}` (substituição em URL).
+- [x] `curls/` tem 8 arquivos (steps 1 e 2 ausentes); `original_responses/` e `real_requests/` têm 10 cada; `real_responses/` está **vazio**.
+- [x] Duas rodadas em `--output` virgens produzem 48 arquivos/dirs cada (`rglob` cru) e são idênticas exceto o campo `temp_file_path` dos `.meta.json`.
+- [x] `run --mode dry` sobre `minimal_flow.har` com config `{"success_criteria":[{"type":"status_code","expected":200}]}` imprime `Final Validation Result: ✓ SUCCESS`, e com `expected: 500` imprime `✗ FAILURE` — e nos dois casos `extractors/` fica **vazio** e a rodada custa <1 s.
 
 ---
 
@@ -160,13 +160,13 @@ Dinâmico`).
 `replays/<run_id>/`). Esta task cobre só o primeiro; o segundo é T03.
 
 **Critérios de aceite:**
-- [ ] `normalize('.../out1/temp_extractors/x.py')` com workspace `.../out1` devolve `<WORKSPACE>/temp_extractors/x.py`.
-- [ ] `normalize('http://127.0.0.1:34005/login')` devolve `http://127.0.0.1:<PORT>/login`, e o mesmo para uma porta de 4 dígitos.
-- [ ] `normalize('"Date": "Thu, 06 Aug 2026 15:28:28 GMT"')` e `normalize("'Date': 'Thu, 06 Aug 2026 15:28:28 GMT'")` produzem, os dois, um texto com `<DATE>` e sem a data original.
-- [ ] `normalize('"Server": "BaseHTTP/0.6 Python/3.12.3"')` produz `<SERVER>` — garantindo que um upgrade de patch do Python não quebre a suíte.
-- [ ] `normalize('replays/20260806_122833/res_0000.json')` devolve `replays/<RUN_ID>/res_0000.json`.
-- [ ] Um texto contendo `b3defec11e606afd97c5430602861f32` sai **inalterado** — nenhum hexadecimal é mascarado.
-- [ ] Texto sem nenhuma das fontes sai byte-idêntico à entrada.
+- [x] `normalize('.../out1/temp_extractors/x.py')` com workspace `.../out1` devolve `<WORKSPACE>/temp_extractors/x.py`.
+- [x] `normalize('http://127.0.0.1:34005/login')` devolve `http://127.0.0.1:<PORT>/login`, e o mesmo para uma porta de 4 dígitos.
+- [x] `normalize('"Date": "Thu, 06 Aug 2026 15:28:28 GMT"')` e `normalize("'Date': 'Thu, 06 Aug 2026 15:28:28 GMT'")` produzem, os dois, um texto com `<DATE>` e sem a data original.
+- [x] `normalize('"Server": "BaseHTTP/0.6 Python/3.12.3"')` produz `<SERVER>` — garantindo que um upgrade de patch do Python não quebre a suíte.
+- [x] `normalize('replays/20260806_122833/res_0000.json')` devolve `replays/<RUN_ID>/res_0000.json`.
+- [x] Um texto contendo `b3defec11e606afd97c5430602861f32` sai **inalterado** — nenhum hexadecimal é mascarado.
+- [x] Texto sem nenhuma das fontes sai byte-idêntico à entrada.
 
 ---
 
@@ -215,13 +215,13 @@ task está errada, não o golden. A variável existe para mudanças deliberadas 
 comportamento.
 
 **Critérios de aceite:**
-- [ ] Sobre um workspace de `run --mode dry` da fixture, o snapshot tem 48 entradas e inclui `real_responses/` como diretório vazio.
-- [ ] Dois workspaces de `run --mode dry` gerados em `--output` diferentes comparam **iguais** (o `temp_file_path` absoluto é neutralizado por T02).
-- [ ] Dois workspaces de rede gerados com **portas e `run_id` diferentes** comparam iguais, e o snapshot tem 69 entradas após `run main` + `replay all`.
-- [ ] O snapshot contém a chave do diretório `mitm_capture/` mas **nenhuma** chave de arquivo sob ele.
-- [ ] Um `replays/20260806_122833/res_0000.json` aparece no snapshot como `replays/<RUN_ID>/res_0000.json`.
-- [ ] Com `HAR_REPRODUCER_UPDATE_GOLDEN=1`, a referência é escrita e uma comparação subsequente passa; sem a variável, uma divergência artificial (um byte alterado num `.meta.json`) **falha** e o relatório nomeia o arquivo.
-- [ ] Percorrer o mesmo workspace duas vezes produz a mesma ordem de chaves.
+- [x] Sobre um workspace de `run --mode dry` da fixture, o snapshot tem 48 entradas e inclui `real_responses/` como diretório vazio.
+- [x] Dois workspaces de `run --mode dry` gerados em `--output` diferentes comparam **iguais** (o `temp_file_path` absoluto é neutralizado por T02).
+- [x] Dois workspaces de rede gerados com **portas e `run_id` diferentes** comparam iguais, e o snapshot tem 69 entradas após `run main` + `replay all`.
+- [x] O snapshot contém a chave do diretório `mitm_capture/` mas **nenhuma** chave de arquivo sob ele.
+- [x] Um `replays/20260806_122833/res_0000.json` aparece no snapshot como `replays/<RUN_ID>/res_0000.json`.
+- [x] Com `HAR_REPRODUCER_UPDATE_GOLDEN=1`, a referência é escrita e uma comparação subsequente passa; sem a variável, uma divergência artificial (um byte alterado num `.meta.json`) **falha** e o relatório nomeia o arquivo.
+- [x] Percorrer o mesmo workspace duas vezes produz a mesma ordem de chaves.
 
 ---
 
@@ -267,11 +267,11 @@ entrada não controlada, aceita como risco (spec §7.1) porque nenhum cenário c
 `llm`. Não tentar isolar nesta etapa — isolar exigiria mexer fora de `tests/`.
 
 **Critérios de aceite:**
-- [ ] Uma invocação de `parse` bem-sucedida devolve exceção `None` e um `stdout` contendo `Parsed HAR into 10 steps.`
-- [ ] `sys.argv` volta ao valor original depois da invocação, inclusive quando a invocação levanta exceção.
-- [ ] Invocar com `--mode` inválido devolve um `SystemExit` (não `None`, não `ValueError`) e um `stderr` contendo `invalid choice`.
-- [ ] Invocar `replay --output <dir inexistente> --mode all` devolve um `ValueError` cuja mensagem começa com `Workspace directory does not exist:`.
-- [ ] Duas invocações seguidas no mesmo processo funcionam, e a segunda não vê `stdout` da primeira.
+- [x] Uma invocação de `parse` bem-sucedida devolve exceção `None` e um `stdout` contendo `Parsed HAR into 10 steps.`
+- [x] `sys.argv` volta ao valor original depois da invocação, inclusive quando a invocação levanta exceção.
+- [x] Invocar com `--mode` inválido devolve um `SystemExit` (não `None`, não `ValueError`) e um `stderr` contendo `invalid choice`.
+- [x] Invocar `replay --output <dir inexistente> --mode all` devolve um `ValueError` cuja mensagem começa com `Workspace directory does not exist:`.
+- [x] Duas invocações seguidas no mesmo processo funcionam, e a segunda não vê `stdout` da primeira.
 
 ---
 
@@ -317,11 +317,11 @@ sem passar pelo CLI. Não adicionar `pytest-xdist` nem plugin de ordem aleatóri
 restrição de T10, que vale para qualquer golden que congele mensagem de erro de `curl`.
 
 **Critérios de aceite:**
-- [ ] A fixture do HAR sintético devolve um `Path` dentro do `tmp_path` cujo conteúdo não contém mais `__PORT__` e é JSON válido com 10 entries.
-- [ ] `uv run pytest` (sem flag) **pula** os testes marcados `slow` e não emite `PytestUnknownMarkWarning`.
-- [ ] `uv run pytest --runslow` coleta e executa os testes marcados `slow`.
-- [ ] `uv run pytest -q` termina sem warnings.
-- [ ] Nenhum arquivo fora de `tests/` aparece em `git status` depois de rodar a suíte — exceto `.mitmproxy/`, que é gitignored e criado por `ProjectConfigLoader._apply_defaults` (`config/project_config_loader.py:35-38`) em todo `run`/`replay`, inclusive `dry` (spec §3.7).
+- [x] A fixture do HAR sintético devolve um `Path` dentro do `tmp_path` cujo conteúdo não contém mais `__PORT__` e é JSON válido com 10 entries.
+- [x] `uv run pytest` (sem flag) **pula** os testes marcados `slow` e não emite `PytestUnknownMarkWarning`.
+- [x] `uv run pytest --runslow` coleta e executa os testes marcados `slow`.
+- [x] `uv run pytest -q` termina sem warnings.
+- [x] Nenhum arquivo fora de `tests/` aparece em `git status` depois de rodar a suíte — exceto `.mitmproxy/`, que é gitignored e criado por `ProjectConfigLoader._apply_defaults` (`config/project_config_loader.py:35-38`) em todo `run`/`replay`, inclusive `dry` (spec §3.7).
 
 ---
 
@@ -354,11 +354,11 @@ antes e afirmar que desapareceu é a única coisa que distingue os dois.
 cenário que rode duas vezes e compare com o mesmo golden.
 
 **Critérios de aceite:**
-- [ ] `parse --har <fixture> --output <tmp>` imprime `Parsed HAR into 10 steps.` e gera `parse/req_0000.json`..`req_0009.json` e `parse/res_0000.json`..`res_0009.json` — 20 arquivos, e **nenhum** dos oito diretórios de workspace.
-- [ ] `parse --har <tmp>/flow.har` sem `--output` grava em `<tmp>/output/parse/`.
-- [ ] Com `<output>/lixo.txt` presente, `parse --reset` remove o arquivo e `parse` sem `--reset` o preserva — os dois goldens diferem exatamente nessa entrada.
-- [ ] Rodar `parse` duas vezes no mesmo `--output` compara igual ao golden nas duas.
-- [ ] Os goldens de `parse` não contêm nenhum caminho absoluto nem porta literal.
+- [x] `parse --har <fixture> --output <tmp>` imprime `Parsed HAR into 10 steps.` e gera `parse/req_0000.json`..`req_0009.json` e `parse/res_0000.json`..`res_0009.json` — 20 arquivos, e **nenhum** dos oito diretórios de workspace.
+- [x] `parse --har <tmp>/flow.har` sem `--output` grava em `<tmp>/output/parse/`.
+- [x] Com `<output>/lixo.txt` presente, `parse --reset` remove o arquivo e `parse` sem `--reset` o preserva — os dois goldens diferem exatamente nessa entrada.
+- [x] Rodar `parse` duas vezes no mesmo `--output` compara igual ao golden nas duas.
+- [x] Os goldens de `parse` não contêm nenhum caminho absoluto nem porta literal.
 
 ---
 
@@ -392,12 +392,12 @@ o skip, e em `dry` o tracking lê `original_responses/`. **Sem este aviso, algu�
 rodada. É esperado e não deve ser "otimizado" mexendo na fixture.
 
 **Critérios de aceite:**
-- [ ] `run --mode dry` compara igual ao golden, que contém os 7 `.meta.json` com os `agent_type`/`origin_step` listados em T01, `real_responses/` vazio, e `curls/` com 8 arquivos.
-- [ ] O golden de `stdout` do cenário padrão contém, na ordem: `Step 0 completed with status 200`, `Step 1 skipped (unsupported scheme 'wss')`, `Step 2 skipped (skippable method 'OPTIONS')`, `Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...`, `Step 3 completed with status 200`, e mais adiante `[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.`
-- [ ] O cenário `--reset` remove um `<output>/lixo.txt` pré-criado.
-- [ ] O cenário de `skip_rules` gera **exatamente 4** extratores — `CookieAgent`, `JSONPathAgent`, `LiteralAgent`, `RegexAgent` — **zero** linhas `Attempt … failed`, e `stdout` com `Step 3 skipped (skippable method 'POST')` e `Step 9 skipped (skippable method 'POST')`.
-- [ ] No golden de `skip_rules`, `original_responses/res_0003.json` tem `status_code: 200` e corpo `{"id": 4242, "ok": true}`, e `real_requests/req_0003.json` tem `is_skippable: true` — é o que sustenta a sobrevivência do `JSONPathAgent`.
-- [ ] Não-regressão: os três cenários usam `--output` virgem, e nenhum reusa diretório de outro.
+- [x] `run --mode dry` compara igual ao golden, que contém os 7 `.meta.json` com os `agent_type`/`origin_step` listados em T01, `real_responses/` vazio, e `curls/` com 8 arquivos.
+- [x] O golden de `stdout` do cenário padrão contém, na ordem: `Step 0 completed with status 200`, `Step 1 skipped (unsupported scheme 'wss')`, `Step 2 skipped (skippable method 'OPTIONS')`, `Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...`, `Step 3 completed with status 200`, e mais adiante `[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.`
+- [x] O cenário `--reset` remove um `<output>/lixo.txt` pré-criado.
+- [x] O cenário de `skip_rules` gera **exatamente 4** extratores — `CookieAgent`, `JSONPathAgent`, `LiteralAgent`, `RegexAgent` — **zero** linhas `Attempt … failed`, e `stdout` com `Step 3 skipped (skippable method 'POST')` e `Step 9 skipped (skippable method 'POST')`.
+- [x] No golden de `skip_rules`, `original_responses/res_0003.json` tem `status_code: 200` e corpo `{"id": 4242, "ok": true}`, e `real_requests/req_0003.json` tem `is_skippable: true` — é o que sustenta a sobrevivência do `JSONPathAgent`.
+- [x] Não-regressão: os três cenários usam `--output` virgem, e nenhum reusa diretório de outro.
 
 ---
 
@@ -439,11 +439,11 @@ roda: medido, <1 s por cenário e `extractors/` vazio.
 nenhum teste faz chamada a provedor.
 
 **Critérios de aceite:**
-- [ ] Os 4 cenários de sucesso imprimem `Final Validation Result: ✓ SUCCESS` e `Reproduction SUCCESSFUL: Target state reached.`
-- [ ] Os 4 cenários de falha imprimem `Final Validation Result: ✗ FAILURE` e `Reproduction FAILED: Target state not reached.`
-- [ ] Em todos os 8, `extractors/` está vazio e a rodada custa <1 s.
-- [ ] Um cenário adicional com `success_criteria: []` (ou sem `--config`) imprime `Reproduction SUCCESSFUL` **sem** nenhuma linha `Final Validation Result` — `Engine._validate_final` (`engines/engine.py:141-147`) retorna `True` sem imprimir quando a lista está vazia.
-- [ ] Os goldens dos 8 diferem entre si apenas nas linhas de veredito.
+- [x] Os 4 cenários de sucesso imprimem `Final Validation Result: ✓ SUCCESS` e `Reproduction SUCCESSFUL: Target state reached.`
+- [x] Os 4 cenários de falha imprimem `Final Validation Result: ✗ FAILURE` e `Reproduction FAILED: Target state not reached.`
+- [x] Em todos os 8, `extractors/` está vazio e a rodada custa <1 s.
+- [x] Um cenário adicional com `success_criteria: []` (ou sem `--config`) imprime `Reproduction SUCCESSFUL` **sem** nenhuma linha `Final Validation Result` — `Engine._validate_final` (`engines/engine.py:141-147`) retorna `True` sem imprimir quando a lista está vazia.
+- [x] Os goldens dos 8 diferem entre si apenas nas linhas de veredito.
 
 ---
 
@@ -489,17 +489,17 @@ quatro mensagens de `ValueError` embutem caminho absoluto, e no caso de
 golden não se aplica a eles.
 
 **Critérios de aceite:**
-- [ ] `run --mode inexistente` devolve `SystemExit` e `stderr` contendo `invalid choice: 'inexistente'`.
-- [ ] `run` sem `--har` devolve `SystemExit` e `stderr` contendo `the following arguments are required: --har`.
-- [ ] `replay --output <dir>` sem `--mode` devolve `SystemExit` e `stderr` contendo `--mode`.
-- [ ] `replay --mode all --from 0` devolve `ValueError("--from/--to/--steps-file não se aplicam a --mode all")`.
-- [ ] `replay --mode slice --steps-file x.txt` e `replay --mode smart --steps-file x.txt` devolvem `ValueError` com `--steps-file não se aplica a --mode slice` e `… smart`, respectivamente.
-- [ ] `replay --mode slice --from 5 --to 2` devolve `ValueError("--from não pode ser maior que --to")`.
-- [ ] `replay --mode list` sem `--steps-file` devolve `ValueError("--mode list exige --steps-file")`, e `replay --mode list --steps-file x.txt --from 0` devolve `ValueError("--from/--to não se aplicam a --mode list")`.
-- [ ] `replay --output <dir inexistente> --mode all` devolve `ValueError` cuja mensagem normalizada é `Workspace directory does not exist: <TMP>/...`.
-- [ ] `replay` sobre diretório existente e vazio devolve `ValueError` com `Workspace has no curl files:`.
-- [ ] `replay` com `response_reference_dir` apontando para diretório inexistente devolve `ValueError` com `response_reference_dir does not exist:`.
-- [ ] Todos os 11 rodam na rodada padrão (sem `--runslow`) e somam <1 s.
+- [x] `run --mode inexistente` devolve `SystemExit` e `stderr` contendo `invalid choice: 'inexistente'`.
+- [x] `run` sem `--har` devolve `SystemExit` e `stderr` contendo `the following arguments are required: --har`.
+- [x] `replay --output <dir>` sem `--mode` devolve `SystemExit` e `stderr` contendo `--mode`.
+- [x] `replay --mode all --from 0` devolve `ValueError("--from/--to/--steps-file não se aplicam a --mode all")`.
+- [x] `replay --mode slice --steps-file x.txt` e `replay --mode smart --steps-file x.txt` devolvem `ValueError` com `--steps-file não se aplica a --mode slice` e `… smart`, respectivamente.
+- [x] `replay --mode slice --from 5 --to 2` devolve `ValueError("--from não pode ser maior que --to")`.
+- [x] `replay --mode list` sem `--steps-file` devolve `ValueError("--mode list exige --steps-file")`, e `replay --mode list --steps-file x.txt --from 0` devolve `ValueError("--from/--to não se aplicam a --mode list")`.
+- [x] `replay --output <dir inexistente> --mode all` devolve `ValueError` cuja mensagem normalizada é `Workspace directory does not exist: <TMP>/...`.
+- [x] `replay` sobre diretório existente e vazio devolve `ValueError` com `Workspace has no curl files:`.
+- [x] `replay` com `response_reference_dir` apontando para diretório inexistente devolve `ValueError` com `response_reference_dir does not exist:`.
+- [x] Todos os 11 rodam na rodada padrão (sem `--runslow`) e somam <1 s.
 
 ---
 
@@ -560,14 +560,14 @@ outro jeito de setar cookie em HTTP. É por isso que `CookieAgent` desaparece em
 `main` (spec §2.2, fato 11), e isso é comportamento esperado, não bug da task.
 
 **Critérios de aceite:**
-- [ ] Construir com porta < 10000 levanta erro; com porta da faixa efêmera, sobe normalmente.
-- [ ] `curl http://127.0.0.1:<porta>/login` devolve 200, `Content-Type: text/html`, `Set-Cookie: SESSIONID=abc123sess; Path=/`, e o corpo com `<div id="marker">tok_CSS_1</div>` e o bloco `<script>`.
-- [ ] `curl -X POST http://127.0.0.1:<porta>/api/do` devolve 200 e `{"id": 4242, "ok": true}` com mime `application/json`.
-- [ ] `curl http://127.0.0.1:<porta>/plain` devolve `Content-Type: text/plain` e corpo `PLAINVAL777`.
-- [ ] `curl http://127.0.0.1:<porta>/prefs` devolve `Set-Cookie: PREFS=xyz789`.
-- [ ] `curl http://127.0.0.1:<porta>/rota-inexistente` devolve 404.
-- [ ] Nenhum corpo servido contém a porta.
-- [ ] O servidor não escreve nada em `stdout` (o log padrão do `http.server` está silenciado, senão poluiria a captura do `CliInvoker`).
+- [x] Construir com porta < 10000 levanta erro; com porta da faixa efêmera, sobe normalmente.
+- [x] `curl http://127.0.0.1:<porta>/login` devolve 200, `Content-Type: text/html`, `Set-Cookie: SESSIONID=abc123sess; Path=/`, e o corpo com `<div id="marker">tok_CSS_1</div>` e o bloco `<script>`.
+- [x] `curl -X POST http://127.0.0.1:<porta>/api/do` devolve 200 e `{"id": 4242, "ok": true}` com mime `application/json`.
+- [x] `curl http://127.0.0.1:<porta>/plain` devolve `Content-Type: text/plain` e corpo `PLAINVAL777`.
+- [x] `curl http://127.0.0.1:<porta>/prefs` devolve `Set-Cookie: PREFS=xyz789`.
+- [x] `curl http://127.0.0.1:<porta>/rota-inexistente` devolve 404.
+- [x] Nenhum corpo servido contém a porta.
+- [x] O servidor não escreve nada em `stdout` (o log padrão do `http.server` está silenciado, senão poluiria a captura do `CliInvoker`).
 
 ---
 
@@ -617,11 +617,11 @@ dois entra na suíte.
 real introduzida pela Etapa B.
 
 **Critérios de aceite:**
-- [ ] Um `stdout` sem nenhuma linha `Failed to resolve` passa.
-- [ ] O `stdout` do cenário `list 4\n3` — uma falha (`ade6a530…`) antes de `Step 4 completed with status 0` — passa, e o guard reporta o agrupamento `{4: ['ade6a53080262635799eb7ec66e824e8']}`.
-- [ ] Um `stdout` sintético com **duas** linhas `Failed to resolve` antes do mesmo `Step 4 completed` **falha**, e a mensagem nomeia o step 4 e os dois ids.
-- [ ] Um `stdout` sintético com uma falha antes de `Step 3 completed` e outra antes de `Step 4 completed` **passa** — grupos diferentes.
-- [ ] O guard não confunde `Failed to resolve token` com `Failed to refresh token` (a mensagem do ramo `run`, em `tracking/token_resolver.py:32`, que itera um **dict** e portanto é determinística).
+- [x] Um `stdout` sem nenhuma linha `Failed to resolve` passa.
+- [x] O `stdout` do cenário `list 4\n3` — uma falha (`ade6a530…`) antes de `Step 4 completed with status 0` — passa, e o guard reporta o agrupamento `{4: ['ade6a53080262635799eb7ec66e824e8']}`.
+- [x] Um `stdout` sintético com **duas** linhas `Failed to resolve` antes do mesmo `Step 4 completed` **falha**, e a mensagem nomeia o step 4 e os dois ids.
+- [x] Um `stdout` sintético com uma falha antes de `Step 3 completed` e outra antes de `Step 4 completed` **passa** — grupos diferentes.
+- [x] O guard não confunde `Failed to resolve token` com `Failed to refresh token` (a mensagem do ramo `run`, em `tracking/token_resolver.py:32`, que itera um **dict** e portanto é determinística).
 
 ---
 
@@ -695,17 +695,17 @@ deve dar erro claro — não regravar golden.
 **exatamente um** diretório sob `replays/`.
 
 **Critérios de aceite:**
-- [ ] `run --mode main` compara igual ao golden: **6** tipos de extrator (dois `LiteralFallbackAgent`, origens 0 e 7; **nenhum** `CookieAgent`), os 7 `extract_*.py` escritos, `temp_extractors/` **vazio**, `real_responses/` com 10 arquivos — incluindo `res_0001.json` e `res_0002.json` com `status_code: 0` e `skipped: true`.
-- [ ] O `stdout` de `run --mode main` tem **duas** linhas `Attempt 1 failed` (tokens `b3defec1…` e `cd0419ee…`) e termina em `Reproduction SUCCESSFUL`.
-- [ ] Os steps executados por cenário são exatamente: `all` e `slice_full` → `[0,3,4,5,6,7,8,9]`; `slice_0_3` → `[0,3]`; `smart_noflag` → `[0,3,9]`; `smart_to_4` → `[0,3,4]`; `smart_from_3` → `[3,4]`; `list_asc` → `[0,3,4]`; `list_out_of_order` → `[4,3]`; `ref_fallback` → `[4]`.
-- [ ] Os 9 cenários de replay bem-sucedidos imprimem `Replay Validation Result: ✓ SUCCESS`, e `TokenFailureGuard` passa em **todos** os 11.
-- [ ] `replay_list_out_of_order` congela os três comportamentos do defeito §6.9: `Failed to resolve token 'ade6a53080262635799eb7ec66e824e8'`, `curl: (3) nested brace in URL position 30:`, `Step 4 completed with status 0` — **e ainda assim** `Replay Validation Result: ✓ SUCCESS (step 3 status code vs. original)` e `Reproduction SUCCESSFUL`.
-- [ ] `replay_ref_fallback` termina com `✓ SUCCESS` e **zero** falhas de token, provando que o token de origem 3 foi resolvido via `original_responses/` (fallback) e o de origem 0 via a referência.
-- [ ] `replay_missing_step` devolve `ValueError` cuja mensagem contém `step(s) [1] não existem no workspace` — o comportamento estabelecido pelas três specs de 05/08.
-- [ ] Cada golden de replay tem **exatamente um** diretório sob `replays/`, normalizado como `<RUN_ID>`.
-- [ ] Duas execuções da suíte com `--runslow`, em processos diferentes, comparam iguais aos mesmos goldens — a prova de que as sete fontes de não-determinismo estão neutralizadas.
-- [ ] `uv run pytest -q` (sem `--runslow`) continua verde e **não** executa nenhum destes 11.
-- [ ] Não-regressão: nenhum arquivo fora de `tests/` mudou; `git status` limpo exceto `tests/` e o `.mitmproxy/` gitignored.
+- [x] `run --mode main` compara igual ao golden: **6** tipos de extrator (dois `LiteralFallbackAgent`, origens 0 e 7; **nenhum** `CookieAgent`), os 7 `extract_*.py` escritos, `temp_extractors/` **vazio**, `real_responses/` com 10 arquivos — incluindo `res_0001.json` e `res_0002.json` com `status_code: 0` e `skipped: true`.
+- [x] O `stdout` de `run --mode main` tem **duas** linhas `Attempt 1 failed` (tokens `b3defec1…` e `cd0419ee…`) e termina em `Reproduction SUCCESSFUL`.
+- [x] Os steps executados por cenário são exatamente: `all` e `slice_full` → `[0,3,4,5,6,7,8,9]`; `slice_0_3` → `[0,3]`; `smart_noflag` → `[0,3,9]`; `smart_to_4` → `[0,3,4]`; `smart_from_3` → `[3,4]`; `list_asc` → `[0,3,4]`; `list_out_of_order` → `[4,3]`; `ref_fallback` → `[4]`.
+- [x] Os 9 cenários de replay bem-sucedidos imprimem `Replay Validation Result: ✓ SUCCESS`, e `TokenFailureGuard` passa em **todos** os 11.
+- [x] `replay_list_out_of_order` congela os três comportamentos do defeito §6.9: `Failed to resolve token 'ade6a53080262635799eb7ec66e824e8'`, `curl: (3) nested brace in URL position 30:`, `Step 4 completed with status 0` — **e ainda assim** `Replay Validation Result: ✓ SUCCESS (step 3 status code vs. original)` e `Reproduction SUCCESSFUL`.
+- [x] `replay_ref_fallback` termina com `✓ SUCCESS` e **zero** falhas de token, provando que o token de origem 3 foi resolvido via `original_responses/` (fallback) e o de origem 0 via a referência.
+- [x] `replay_missing_step` devolve `ValueError` cuja mensagem contém `step(s) [1] não existem no workspace` — o comportamento estabelecido pelas três specs de 05/08.
+- [x] Cada golden de replay tem **exatamente um** diretório sob `replays/`, normalizado como `<RUN_ID>`.
+- [x] Duas execuções da suíte com `--runslow`, em processos diferentes, comparam iguais aos mesmos goldens — a prova de que as sete fontes de não-determinismo estão neutralizadas.
+- [x] `uv run pytest -q` (sem `--runslow`) continua verde e **não** executa nenhum destes 11.
+- [x] Não-regressão: nenhum arquivo fora de `tests/` mudou; `git status` limpo exceto `tests/` e o `.mitmproxy/` gitignored.
 
 ---
 
