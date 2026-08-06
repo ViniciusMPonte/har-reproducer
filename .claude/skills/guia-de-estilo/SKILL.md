@@ -17,6 +17,7 @@ Extraído dos arquivos reais do projeto e do prompt de refatoração usado. Serv
 - Um conceito coeso = uma classe = um arquivo. Nome do arquivo em snake_case do nome da classe (`curl_generator.py` → `CurlGenerator`).
 - Dependências são instanciadas no `__init__` e guardadas como atributo tipado: `self.request_builder: RequestBuilder = RequestBuilder(...)`.
 - Nada solto no módulo — sem função ou constante fora de classe. Até um arquivo só com um enum (`workspace_dir.py`) ou só com staticmethods (`extractor_template.py`) segue esse padrão.
+  - Vale também em `tests/` (`conftest.py`, `test_*.py`): a isenção documentada é só para funções decoradas como fixture do `pytest` e funções `test_*`, exigidas como funções de módulo pelo framework. Constantes — paths, portas, valores fixos — continuam exigindo uma classe com `ClassVar`, mesmo dentro de `conftest.py`. Já aconteceu de constantes soltas (`FIXTURES_DIR`, `OFFLINE_PORT`) passarem batido num `conftest.py` antes de serem corrigidas.
 - `Enum(str, Enum)` para qualquer conjunto fechado de valores (`TokenLocation`, `AgentType`, `EngineMode`).
 
 ## Decomposição de métodos
