@@ -1,0 +1,12 @@
+{
+  "url": "http://127.0.0.1:<PORT>/use-prefs",
+  "method": "GET",
+  "headers": {
+    "Accept": "text/html"
+  },
+  "cookies": {
+    "PREFS": "xyz789"
+  },
+  "body": null,
+  "is_skippable": false
+}
