@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import ClassVar, List
 
 import pytest
 
@@ -7,9 +7,11 @@ from tests.support.cli_invoker import CliInvoker
 from tests.support.golden_workspace_factory import GoldenWorkspaceFactory
 from tests.support.har_materializer import HarMaterializer
 
-FIXTURES_DIR: Path = Path(__file__).parent / "fixtures"
-GOLDEN_DIR: Path = Path(__file__).parent / "golden"
-OFFLINE_PORT: int = 19999
+
+class OfflineFixtureConfig:
+    FIXTURES_DIR: ClassVar[Path] = Path(__file__).parent / "fixtures"
+    GOLDEN_DIR: ClassVar[Path] = Path(__file__).parent / "golden"
+    OFFLINE_PORT: ClassVar[int] = 19999
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -36,21 +38,21 @@ def pytest_collection_modifyitems(config: pytest.Config, items: List[pytest.Item
 
 @pytest.fixture
 def golden_dir() -> Path:
-    return GOLDEN_DIR
+    return OfflineFixtureConfig.GOLDEN_DIR
 
 
 @pytest.fixture
 def synthetic_flow_har(tmp_path: Path) -> Path:
-    source: Path = FIXTURES_DIR / "synthetic_flow.har"
+    source: Path = OfflineFixtureConfig.FIXTURES_DIR / "synthetic_flow.har"
     destination: Path = tmp_path / "synthetic_flow.har"
-    return HarMaterializer().materialize(source, destination, OFFLINE_PORT)
+    return HarMaterializer().materialize(source, destination, OfflineFixtureConfig.OFFLINE_PORT)
 
 
 @pytest.fixture
 def minimal_flow_har(tmp_path: Path) -> Path:
-    source: Path = FIXTURES_DIR / "minimal_flow.har"
+    source: Path = OfflineFixtureConfig.FIXTURES_DIR / "minimal_flow.har"
     destination: Path = tmp_path / "minimal_flow.har"
-    return HarMaterializer().materialize(source, destination, OFFLINE_PORT)
+    return HarMaterializer().materialize(source, destination, OfflineFixtureConfig.OFFLINE_PORT)
 
 
 @pytest.fixture
