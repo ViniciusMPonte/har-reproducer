@@ -1,0 +1,11 @@
+{
+  "token_id": "47ee3e04bc14c64ddd36aae983d6cb84",
+  "code": "\nfrom bs4 import BeautifulSoup\n\ndef extract_t_47ee3e04bc14c64ddd36aae983d6cb84(response: dict) -> str:\n    body = response.get('body', '')\n    soup = BeautifulSoup(body, 'html.parser')\n    element = soup.select_one('#marker')\n    if not element:\n        raise Exception(\"Token element not found in HTML\")\n    value = element.get_text(strip=True)\n    if not value:\n        raise Exception(\"Token value not found in HTML element\")\n    return value\n",
+  "verified": true,
+  "agent_type": "CSSAgent",
+  "origin_step": 0,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_47ee3e04bc14c64ddd36aae983d6cb84.py",
+  "valid_count": 1,
+  "last_value": "tok_CSS_1",
+  "ever_changed": false
+}

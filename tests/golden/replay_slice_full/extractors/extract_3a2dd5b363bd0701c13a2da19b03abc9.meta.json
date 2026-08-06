@@ -1,0 +1,11 @@
+{
+  "token_id": "3a2dd5b363bd0701c13a2da19b03abc9",
+  "code": "\ndef extract_t_3a2dd5b363bd0701c13a2da19b03abc9(response: dict) -> str:\n    headers = response.get('headers', {})\n    target = 'Content-Type'\n    value = headers.get(target)\n    if value is None:\n        lowered = {str(k).lower(): v for k, v in headers.items()}\n        value = lowered.get(target.lower())\n    if not value:\n        raise Exception(\"Token not found in headers\")\n    return value\n",
+  "verified": true,
+  "agent_type": "HeaderAgent",
+  "origin_step": 3,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_3a2dd5b363bd0701c13a2da19b03abc9.py",
+  "valid_count": 1,
+  "last_value": "application/json",
+  "ever_changed": false
+}

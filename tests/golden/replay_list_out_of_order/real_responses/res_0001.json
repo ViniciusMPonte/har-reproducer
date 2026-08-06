@@ -1,0 +1,10 @@
+{
+  "status_code": 0,
+  "headers": {},
+  "cookies": {},
+  "body": null,
+  "body_mime": null,
+  "redirect_url": null,
+  "skipped": true,
+  "skip_reason": "unsupported scheme 'wss'"
+}

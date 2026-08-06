@@ -1,0 +1,15 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Server": "<SERVER>",
+    "Date": "<DATE>",
+    "Content-Type": "application/json",
+    "Content-Length": "24"
+  },
+  "cookies": {},
+  "body": "{\"id\": 4242, \"ok\": true}",
+  "body_mime": "application/json",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

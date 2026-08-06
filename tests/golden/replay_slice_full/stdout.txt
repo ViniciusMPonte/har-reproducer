@@ -1,0 +1,12 @@
+Step 0 completed with status 200
+Step 3 completed with status 200
+Step 4 completed with status 200
+Step 5 completed with status 200
+Step 6 completed with status 200
+Step 7 completed with status 200
+Step 8 completed with status 200
+Step 9 completed with status 200
+
+Replay Validation Result: ✓ SUCCESS (step 9 status code vs. original)
+
+Reproduction SUCCESSFUL: Target state reached.

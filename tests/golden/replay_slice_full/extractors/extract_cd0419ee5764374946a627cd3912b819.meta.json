@@ -1,0 +1,11 @@
+{
+  "token_id": "cd0419ee5764374946a627cd3912b819",
+  "code": "def extract_t_cd0419ee5764374946a627cd3912b819(response):\n    return 'xyz789'\n",
+  "verified": true,
+  "agent_type": "LiteralFallbackAgent",
+  "origin_step": 7,
+  "temp_file_path": null,
+  "valid_count": 1,
+  "last_value": "xyz789",
+  "ever_changed": false
+}

@@ -1,0 +1,11 @@
+{
+  "token_id": "f04743b512e6241375b3226e7f7c69d3",
+  "code": "\nimport re\n\ndef extract_t_f04743b512e6241375b3226e7f7c69d3(response: dict) -> str:\n    body = response.get('body', '')\n    if isinstance(body, bytes):\n        body = body.decode('utf-8', errors='replace')\n    match = re.search('nonce[\\'\\\\\"]?\\\\s*[:=]\\\\s*[\\'\\\\\"]?([\\\\w\\\\-.]+)', body, re.DOTALL)\n    if not match:\n        raise Exception(\"Token not found via regex\")\n    return match.group(1)\n",
+  "verified": true,
+  "agent_type": "RegexAgent",
+  "origin_step": 0,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_f04743b512e6241375b3226e7f7c69d3.py",
+  "valid_count": 0,
+  "last_value": null,
+  "ever_changed": false
+}
