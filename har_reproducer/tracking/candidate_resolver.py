@@ -2,12 +2,10 @@ import hashlib
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple
 
-from langchain_core.language_models import BaseChatModel
-
-from har_reproducer.agents import BaseAgent, CookieAgent, CSSAgent, HeaderAgent, JSONPathAgent, RegexAgent
-from har_reproducer.models import AgentType, DynamicToken, Extractor, TokenLocation
+from har_reproducer.agents import AgentFactory, BaseAgent
+from har_reproducer.models import AgentType, DynamicToken, Extractor
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import IdentifierSanitizer
@@ -22,23 +20,16 @@ class SlotStatus(str, Enum):
 
 
 class CandidateResolver:
-    LOCATION_AGENTS: ClassVar[Dict[TokenLocation, Type[BaseAgent]]] = {
-        TokenLocation.COOKIE: CookieAgent,
-        TokenLocation.HEADER: HeaderAgent,
-        TokenLocation.BODY_JSON: JSONPathAgent,
-        TokenLocation.BODY_HTML: CSSAgent,
-        TokenLocation.SCRIPT: RegexAgent,
-    }
 
     def __init__(
             self,
             responses_dir: Path,
             session_store: SessionStore,
-            llm: Optional[BaseChatModel],
+            agent_factory: AgentFactory,
     ) -> None:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
-        self.llm: Optional[BaseChatModel] = llm
+        self.agent_factory: AgentFactory = agent_factory
         self.extractor_runner: ExtractorRunner = ExtractorRunner()
         self.metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
         self._validated_values: Dict[str, str] = {}
@@ -183,16 +174,7 @@ class CandidateResolver:
         if candidate.origin_location is None:
             return self._build_literal_extractor(candidate, AgentType.LITERAL)
 
-        agent_cls: Type[BaseAgent] = self.LOCATION_AGENTS.get(candidate.origin_location, RegexAgent)
-
-        agent: BaseAgent = agent_cls(
-            token_id=candidate.token_id,
-            response_sample=response_sample,
-            expected_value=candidate.current_value,
-            path=candidate.path,
-            location=candidate.origin_location.value if candidate.origin_location else None,
-            llm=self.llm,
-        )
+        agent: BaseAgent = self.agent_factory.create(candidate, response_sample)
         extractor: Optional[Extractor] = agent.run_tdd_loop(
             origin_step=candidate.origin_step, initial_error=initial_error
         )

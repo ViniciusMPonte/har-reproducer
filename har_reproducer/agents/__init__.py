@@ -4,8 +4,10 @@ from har_reproducer.agents.css_agent import CSSAgent
 from har_reproducer.agents.header_agent import HeaderAgent
 from har_reproducer.agents.jsonpath_agent import JSONPathAgent
 from har_reproducer.agents.regex_agent import RegexAgent
+from har_reproducer.agents.construction.agent_factory import AgentFactory
 
 __all__: list[str] = [
+    "AgentFactory",
     "BaseAgent",
     "CookieAgent",
     "CSSAgent",

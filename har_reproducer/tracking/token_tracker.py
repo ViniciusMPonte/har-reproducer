@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from langchain_core.language_models import BaseChatModel
 
+from har_reproducer.agents import AgentFactory
 from har_reproducer.models import DynamicToken, Step, StepAnalysis
 from har_reproducer.reproduction import CurlGenerator
 from har_reproducer.session import SessionStore
@@ -23,8 +24,9 @@ class TokenTracker:
         self.session_store: SessionStore = session_store
         self.llm: Optional[BaseChatModel] = llm
 
+        agent_factory: AgentFactory = AgentFactory(llm)
         self.baseline_diff: BaselineDiff = BaselineDiff()
-        self.candidate_resolver: CandidateResolver = CandidateResolver(responses_dir, session_store, llm)
+        self.candidate_resolver: CandidateResolver = CandidateResolver(responses_dir, session_store, agent_factory)
         self.placeholder_applier: PlaceholderApplier = PlaceholderApplier(session_store)
 
     def analyze_step(self, step: Step, baseline_step: Step) -> StepAnalysis:
