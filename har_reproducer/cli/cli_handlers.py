@@ -37,36 +37,37 @@ class CliHandlers:
         output_dir: Path = self._resolve_output_dir(args, har_path)
         if args.reset_output_dir:
             self._reset_output_dir(output_dir)
+        Workspace.init(output_dir)
+
         config_path: Optional[Path] = Path(args.config) if args.config else None
+        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
+        engine_factory: EngineFactory = self._engine_factory(project_config)
 
         mode: EngineMode = EngineMode(args.mode)
-        result: bool = self._run(mode, har_path, output_dir, config_path)
+        result: bool = self._run(engine_factory, mode, har_path, project_config)
         self._print_result(result)
 
-    def _run(self, mode: EngineMode, har_path: Path, output_dir: Path, config_path: Optional[Path]) -> bool:
-        engine_cls: Type[Engine] = self._engine_factory.resolve_class(mode)
+    def _run(
+            self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path, project_config: ProjectConfig
+    ) -> bool:
+        engine_cls: Type[Engine] = engine_factory.resolve_class(mode)
         if not engine_cls.USES_NETWORK:
-            return self._run_without_proxy(mode, har_path, output_dir, config_path)
-        return self._run_with_proxy(mode, har_path, output_dir, config_path)
+            return self._run_without_proxy(engine_factory, mode, har_path)
+        return self._run_with_proxy(engine_factory, mode, har_path, project_config)
 
-    def _run_without_proxy(self, mode, har_path, output_dir, config_path) -> bool:
-        engine: Engine = self._engine_factory.create(mode, har_path, output_dir, config_path)
+    def _run_without_proxy(self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path) -> bool:
+        engine: Engine = engine_factory.create(mode, har_path)
         return engine.run()
 
-    def _run_with_proxy(self, mode, har_path, output_dir, config_path) -> bool:
-        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
+    def _run_with_proxy(
+            self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path, project_config: ProjectConfig
+    ) -> bool:
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
             project_config.proxy_port,
             project_config.ca_cert_path
         )
         http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path)
-        engine: Engine = self._engine_factory.create(
-            mode,
-            har_path,
-            output_dir,
-            config_path,
-            http_transport=http_transport,
-        )
+        engine: Engine = engine_factory.create(mode, har_path, http_transport=http_transport)
         return orchestrator.run(engine.run)
 
     @staticmethod

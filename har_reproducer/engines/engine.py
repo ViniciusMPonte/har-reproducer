@@ -1,30 +1,13 @@
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
-from langchain_core.language_models.chat_models import BaseChatModel
-
-from har_reproducer.agents import AgentFactory
-from har_reproducer.config import ProjectConfigLoader
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import HARParser, Workspace
-from har_reproducer.llm import LLMFactory
-from har_reproducer.models import (
-    ProjectConfig,
-    Step,
-    StepRequest,
-    StepResponse,
-    SuccessCriterion,
-)
-from har_reproducer.reproduction import (
-    CurlGenerator,
-    ExtractorMetadataStore,
-    ExtractorRunner,
-    StepRetryPolicy,
-    StepSkipEvaluator,
-)
+from har_reproducer.models import Step, StepRequest, StepResponse, SuccessCriterion
+from har_reproducer.reproduction import StepRetryPolicy, StepSkipEvaluator
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import ExtractorTemplate
-from har_reproducer.tracking import BaselineDiff, CandidateResolver, PlaceholderApplier, TokenResolver, TokenTracker
+from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
 
 
@@ -34,56 +17,24 @@ class Engine:
     def __init__(
             self,
             har_path: Path,
-            output_dir: Path,
-            config_path: Optional[Path] = None,
-            http_transport: Optional[HttpTransport] = None,
+            session_store: SessionStore,
+            tracker: TokenTracker,
+            token_resolver: TokenResolver,
+            skip_evaluator: StepSkipEvaluator,
+            retry_policy: StepRetryPolicy,
+            validator: Validator,
+            success_criteria: List[SuccessCriterion],
+            http_transport: Optional[HttpTransport],
     ) -> None:
         self.har_path: Path = har_path
-        self.output_dir: Path = output_dir
-
-        Workspace.init(output_dir)
-        self.curls_dir: Path = Workspace.curls
-        self.original_responses_dir: Path = Workspace.original_responses
-        self.tracking_responses_dir: Path = Workspace.real_responses if self.USES_NETWORK else Workspace.original_responses
-        self.extractors_dir: Path = Workspace.extractors
-        self.temp_extractors_dir: Path = Workspace.temp_extractors
-
-        self.session_store: SessionStore = SessionStore()
-        self.validator: Validator = Validator()
-        self.retry_policy: StepRetryPolicy = StepRetryPolicy()
-        extractor_runner: ExtractorRunner = ExtractorRunner()
-        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
-
-        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
-
-        self.skip_evaluator: StepSkipEvaluator = StepSkipEvaluator(project_config.skip_rules)
-
+        self.session_store: SessionStore = session_store
+        self.tracker: TokenTracker = tracker
+        self.token_resolver: TokenResolver = token_resolver
+        self.skip_evaluator: StepSkipEvaluator = skip_evaluator
+        self.retry_policy: StepRetryPolicy = retry_policy
+        self.validator: Validator = validator
+        self.success_criteria: List[SuccessCriterion] = success_criteria
         self.http_transport: Optional[HttpTransport] = http_transport
-        self.token_resolver: TokenResolver = TokenResolver(
-            self.tracking_responses_dir, self.session_store, extractor_runner
-        )
-
-        self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
-        llm: Optional[BaseChatModel] = self._build_llm(project_config)
-        agent_factory: AgentFactory = AgentFactory(llm)
-        baseline_diff: BaselineDiff = BaselineDiff()
-        candidate_resolver: CandidateResolver = CandidateResolver(
-            self.tracking_responses_dir, self.session_store, extractor_runner, metadata_store, agent_factory
-        )
-        placeholder_applier: PlaceholderApplier = PlaceholderApplier(self.session_store)
-        curl_generator: CurlGenerator = CurlGenerator()
-        self.tracker: TokenTracker = TokenTracker(baseline_diff, candidate_resolver, placeholder_applier, curl_generator)
-
-    def _build_llm(self, project_config: ProjectConfig) -> Optional[BaseChatModel]:
-        if not project_config.llm:
-            return None
-
-        llm: BaseChatModel = LLMFactory.create(project_config.llm)
-        print(
-            f"LLM fallback enabled from config: "
-            f"provider={project_config.llm.provider} model={project_config.llm.model}"
-        )
-        return llm
 
     def run(self) -> bool:
         return self._reproduce()
