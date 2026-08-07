@@ -16,6 +16,7 @@ from har_reproducer.reproduction import (
     ExtractorMetadataStore,
     ExtractorRunner,
     ScriptExecutor,
+    Sleeper,
     StepRetryPolicy,
     StepSkipEvaluator,
 )
@@ -30,9 +31,10 @@ class EngineFactory:
         EngineMode.DRY: DryEngine,
     }
 
-    def __init__(self, project_config: ProjectConfig, script_executor: ScriptExecutor) -> None:
+    def __init__(self, project_config: ProjectConfig, script_executor: ScriptExecutor, sleeper: Sleeper) -> None:
         self.project_config: ProjectConfig = project_config
         self.script_executor: ScriptExecutor = script_executor
+        self.sleeper: Sleeper = sleeper
         self.llm: Optional[BaseChatModel] = self._build_llm(project_config)
 
     def resolve_class(self, mode: EngineMode) -> Type[Engine]:
@@ -75,7 +77,7 @@ class EngineFactory:
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
     ) -> TokenTracker:
-        agent_factory: AgentFactory = AgentFactory(self.script_executor, self.llm)
+        agent_factory: AgentFactory = AgentFactory(self.script_executor, self.sleeper, self.llm)
         candidate_resolver: CandidateResolver = CandidateResolver(
             tracking_responses_dir, session_store, extractor_runner, metadata_store, agent_factory
         )

@@ -18,6 +18,7 @@ from har_reproducer.reproduction import (
     ExtractorRunner,
     MitmProxyOrchestrator,
     ScriptExecutor,
+    Sleeper,
     StepRetryPolicy,
 )
 from har_reproducer.session.session_store import SessionStore
@@ -43,32 +44,43 @@ class CliHandlers:
         config_path: Optional[Path] = Path(args.config) if args.config else None
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
         script_executor: ScriptExecutor = ScriptExecutor()
-        engine_factory: EngineFactory = self._engine_factory(project_config, script_executor)
+        sleeper: Sleeper = Sleeper()
+        engine_factory: EngineFactory = self._engine_factory(project_config, script_executor, sleeper)
 
         mode: EngineMode = EngineMode(args.mode)
-        result: bool = self._run(engine_factory, mode, har_path, project_config)
+        result: bool = self._run(engine_factory, mode, har_path, project_config, sleeper)
         self._print_result(result)
 
     def _run(
-            self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path, project_config: ProjectConfig
+            self,
+            engine_factory: EngineFactory,
+            mode: EngineMode,
+            har_path: Path,
+            project_config: ProjectConfig,
+            sleeper: Sleeper,
     ) -> bool:
         engine_cls: Type[Engine] = engine_factory.resolve_class(mode)
         if not engine_cls.USES_NETWORK:
             return self._run_without_proxy(engine_factory, mode, har_path)
-        return self._run_with_proxy(engine_factory, mode, har_path, project_config)
+        return self._run_with_proxy(engine_factory, mode, har_path, project_config, sleeper)
 
     def _run_without_proxy(self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path) -> bool:
         engine: Engine = engine_factory.create(mode, har_path)
         return engine.run()
 
     def _run_with_proxy(
-            self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path, project_config: ProjectConfig
+            self,
+            engine_factory: EngineFactory,
+            mode: EngineMode,
+            har_path: Path,
+            project_config: ProjectConfig,
+            sleeper: Sleeper,
     ) -> bool:
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
             project_config.proxy_port,
             project_config.ca_cert_path
         )
-        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path)
+        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path, sleeper)
         engine: Engine = engine_factory.create(mode, har_path, http_transport=http_transport)
         return orchestrator.run(engine.run)
 
@@ -99,7 +111,10 @@ class CliHandlers:
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(project_config.proxy_port,
                                                                     project_config.ca_cert_path)
         script_executor: ScriptExecutor = ScriptExecutor()
-        runner: ReplayRunner = self._build_replay_runner(orchestrator, run_id, res_refer_dir, script_executor)
+        sleeper: Sleeper = Sleeper()
+        runner: ReplayRunner = self._build_replay_runner(
+            orchestrator, run_id, res_refer_dir, script_executor, sleeper
+        )
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
@@ -126,6 +141,7 @@ class CliHandlers:
             run_id: str,
             res_refer_dir: Path,
             script_executor: ScriptExecutor,
+            sleeper: Sleeper,
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner(script_executor)
@@ -136,7 +152,7 @@ class CliHandlers:
         )
         retry_policy: StepRetryPolicy = StepRetryPolicy()
         comparator: ReplayResultComparator = ReplayResultComparator()
-        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path)
+        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path, sleeper)
 
         return ReplayRunner(
             dependency_parser=dependency_parser,

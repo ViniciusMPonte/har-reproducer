@@ -1,5 +1,4 @@
 import re
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -10,7 +9,7 @@ from har_reproducer.contracts import Strategy
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import AgentType, Extractor, ScriptExecutionResult
 from har_reproducer.prompts import ExtractorPrompt
-from har_reproducer.reproduction import ScriptExecutor
+from har_reproducer.reproduction import ScriptExecutor, Sleeper
 from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 
 
@@ -24,6 +23,7 @@ class BaseAgent:
             response_sample: Dict[str, Any],
             expected_value: str,
             script_executor: ScriptExecutor,
+            sleeper: Sleeper,
             path: Optional[str] = None,
             location: Optional[str] = None,
             llm: Optional[BaseChatModel] = None,
@@ -33,6 +33,7 @@ class BaseAgent:
         self.response_sample: Dict[str, Any] = response_sample
         self.expected_value: str = expected_value
         self.script_executor: ScriptExecutor = script_executor
+        self.sleeper: Sleeper = sleeper
         self.path: Optional[str] = path
         self.location: Optional[str] = location
         self.llm: Optional[BaseChatModel] = llm
@@ -158,7 +159,7 @@ class BaseAgent:
 
             last_error = error
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
-            time.sleep(self.RETRY_DELAY_SECONDS)
+            self.sleeper.sleep(self.RETRY_DELAY_SECONDS)
 
         self._cleanup_script(Workspace.temp_extractor_file(self.safe_token_id))
         return None

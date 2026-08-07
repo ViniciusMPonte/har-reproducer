@@ -5,6 +5,7 @@ from har_reproducer.reproduction.extractor_runner import ExtractorRunner
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.mitm_proxy_orchestrator import MitmProxyOrchestrator
 from har_reproducer.reproduction.script_executor import ScriptExecutor
+from har_reproducer.reproduction.sleeper import Sleeper
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 
@@ -16,6 +17,7 @@ __all__ = [
     "MitmEnv",
     "MitmProxyOrchestrator",
     "ScriptExecutor",
+    "Sleeper",
     "StepRetryPolicy",
     "StepSkipEvaluator",
 ]
