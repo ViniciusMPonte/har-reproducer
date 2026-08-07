@@ -39,16 +39,16 @@ class CliHandlers:
         output_dir: Path = self._resolve_output_dir(args, har_path)
         if args.reset_output_dir:
             self._reset_output_dir(output_dir)
-        Workspace.init(output_dir)
+        workspace: Workspace = Workspace(output_dir)
 
         config_path: Optional[Path] = Path(args.config) if args.config else None
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
         script_executor: ScriptExecutor = ScriptExecutor()
         sleeper: Sleeper = Sleeper()
-        engine_factory: EngineFactory = self._engine_factory(project_config, script_executor, sleeper)
+        engine_factory: EngineFactory = self._engine_factory(workspace, project_config, script_executor, sleeper)
 
         mode: EngineMode = EngineMode(args.mode)
-        result: bool = self._run(engine_factory, mode, har_path, project_config, sleeper)
+        result: bool = self._run(engine_factory, mode, har_path, workspace, project_config, sleeper)
         self._print_result(result)
 
     def _run(
@@ -56,13 +56,14 @@ class CliHandlers:
             engine_factory: EngineFactory,
             mode: EngineMode,
             har_path: Path,
+            workspace: Workspace,
             project_config: ProjectConfig,
             sleeper: Sleeper,
     ) -> bool:
         engine_cls: Type[Engine] = engine_factory.resolve_class(mode)
         if not engine_cls.USES_NETWORK:
             return self._run_without_proxy(engine_factory, mode, har_path)
-        return self._run_with_proxy(engine_factory, mode, har_path, project_config, sleeper)
+        return self._run_with_proxy(engine_factory, mode, har_path, workspace, project_config, sleeper)
 
     def _run_without_proxy(self, engine_factory: EngineFactory, mode: EngineMode, har_path: Path) -> bool:
         engine: Engine = engine_factory.create(mode, har_path)
@@ -73,14 +74,18 @@ class CliHandlers:
             engine_factory: EngineFactory,
             mode: EngineMode,
             har_path: Path,
+            workspace: Workspace,
             project_config: ProjectConfig,
             sleeper: Sleeper,
     ) -> bool:
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+            workspace,
             project_config.proxy_port,
             project_config.ca_cert_path
         )
-        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path, sleeper)
+        http_transport: CurlHttpTransport = CurlHttpTransport(
+            workspace, orchestrator.port, orchestrator.ca_cert_path, sleeper
+        )
         engine: Engine = engine_factory.create(mode, har_path, http_transport=http_transport)
         return orchestrator.run(engine.run)
 
@@ -102,41 +107,44 @@ class CliHandlers:
     def handle_replay(self, args: Namespace) -> None:
         output_dir: Path = Path(args.output)
         self._validate_replay_mode_flags(args)
-        self._prepare_replay_workspace(output_dir)
+        workspace: Workspace = self._prepare_replay_workspace(output_dir)
 
         project_config: ProjectConfig = ProjectConfigLoader.load(Path(args.config) if args.config else None)
-        res_refer_dir: Path = self._resolve_response_reference_dir(project_config)
+        res_refer_dir: Path = self._resolve_response_reference_dir(workspace, project_config)
 
         run_id: str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(project_config.proxy_port,
-                                                                    project_config.ca_cert_path)
+        orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+            workspace, project_config.proxy_port, project_config.ca_cert_path
+        )
         script_executor: ScriptExecutor = ScriptExecutor()
         sleeper: Sleeper = Sleeper()
         runner: ReplayRunner = self._build_replay_runner(
-            orchestrator, run_id, res_refer_dir, script_executor, sleeper
+            workspace, orchestrator, run_id, res_refer_dir, script_executor, sleeper
         )
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
 
     @staticmethod
-    def _prepare_replay_workspace(output_dir: Path) -> None:
+    def _prepare_replay_workspace(output_dir: Path) -> Workspace:
         if not output_dir.exists():
             raise ValueError(f"Workspace directory does not exist: {output_dir}")
 
-        Workspace.init(output_dir)
-        if not any(Workspace.curls.glob("req_*.curl.sh")):
+        workspace: Workspace = Workspace(output_dir)
+        if not any(workspace.curls.glob("req_*.curl.sh")):
             raise ValueError(f"Workspace has no curl files: {output_dir}")
+        return workspace
 
     @staticmethod
-    def _resolve_response_reference_dir(project_config: ProjectConfig) -> Path:
-        res_refer_dir: Path = project_config.response_reference_dir or Workspace.real_responses
+    def _resolve_response_reference_dir(workspace: Workspace, project_config: ProjectConfig) -> Path:
+        res_refer_dir: Path = project_config.response_reference_dir or workspace.real_responses
         if not res_refer_dir.exists():
             raise ValueError(f"response_reference_dir does not exist: {res_refer_dir}")
         return res_refer_dir
 
     @staticmethod
     def _build_replay_runner(
+            workspace: Workspace,
             orchestrator: MitmProxyOrchestrator,
             run_id: str,
             res_refer_dir: Path,
@@ -144,17 +152,20 @@ class CliHandlers:
             sleeper: Sleeper,
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
-        extractor_runner: ExtractorRunner = ExtractorRunner(script_executor)
+        extractor_runner: ExtractorRunner = ExtractorRunner(workspace, script_executor)
         dependency_parser: CurlDependencyParser = CurlDependencyParser()
-        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
+        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
         replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(
             session_store, extractor_runner, dependency_parser, metadata_store
         )
         retry_policy: StepRetryPolicy = StepRetryPolicy()
-        comparator: ReplayResultComparator = ReplayResultComparator()
-        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path, sleeper)
+        comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+        http_transport: CurlHttpTransport = CurlHttpTransport(
+            workspace, orchestrator.port, orchestrator.ca_cert_path, sleeper
+        )
 
         return ReplayRunner(
+            workspace=workspace,
             dependency_parser=dependency_parser,
             session_store=session_store,
             http_transport=http_transport,
@@ -162,9 +173,9 @@ class CliHandlers:
             retry_policy=retry_policy,
             comparator=comparator,
             run_id=run_id,
-            replay_run_dir=Workspace.replay_run_dir(run_id),
+            replay_run_dir=workspace.replay_run_dir(run_id),
             res_refer_dir=res_refer_dir,
-            original_responses_dir=Workspace.original_responses,
+            original_responses_dir=workspace.original_responses,
         )
 
     @staticmethod

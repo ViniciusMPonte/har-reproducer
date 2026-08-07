@@ -1,36 +1,27 @@
 from pathlib import Path
-from typing import Optional
 
 from har_reproducer.fs_io.workspace_dir import WorkspaceDir
 
 
 class Workspace:
-    _output_dir: Optional[Path] = None
 
-    curls: Path
-    real_responses: Path
-    original_responses: Path
-    real_requests: Path
-    extractors: Path
-    temp_extractors: Path
-    mitm_capture: Path
-    replays: Path
+    def __init__(self, output_dir: Path) -> None:
+        self.output_dir: Path = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    @classmethod
-    def init(cls, output_dir: Path) -> None:
-        cls._output_dir = Path(output_dir)
-        cls._output_dir.mkdir(parents=True, exist_ok=True)
-        for workspace_dir in WorkspaceDir:
-            path: Path = cls._output_dir / workspace_dir.value
-            path.mkdir(parents=True, exist_ok=True)
-            setattr(cls, workspace_dir.value, path)
+        self.curls: Path = self._prepare_dir(WorkspaceDir.CURLS)
+        self.real_responses: Path = self._prepare_dir(WorkspaceDir.REAL_RESPONSES)
+        self.original_responses: Path = self._prepare_dir(WorkspaceDir.ORIGINAL_RESPONSES)
+        self.real_requests: Path = self._prepare_dir(WorkspaceDir.REAL_REQUESTS)
+        self.extractors: Path = self._prepare_dir(WorkspaceDir.EXTRACTORS)
+        self.temp_extractors: Path = self._prepare_dir(WorkspaceDir.TEMP_EXTRACTORS)
+        self.mitm_capture: Path = self._prepare_dir(WorkspaceDir.MITM_CAPTURE)
+        self.replays: Path = self._prepare_dir(WorkspaceDir.REPLAYS)
 
-    @classmethod
-    def _ensure_initialized(cls) -> None:
-        if cls._output_dir is None:
-            raise RuntimeError(
-                "Workspace não inicializado. Chame Workspace.init(output_dir) primeiro."
-            )
+    def _prepare_dir(self, workspace_dir: WorkspaceDir) -> Path:
+        path: Path = self.output_dir / workspace_dir.value
+        path.mkdir(parents=True, exist_ok=True)
+        return path
 
     @staticmethod
     def get_root_path() -> Path:
@@ -42,59 +33,37 @@ class Workspace:
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    @classmethod
-    def temp_extractor_file(cls, safe_token_id: str) -> Path:
-        cls._ensure_initialized()
-        return cls.temp_extractors / f"temp_extractor_{safe_token_id}.py"
+    def temp_extractor_file(self, safe_token_id: str) -> Path:
+        return self.temp_extractors / f"temp_extractor_{safe_token_id}.py"
 
-    @classmethod
-    def extractor_file(cls, safe_token_id: str) -> Path:
-        cls._ensure_initialized()
-        return cls.extractors / f"extract_{safe_token_id}.py"
+    def extractor_file(self, safe_token_id: str) -> Path:
+        return self.extractors / f"extract_{safe_token_id}.py"
 
-    @classmethod
-    def extractor_meta_file(cls, safe_token_id: str) -> Path:
-        cls._ensure_initialized()
-        return cls.extractors / f"extract_{safe_token_id}.meta.json"
+    def extractor_meta_file(self, safe_token_id: str) -> Path:
+        return self.extractors / f"extract_{safe_token_id}.meta.json"
 
-    @classmethod
-    def request_file(cls, index: int) -> Path:
-        cls._ensure_initialized()
-        return cls.real_requests / f"req_{index:04d}.json"
+    def request_file(self, index: int) -> Path:
+        return self.real_requests / f"req_{index:04d}.json"
 
-    @classmethod
-    def response_file(cls, index: int) -> Path:
-        cls._ensure_initialized()
-        return cls.real_responses / f"res_{index:04d}.json"
+    def response_file(self, index: int) -> Path:
+        return self.real_responses / f"res_{index:04d}.json"
 
-    @classmethod
-    def original_response_file(cls, index: int) -> Path:
-        cls._ensure_initialized()
-        return cls.original_responses / f"res_{index:04d}.json"
+    def original_response_file(self, index: int) -> Path:
+        return self.original_responses / f"res_{index:04d}.json"
 
-    @classmethod
-    def mitm_capture_file(cls) -> Path:
-        cls._ensure_initialized()
-        return cls.mitm_capture / "capture.har"
+    def mitm_capture_file(self) -> Path:
+        return self.mitm_capture / "capture.har"
 
-    @classmethod
-    def mitm_log_file(cls) -> Path:
-        cls._ensure_initialized()
-        return cls.mitm_capture / "mitmdump.log"
+    def mitm_log_file(self) -> Path:
+        return self.mitm_capture / "mitmdump.log"
 
-    @classmethod
-    def curl_file(cls, index: int) -> Path:
-        cls._ensure_initialized()
-        return cls.curls / f"req_{index:04d}.curl.sh"
+    def curl_file(self, index: int) -> Path:
+        return self.curls / f"req_{index:04d}.curl.sh"
 
-    @classmethod
-    def replay_run_dir(cls, run_id: str) -> Path:
-        cls._ensure_initialized()
-        path: Path = cls.replays / run_id
+    def replay_run_dir(self, run_id: str) -> Path:
+        path: Path = self.replays / run_id
         path.mkdir(parents=True, exist_ok=True)
         return path
 
-    @classmethod
-    def replay_response_file(cls, run_id: str, index: int) -> Path:
-        cls._ensure_initialized()
-        return cls.replay_run_dir(run_id) / f"res_{index:04d}.json"
+    def replay_response_file(self, run_id: str, index: int) -> Path:
+        return self.replay_run_dir(run_id) / f"res_{index:04d}.json"

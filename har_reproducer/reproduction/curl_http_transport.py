@@ -13,7 +13,8 @@ class CurlHttpTransport:
     CAPTURE_READ_ATTEMPTS: ClassVar[int] = 5
     CAPTURE_READ_RETRY_INTERVAL_SECONDS: ClassVar[float] = 0.1
 
-    def __init__(self, port: int, ca_cert_path: Optional[Path], sleeper: Sleeper) -> None:
+    def __init__(self, workspace: Workspace, port: int, ca_cert_path: Optional[Path], sleeper: Sleeper) -> None:
+        self.workspace: Workspace = workspace
         self.port: int = port
         self.ca_cert_path: Optional[Path] = ca_cert_path
         self.sleeper: Sleeper = sleeper
@@ -68,10 +69,9 @@ class CurlHttpTransport:
             self.sleeper.sleep(self.CAPTURE_READ_RETRY_INTERVAL_SECONDS)
         return None
 
-    @staticmethod
-    def _try_read_capture(step_index: int) -> Optional[StepResponse]:
+    def _try_read_capture(self, step_index: int) -> Optional[StepResponse]:
         try:
-            entries: List[Dict[str, Any]] = HARParser.get_entries(Workspace.mitm_capture_file())
+            entries: List[Dict[str, Any]] = HARParser.get_entries(self.workspace.mitm_capture_file())
             if not entries:
                 return None
             step: Step = HARParser.parse_entry(entries[0], step_index)

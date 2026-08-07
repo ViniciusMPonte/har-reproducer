@@ -31,7 +31,14 @@ class EngineFactory:
         EngineMode.DRY: DryEngine,
     }
 
-    def __init__(self, project_config: ProjectConfig, script_executor: ScriptExecutor, sleeper: Sleeper) -> None:
+    def __init__(
+            self,
+            workspace: Workspace,
+            project_config: ProjectConfig,
+            script_executor: ScriptExecutor,
+            sleeper: Sleeper,
+    ) -> None:
+        self.workspace: Workspace = workspace
         self.project_config: ProjectConfig = project_config
         self.script_executor: ScriptExecutor = script_executor
         self.sleeper: Sleeper = sleeper
@@ -52,14 +59,15 @@ class EngineFactory:
             assert transport is not None
 
         tracking_responses_dir: Path = (
-            Workspace.real_responses if engine_cls.USES_NETWORK else Workspace.original_responses
+            self.workspace.real_responses if engine_cls.USES_NETWORK else self.workspace.original_responses
         )
         session_store: SessionStore = SessionStore()
-        extractor_runner: ExtractorRunner = ExtractorRunner(self.script_executor)
-        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
+        extractor_runner: ExtractorRunner = ExtractorRunner(self.workspace, self.script_executor)
+        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(self.workspace)
 
         return engine_cls(
             har_path,
+            self.workspace,
             session_store,
             self._build_tracker(tracking_responses_dir, session_store, extractor_runner, metadata_store),
             TokenResolver(tracking_responses_dir, session_store, extractor_runner),
@@ -77,7 +85,7 @@ class EngineFactory:
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
     ) -> TokenTracker:
-        agent_factory: AgentFactory = AgentFactory(self.script_executor, self.sleeper, self.llm)
+        agent_factory: AgentFactory = AgentFactory(self.workspace, self.script_executor, self.sleeper, self.llm)
         candidate_resolver: CandidateResolver = CandidateResolver(
             tracking_responses_dir, session_store, extractor_runner, metadata_store, agent_factory
         )

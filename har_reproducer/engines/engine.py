@@ -17,6 +17,7 @@ class Engine:
     def __init__(
             self,
             har_path: Path,
+            workspace: Workspace,
             session_store: SessionStore,
             tracker: TokenTracker,
             token_resolver: TokenResolver,
@@ -27,6 +28,7 @@ class Engine:
             http_transport: Optional[HttpTransport],
     ) -> None:
         self.har_path: Path = har_path
+        self.workspace: Workspace = workspace
         self.session_store: SessionStore = session_store
         self.tracker: TokenTracker = tracker
         self.token_resolver: TokenResolver = token_resolver
@@ -87,17 +89,21 @@ class Engine:
         return response
 
     def _persist_request_step(self, index: int, request: StepRequest) -> None:
-        Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_original_response_step(self, index: int, response: Optional[StepResponse]) -> None:
         assert response is not None
-        Workspace.original_response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.original_response_file(index).write_text(
+            response.model_dump_json(indent=2), encoding="utf-8"
+        )
 
     def _persist_response_step(self, index: int, response: StepResponse) -> None:
-        Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_template_curl(self, index: int, curl_template: str) -> None:
-        Workspace.curl_file(index).write_text(ExtractorTemplate.render_bash_script(curl_template), encoding="utf-8")
+        self.workspace.curl_file(index).write_text(
+            ExtractorTemplate.render_bash_script(curl_template), encoding="utf-8"
+        )
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if not last_response or not self.success_criteria:

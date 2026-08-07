@@ -23,7 +23,8 @@ class MitmProxyOrchestrator:
     TERMINATE_TIMEOUT_SECONDS: ClassVar[float] = 5.0
     MITMDUMP_EXECUTABLE_NAME: ClassVar[str] = "mitmdump.exe" if sys.platform == "win32" else "mitmdump"
 
-    def __init__(self, proxy_port: Optional[int], project_root: Path) -> None:
+    def __init__(self, workspace: Workspace, proxy_port: Optional[int], project_root: Path) -> None:
+        self.workspace: Workspace = workspace
         self.project_root: Path = project_root
         self.port: int = self._resolve_port(proxy_port)
         self.ca_cert_path: Path = self.project_root / self.CA_CERT_FILENAME
@@ -56,7 +57,7 @@ class MitmProxyOrchestrator:
             self._terminate()
 
     def _start_process(self) -> subprocess.Popen:
-        self._log_file = open(Workspace.mitm_log_file(), "w", encoding="utf-8")
+        self._log_file = open(self.workspace.mitm_log_file(), "w", encoding="utf-8")
         return subprocess.Popen(
             self._build_command(),
             env=self._build_env(),
@@ -74,7 +75,7 @@ class MitmProxyOrchestrator:
 
     def _build_env(self) -> Dict[str, str]:
         env: Dict[str, str] = dict(os.environ)
-        env[MitmEnv.CAPTURE_PATH_ENV_VAR] = str(Workspace.mitm_capture_file())
+        env[MitmEnv.CAPTURE_PATH_ENV_VAR] = str(self.workspace.mitm_capture_file())
         env["PYTHONPATH"] = self._prepend_package_root(env.get("PYTHONPATH"))
         return env
 
@@ -110,7 +111,7 @@ class MitmProxyOrchestrator:
 
     def _build_early_exit_message(self) -> str:
         assert self._process is not None
-        log_path: Path = Workspace.mitm_log_file()
+        log_path: Path = self.workspace.mitm_log_file()
         output: str = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else ""
         return f"mitmdump encerrou antes de ficar pronto (exit code {self._process.returncode}):\n{output}"
 

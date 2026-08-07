@@ -8,6 +8,7 @@ from har_reproducer.agents.css_agent import CSSAgent
 from har_reproducer.agents.header_agent import HeaderAgent
 from har_reproducer.agents.jsonpath_agent import JSONPathAgent
 from har_reproducer.agents.regex_agent import RegexAgent
+from har_reproducer.fs_io import Workspace
 from har_reproducer.models import DynamicToken, TokenLocation
 from har_reproducer.reproduction import ScriptExecutor, Sleeper
 
@@ -22,7 +23,14 @@ class AgentFactory:
     }
     DEFAULT_AGENT: ClassVar[Type[BaseAgent]] = RegexAgent
 
-    def __init__(self, script_executor: ScriptExecutor, sleeper: Sleeper, llm: Optional[BaseChatModel]) -> None:
+    def __init__(
+            self,
+            workspace: Workspace,
+            script_executor: ScriptExecutor,
+            sleeper: Sleeper,
+            llm: Optional[BaseChatModel],
+    ) -> None:
+        self.workspace: Workspace = workspace
         self.script_executor: ScriptExecutor = script_executor
         self.sleeper: Sleeper = sleeper
         self.llm: Optional[BaseChatModel] = llm
@@ -34,6 +42,7 @@ class AgentFactory:
             token_id=candidate.token_id,
             response_sample=response_sample,
             expected_value=candidate.current_value,
+            workspace=self.workspace,
             script_executor=self.script_executor,
             sleeper=self.sleeper,
             path=candidate.path,

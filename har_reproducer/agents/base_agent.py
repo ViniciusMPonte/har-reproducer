@@ -22,6 +22,7 @@ class BaseAgent:
             token_id: str,
             response_sample: Dict[str, Any],
             expected_value: str,
+            workspace: Workspace,
             script_executor: ScriptExecutor,
             sleeper: Sleeper,
             path: Optional[str] = None,
@@ -32,6 +33,7 @@ class BaseAgent:
         self.safe_token_id: str = IdentifierSanitizer.sanitize(token_id)
         self.response_sample: Dict[str, Any] = response_sample
         self.expected_value: str = expected_value
+        self.workspace: Workspace = workspace
         self.script_executor: ScriptExecutor = script_executor
         self.sleeper: Sleeper = sleeper
         self.path: Optional[str] = path
@@ -147,7 +149,7 @@ class BaseAgent:
             success, error = self._verify_code(code)
 
             if success:
-                temp_path: Path = Workspace.temp_extractor_file(self.safe_token_id)
+                temp_path: Path = self.workspace.temp_extractor_file(self.safe_token_id)
                 return Extractor(
                     token_id=self.token_id,
                     code=code,
@@ -161,7 +163,7 @@ class BaseAgent:
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
             self.sleeper.sleep(self.RETRY_DELAY_SECONDS)
 
-        self._cleanup_script(Workspace.temp_extractor_file(self.safe_token_id))
+        self._cleanup_script(self.workspace.temp_extractor_file(self.safe_token_id))
         return None
 
     def _verify_code(self, code: str) -> Tuple[bool, Optional[str]]:
@@ -170,7 +172,7 @@ class BaseAgent:
         return self._execute_script(script_path)
 
     def _write_temp_script(self, code: str) -> Path:
-        temp_file: Path = Workspace.temp_extractor_file(self.safe_token_id)
+        temp_file: Path = self.workspace.temp_extractor_file(self.safe_token_id)
         wrapped_code: str = ExtractorTemplate.render_temp_script(
             safe_token_id=self.safe_token_id,
             code=code,
