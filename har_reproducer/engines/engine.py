@@ -5,6 +5,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from har_reproducer.agents import AgentFactory
 from har_reproducer.config import ProjectConfigLoader
+from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.llm import LLMFactory
 from har_reproducer.models import (
@@ -16,7 +17,6 @@ from har_reproducer.models import (
 )
 from har_reproducer.reproduction import (
     CurlGenerator,
-    CurlHttpTransport,
     ExtractorMetadataStore,
     ExtractorRunner,
     StepRetryPolicy,
@@ -36,8 +36,7 @@ class Engine:
             har_path: Path,
             output_dir: Path,
             config_path: Optional[Path] = None,
-            proxy_port: Optional[int] = None,
-            ca_cert_path: Optional[Path] = None,
+            http_transport: Optional[HttpTransport] = None,
     ) -> None:
         self.har_path: Path = har_path
         self.output_dir: Path = output_dir
@@ -59,7 +58,7 @@ class Engine:
 
         self.skip_evaluator: StepSkipEvaluator = StepSkipEvaluator(project_config.skip_rules)
 
-        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
+        self.http_transport: Optional[HttpTransport] = http_transport
         self.token_resolver: TokenResolver = TokenResolver(
             self.tracking_responses_dir, self.session_store, extractor_runner
         )
@@ -74,14 +73,6 @@ class Engine:
         placeholder_applier: PlaceholderApplier = PlaceholderApplier(self.session_store)
         curl_generator: CurlGenerator = CurlGenerator()
         self.tracker: TokenTracker = TokenTracker(baseline_diff, candidate_resolver, placeholder_applier, curl_generator)
-
-    def _build_http_transport(
-            self, proxy_port: Optional[int], ca_cert_path: Optional[Path]
-    ) -> Optional[CurlHttpTransport]:
-        if not self.USES_NETWORK:
-            return None
-        assert proxy_port is not None
-        return CurlHttpTransport(proxy_port, ca_cert_path)
 
     def _build_llm(self, project_config: ProjectConfig) -> Optional[BaseChatModel]:
         if not project_config.llm:

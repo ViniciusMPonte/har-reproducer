@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import ClassVar, Dict, Optional, Type
 
+from har_reproducer.contracts import HttpTransport
 from har_reproducer.engines.dry_engine import DryEngine
 from har_reproducer.engines.engine import Engine
 from har_reproducer.engines.construction.engine_mode import EngineMode
@@ -23,14 +24,10 @@ class EngineFactory:
             har_path: Path,
             output_dir: Path,
             config_path: Optional[Path],
-            proxy_port: Optional[int] = None,
-            ca_cert_path: Optional[Path] = None,
+            http_transport: Optional[HttpTransport] = None,
     ) -> Engine:
         engine_cls: Type[Engine] = cls.resolve_class(mode)
-        return engine_cls(
-            har_path,
-            output_dir,
-            config_path=config_path,
-            proxy_port=proxy_port,
-            ca_cert_path=ca_cert_path,
-        )
+        transport: Optional[HttpTransport] = http_transport if engine_cls.USES_NETWORK else None
+        if engine_cls.USES_NETWORK:
+            assert transport is not None
+        return engine_cls(har_path, output_dir, config_path=config_path, http_transport=transport)

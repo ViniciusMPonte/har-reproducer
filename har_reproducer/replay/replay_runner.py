@@ -3,12 +3,13 @@ from pathlib import Path
 from re import Match, Pattern
 from typing import ClassVar, Iterable, List, Optional, Set, Tuple
 
+from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
-from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
+from har_reproducer.reproduction import StepRetryPolicy
 from har_reproducer.session.session_store import SessionStore
 
 
@@ -20,7 +21,7 @@ class ReplayRunner:
             self,
             dependency_parser: CurlDependencyParser,
             session_store: SessionStore,
-            http_transport: CurlHttpTransport,
+            http_transport: HttpTransport,
             replay_token_resolver: ReplayTokenResolver,
             retry_policy: StepRetryPolicy,
             comparator: ReplayResultComparator,
@@ -31,7 +32,7 @@ class ReplayRunner:
     ) -> None:
         self.dependency_parser: CurlDependencyParser = dependency_parser
         self.session_store: SessionStore = session_store
-        self.http_transport: CurlHttpTransport = http_transport
+        self.http_transport: HttpTransport = http_transport
         self.replay_token_resolver: ReplayTokenResolver = replay_token_resolver
         self.retry_policy: StepRetryPolicy = retry_policy
         self.comparator: ReplayResultComparator = comparator

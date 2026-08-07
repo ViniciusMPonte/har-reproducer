@@ -59,13 +59,13 @@ class CliHandlers:
             project_config.proxy_port,
             project_config.ca_cert_path
         )
+        http_transport: CurlHttpTransport = CurlHttpTransport(orchestrator.port, orchestrator.ca_cert_path)
         engine: Engine = self._engine_factory.create(
             mode,
             har_path,
             output_dir,
             config_path,
-            proxy_port=orchestrator.port,
-            ca_cert_path=orchestrator.ca_cert_path,
+            http_transport=http_transport,
         )
         return orchestrator.run(engine.run)
 
