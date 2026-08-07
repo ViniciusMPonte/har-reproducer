@@ -36,11 +36,15 @@ adicionar heurística nova a qualquer componente deste mapa.
   `token_id` (hash) se torna um valor literal na hora de montar o request real.
 - **`har_reproducer/fs_io/workspace.py`** — `Workspace` centraliza os
   caminhos do diretório de output (`curls/`, `real_responses/`,
-  `original_responses/`, `extractors/`, `replays/`, `mitm_capture/`). Nunca
-  limpa nada entre execuções — reaproveitar o mesmo `--output` entre rodadas
-  deixa arquivos de rodadas anteriores no disco (relevante para qualquer
-  componente que varre esses diretórios em busca de arquivos por índice de
-  step).
+  `original_responses/`, `extractors/`, `replays/`, `mitm_capture/`). É uma
+  instância comum, não singleton: o construtor recebe `output_dir` e
+  materializa os oito subdiretórios eagerly; cada comando (`run`/`replay`)
+  constrói a sua própria e a repassa por construtor a quem precisa de um
+  caminho (`Engine`, `EngineFactory`, `AgentFactory`, `BaseAgent`, e aos
+  colaboradores de `reproduction/`/`replay/`). Nunca limpa nada entre
+  execuções — reaproveitar o mesmo `--output` entre rodadas deixa arquivos de
+  rodadas anteriores no disco (relevante para qualquer componente que varre
+  esses diretórios em busca de arquivos por índice de step).
 
 ### Pipeline do comando `run` (`parse` + `reproduce`)
 
@@ -65,8 +69,9 @@ adicionar heurística nova a qualquer componente deste mapa.
      busca a resposta de origem, restrita a steps anteriores ao step atual —
      nunca uma response futura, o que garantiria uma dependência impossível
      de satisfazer numa reprodução sequencial) e delega a um `Agent`
-     (`agents/`, escolhido por `TokenLocation` via `LOCATION_AGENTS`) a
-     geração do código Python que extrai aquele valor daquela resposta.
+     (`agents/`, escolhido por `TokenLocation` via
+     `AgentFactory.LOCATION_AGENTS`, `agents/construction/agent_factory.py`)
+     a geração do código Python que extrai aquele valor daquela resposta.
    - Cada `Agent` (`CookieAgent`/`HeaderAgent`/`JSONPathAgent`/`CSSAgent`/
      `RegexAgent`, todos em `agents/`, base comum `BaseAgent`) roda um loop
      TDD (`run_tdd_loop`): tenta estratégias determinísticas específicas do
