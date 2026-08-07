@@ -15,7 +15,9 @@ Extraído dos arquivos reais do projeto e do prompt de refatoração usado. Serv
 
 ## Estrutura e composição
 - Um conceito coeso = uma classe = um arquivo. Nome do arquivo em snake_case do nome da classe (`curl_generator.py` → `CurlGenerator`).
-- Dependências são instanciadas no `__init__` e guardadas como atributo tipado: `self.request_builder: RequestBuilder = RequestBuilder(...)`.
+- Dependências são **recebidas por construtor** e guardadas como atributo tipado: `self.request_builder: RequestBuilder = request_builder`. Um `__init__` que constrói os próprios colaboradores não é substituível em teste. Nunca use valor default para uma dependência (`def __init__(self, x: X = None)`): o default esconde a construção e vira andaime permanente.
+- A **instanciação** se concentra nas raízes de composição, que montam o grafo e entregam objetos prontos: `CliHandlers._build_replay_runner` (ramo `replay`) e `EngineFactory` (ramo `run`). Um construtor de raiz pode instanciar; os demais, não. `ReplayRunner.__init__` é o formato-alvo — parâmetros entram, atributos tipados saem, nenhuma construção no meio.
+  - ⚠️ Parte do código ainda não segue isto: `Engine`, `TokenTracker`, `CandidateResolver` e `TokenResolver` constroem colaboradores no próprio `__init__`. É dívida em migração por `docs/20260806 Refatoração de Testabilidade/` — código novo já nasce no formato-alvo, e código tocado por aquelas tasks migra.
 - Nada solto no módulo — sem função ou constante fora de classe. Até um arquivo só com um enum (`workspace_dir.py`) ou só com staticmethods (`extractor_template.py`) segue esse padrão.
   - Vale também em `tests/` (`conftest.py`, `test_*.py`): a isenção documentada é só para funções decoradas como fixture do `pytest` e funções `test_*`, exigidas como funções de módulo pelo framework. Constantes — paths, portas, valores fixos — continuam exigindo uma classe com `ClassVar`, mesmo dentro de `conftest.py`. Já aconteceu de constantes soltas (`FIXTURES_DIR`, `OFFLINE_PORT`) passarem batido num `conftest.py` antes de serem corrigidas.
 - `Enum(str, Enum)` para qualquer conjunto fechado de valores (`TokenLocation`, `AgentType`, `EngineMode`).
@@ -24,7 +26,8 @@ Extraído dos arquivos reais do projeto e do prompt de refatoração usado. Serv
 - Método não deve passar de ~2 níveis de indentação (loop → if, no máximo). Se passar, extrai método privado (`_algo`).
 - Métodos privados pequenos, um por responsabilidade — ex.: `CurlGenerator._header_parts`/`_cookie_parts`/`_body_parts`, `RequestBuilder._render_headers`/`_render_body`.
 - Guard clauses (`if x is None: return None`) em vez de aninhar — é o que mantém o limite de indentação.
-- `@staticmethod` para métodos sem estado de instância; `@classmethod` para padrão singleton/factory (`Workspace`, `EngineFactory`).
+- `@staticmethod` para métodos sem estado de instância; `@classmethod` para factory e para classe de utilidade sem estado (`LLMFactory`, `HARParser`, `ResponseGrep`, `TokenLocationDetector`).
+  - ⚠️ **Nunca para materializar estado global.** Se um `@classmethod` guarda estado entre chamadas, o padrão está errado. `Workspace.init` (`fs_io/workspace.py:19-26`) é exatamente isso — grava atributo de classe por `setattr` — e está sendo removido por `docs/20260806 Refatoração de Testabilidade/`, junto com os `@classmethod` de `EngineFactory`. Não copie nenhum dos dois como modelo.
 - Duplicação de lógica vira constante/coleção — ex.: `LOCATION_AGENTS: ClassVar[Dict[TokenLocation, Type[BaseAgent]]]` em vez de um `if/elif` por location.
 
 ## Comentários e nomenclatura

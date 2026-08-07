@@ -3,12 +3,13 @@ from pathlib import Path
 from re import Match, Pattern
 from typing import ClassVar, Iterable, List, Optional, Set, Tuple
 
+from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
-from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy
+from har_reproducer.reproduction import StepRetryPolicy
 from har_reproducer.session.session_store import SessionStore
 
 
@@ -18,9 +19,10 @@ class ReplayRunner:
 
     def __init__(
             self,
+            workspace: Workspace,
             dependency_parser: CurlDependencyParser,
             session_store: SessionStore,
-            http_transport: CurlHttpTransport,
+            http_transport: HttpTransport,
             replay_token_resolver: ReplayTokenResolver,
             retry_policy: StepRetryPolicy,
             comparator: ReplayResultComparator,
@@ -29,9 +31,10 @@ class ReplayRunner:
             res_refer_dir: Path,
             original_responses_dir: Path,
     ) -> None:
+        self.workspace: Workspace = workspace
         self.dependency_parser: CurlDependencyParser = dependency_parser
         self.session_store: SessionStore = session_store
-        self.http_transport: CurlHttpTransport = http_transport
+        self.http_transport: HttpTransport = http_transport
         self.replay_token_resolver: ReplayTokenResolver = replay_token_resolver
         self.retry_policy: StepRetryPolicy = retry_policy
         self.comparator: ReplayResultComparator = comparator
@@ -74,7 +77,7 @@ class ReplayRunner:
         return is_match
 
     def _run_step(self, index: int, schedule: Set[int]) -> StepResponse:
-        curl_text: str = Workspace.curl_file(index).read_text(encoding="utf-8")
+        curl_text: str = self.workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
             static_token_ids: Set[str] = self.replay_token_resolver.resolve(
@@ -92,14 +95,14 @@ class ReplayRunner:
             return True
 
         response: StepResponse = self.retry_policy.execute(index, attempt, recover)
-        Workspace.replay_response_file(self.run_id, index).write_text(
+        self.workspace.replay_response_file(self.run_id, index).write_text(
             response.model_dump_json(indent=2), encoding="utf-8"
         )
         print(f"Step {index} completed with status {response.status_code}")
         return response
 
     def _annotate_static_tokens(self, index: int, token_ids: Set[str]) -> None:
-        curl_file: Path = Workspace.curl_file(index)
+        curl_file: Path = self.workspace.curl_file(index)
         text: str = curl_file.read_text(encoding="utf-8")
         updated: str = text
         for token_id in token_ids:
@@ -146,7 +149,7 @@ class ReplayRunner:
     def _expand_pending(
             self, current: int, floor: int, existing_set: Set[int], schedule: Set[int], pending: Set[int]
     ) -> None:
-        curl_text: str = Workspace.curl_file(current).read_text(encoding="utf-8")
+        curl_text: str = self.workspace.curl_file(current).read_text(encoding="utf-8")
         dependencies = self.dependency_parser.parse(curl_text)
         for origin_step in dependencies.values():
             if origin_step >= floor and origin_step not in schedule and origin_step in existing_set:
@@ -171,7 +174,7 @@ class ReplayRunner:
 
     def _existing_step_indexes(self) -> List[int]:
         indexes: List[int] = []
-        for path in Workspace.curls.glob("req_*.curl.sh"):
+        for path in self.workspace.curls.glob("req_*.curl.sh"):
             match: Optional[Match[str]] = self.STEP_FILENAME_PATTERN.match(path.name)
             if match is not None:
                 indexes.append(int(match.group(1)))

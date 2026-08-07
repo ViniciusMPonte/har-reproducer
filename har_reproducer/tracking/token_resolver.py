@@ -7,10 +7,10 @@ from har_reproducer.session import SessionStore
 
 
 class TokenResolver:
-    def __init__(self, responses_dir: Path, session_store: SessionStore) -> None:
+    def __init__(self, responses_dir: Path, session_store: SessionStore, extractor_runner: ExtractorRunner) -> None:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
-        self.extractor_runner: ExtractorRunner = ExtractorRunner()
+        self.extractor_runner: ExtractorRunner = extractor_runner
 
     def resolve_all(self, force: bool = False) -> None:
         for token_id, extractor in self.session_store.state.registry.items():

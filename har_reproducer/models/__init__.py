@@ -7,6 +7,7 @@ from har_reproducer.models.criteria import (
     SuccessCriterion,
     UrlMatchCriterion,
 )
+from har_reproducer.models.execution import ScriptExecutionResult
 from har_reproducer.models.http import Step, StepRequest, StepResponse
 from har_reproducer.models.session import (
     AgentType,
@@ -24,6 +25,7 @@ __all__ = [
     "HtmlElementPresentCriterion",
     "LLMSettings",
     "ProjectConfig",
+    "ScriptExecutionResult",
     "SessionState",
     "SkipRulesConfig",
     "Step",

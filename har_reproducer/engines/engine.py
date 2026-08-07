@@ -1,19 +1,10 @@
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional
 
-from langchain_core.language_models.chat_models import BaseChatModel
-
-from har_reproducer.config import ProjectConfigLoader
+from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import HARParser, Workspace
-from har_reproducer.llm import LLMFactory
-from har_reproducer.models import (
-    ProjectConfig,
-    Step,
-    StepRequest,
-    StepResponse,
-    SuccessCriterion,
-)
-from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy, StepSkipEvaluator
+from har_reproducer.models import Step, StepRequest, StepResponse, SuccessCriterion
+from har_reproducer.reproduction import StepRetryPolicy, StepSkipEvaluator
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import ExtractorTemplate
 from har_reproducer.tracking import TokenResolver, TokenTracker
@@ -26,54 +17,26 @@ class Engine:
     def __init__(
             self,
             har_path: Path,
-            output_dir: Path,
-            config_path: Optional[Path] = None,
-            proxy_port: Optional[int] = None,
-            ca_cert_path: Optional[Path] = None,
+            workspace: Workspace,
+            session_store: SessionStore,
+            tracker: TokenTracker,
+            token_resolver: TokenResolver,
+            skip_evaluator: StepSkipEvaluator,
+            retry_policy: StepRetryPolicy,
+            validator: Validator,
+            success_criteria: List[SuccessCriterion],
+            http_transport: Optional[HttpTransport],
     ) -> None:
         self.har_path: Path = har_path
-        self.output_dir: Path = output_dir
-
-        Workspace.init(output_dir)
-        self.curls_dir: Path = Workspace.curls
-        self.original_responses_dir: Path = Workspace.original_responses
-        self.tracking_responses_dir: Path = Workspace.real_responses if self.USES_NETWORK else Workspace.original_responses
-        self.extractors_dir: Path = Workspace.extractors
-        self.temp_extractors_dir: Path = Workspace.temp_extractors
-
-        self.session_store: SessionStore = SessionStore()
-        self.validator: Validator = Validator()
-        self.retry_policy: StepRetryPolicy = StepRetryPolicy()
-
-        project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
-
-        self.skip_evaluator: StepSkipEvaluator = StepSkipEvaluator(project_config.skip_rules)
-
-        self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
-        self.token_resolver: TokenResolver = TokenResolver(self.tracking_responses_dir, self.session_store)
-
-        self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
-        llm: Optional[BaseChatModel] = self._build_llm(project_config)
-        self.tracker: TokenTracker = TokenTracker(self.tracking_responses_dir, self.session_store, llm=llm)
-
-    def _build_http_transport(
-            self, proxy_port: Optional[int], ca_cert_path: Optional[Path]
-    ) -> Optional[CurlHttpTransport]:
-        if not self.USES_NETWORK:
-            return None
-        assert proxy_port is not None
-        return CurlHttpTransport(proxy_port, ca_cert_path)
-
-    def _build_llm(self, project_config: ProjectConfig) -> Optional[BaseChatModel]:
-        if not project_config.llm:
-            return None
-
-        llm: BaseChatModel = LLMFactory.create(project_config.llm)
-        print(
-            f"LLM fallback enabled from config: "
-            f"provider={project_config.llm.provider} model={project_config.llm.model}"
-        )
-        return llm
+        self.workspace: Workspace = workspace
+        self.session_store: SessionStore = session_store
+        self.tracker: TokenTracker = tracker
+        self.token_resolver: TokenResolver = token_resolver
+        self.skip_evaluator: StepSkipEvaluator = skip_evaluator
+        self.retry_policy: StepRetryPolicy = retry_policy
+        self.validator: Validator = validator
+        self.success_criteria: List[SuccessCriterion] = success_criteria
+        self.http_transport: Optional[HttpTransport] = http_transport
 
     def run(self) -> bool:
         return self._reproduce()
@@ -126,17 +89,21 @@ class Engine:
         return response
 
     def _persist_request_step(self, index: int, request: StepRequest) -> None:
-        Workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.request_file(index).write_text(request.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_original_response_step(self, index: int, response: Optional[StepResponse]) -> None:
         assert response is not None
-        Workspace.original_response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.original_response_file(index).write_text(
+            response.model_dump_json(indent=2), encoding="utf-8"
+        )
 
     def _persist_response_step(self, index: int, response: StepResponse) -> None:
-        Workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
+        self.workspace.response_file(index).write_text(response.model_dump_json(indent=2), encoding="utf-8")
 
     def _persist_template_curl(self, index: int, curl_template: str) -> None:
-        Workspace.curl_file(index).write_text(ExtractorTemplate.render_bash_script(curl_template), encoding="utf-8")
+        self.workspace.curl_file(index).write_text(
+            ExtractorTemplate.render_bash_script(curl_template), encoding="utf-8"
+        )
 
     def _validate_final(self, last_response: Optional[StepResponse]) -> bool:
         if not last_response or not self.success_criteria:

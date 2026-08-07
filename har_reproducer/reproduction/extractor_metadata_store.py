@@ -6,8 +6,11 @@ from har_reproducer.models import Extractor
 
 
 class ExtractorMetadataStore:
+    def __init__(self, workspace: Workspace) -> None:
+        self.workspace: Workspace = workspace
+
     def load(self, token_id: str) -> Optional[Extractor]:
-        meta_file: Path = Workspace.extractor_meta_file(token_id)
+        meta_file: Path = self.workspace.extractor_meta_file(token_id)
         if not meta_file.exists():
             return None
         try:
@@ -17,5 +20,5 @@ class ExtractorMetadataStore:
             return None
 
     def save(self, extractor: Extractor) -> None:
-        meta_file: Path = Workspace.extractor_meta_file(extractor.token_id)
+        meta_file: Path = self.workspace.extractor_meta_file(extractor.token_id)
         meta_file.write_text(extractor.model_dump_json(indent=2), encoding="utf-8")
