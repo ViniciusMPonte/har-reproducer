@@ -3,6 +3,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from langchain_core.language_models.chat_models import BaseChatModel
 
+from har_reproducer.agents import AgentFactory
 from har_reproducer.config import ProjectConfigLoader
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.llm import LLMFactory
@@ -13,10 +14,17 @@ from har_reproducer.models import (
     StepResponse,
     SuccessCriterion,
 )
-from har_reproducer.reproduction import CurlHttpTransport, StepRetryPolicy, StepSkipEvaluator
+from har_reproducer.reproduction import (
+    CurlGenerator,
+    CurlHttpTransport,
+    ExtractorMetadataStore,
+    ExtractorRunner,
+    StepRetryPolicy,
+    StepSkipEvaluator,
+)
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import ExtractorTemplate
-from har_reproducer.tracking import TokenResolver, TokenTracker
+from har_reproducer.tracking import BaselineDiff, CandidateResolver, PlaceholderApplier, TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
 
 
@@ -44,17 +52,28 @@ class Engine:
         self.session_store: SessionStore = SessionStore()
         self.validator: Validator = Validator()
         self.retry_policy: StepRetryPolicy = StepRetryPolicy()
+        extractor_runner: ExtractorRunner = ExtractorRunner()
+        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
 
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
 
         self.skip_evaluator: StepSkipEvaluator = StepSkipEvaluator(project_config.skip_rules)
 
         self.http_transport: Optional[CurlHttpTransport] = self._build_http_transport(proxy_port, ca_cert_path)
-        self.token_resolver: TokenResolver = TokenResolver(self.tracking_responses_dir, self.session_store)
+        self.token_resolver: TokenResolver = TokenResolver(
+            self.tracking_responses_dir, self.session_store, extractor_runner
+        )
 
         self.success_criteria: List[SuccessCriterion] = project_config.success_criteria
         llm: Optional[BaseChatModel] = self._build_llm(project_config)
-        self.tracker: TokenTracker = TokenTracker(self.tracking_responses_dir, self.session_store, llm=llm)
+        agent_factory: AgentFactory = AgentFactory(llm)
+        baseline_diff: BaselineDiff = BaselineDiff()
+        candidate_resolver: CandidateResolver = CandidateResolver(
+            self.tracking_responses_dir, self.session_store, extractor_runner, metadata_store, agent_factory
+        )
+        placeholder_applier: PlaceholderApplier = PlaceholderApplier(self.session_store)
+        curl_generator: CurlGenerator = CurlGenerator()
+        self.tracker: TokenTracker = TokenTracker(baseline_diff, candidate_resolver, placeholder_applier, curl_generator)
 
     def _build_http_transport(
             self, proxy_port: Optional[int], ca_cert_path: Optional[Path]

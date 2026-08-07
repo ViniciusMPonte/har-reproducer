@@ -25,13 +25,15 @@ class CandidateResolver:
             self,
             responses_dir: Path,
             session_store: SessionStore,
+            extractor_runner: ExtractorRunner,
+            metadata_store: ExtractorMetadataStore,
             agent_factory: AgentFactory,
     ) -> None:
         self.responses_dir: Path = responses_dir
         self.session_store: SessionStore = session_store
+        self.extractor_runner: ExtractorRunner = extractor_runner
+        self.metadata_store: ExtractorMetadataStore = metadata_store
         self.agent_factory: AgentFactory = agent_factory
-        self.extractor_runner: ExtractorRunner = ExtractorRunner()
-        self.metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
         self._validated_values: Dict[str, str] = {}
         self._origin_cache: Dict[str, Tuple[int, str]] = {}
 
