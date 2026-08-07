@@ -116,19 +116,19 @@ Na prática `_generate_extractor` já garante `origin_location is not None` ante
 ternário é mudança de comportamento em código defensivo — não simplificar.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `uv run python -c "import har_reproducer.agents"` não levanta `ImportError`.
-- [ ] `grep -n LOCATION_AGENTS har_reproducer/tracking/candidate_resolver.py` não
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `uv run python -c "import har_reproducer.agents"` não levanta `ImportError`.
+- [x] `grep -n LOCATION_AGENTS har_reproducer/tracking/candidate_resolver.py` não
       retorna nada; `grep -rn "LOCATION_AGENTS" har_reproducer/` só acha
       `agent_factory.py`.
-- [ ] `grep -n "CookieAgent\|CSSAgent\|HeaderAgent\|JSONPathAgent\|RegexAgent" har_reproducer/tracking/candidate_resolver.py`
+- [x] `grep -n "CookieAgent\|CSSAgent\|HeaderAgent\|JSONPathAgent\|RegexAgent" har_reproducer/tracking/candidate_resolver.py`
       não retorna nada; `BaseAgent` continua importado.
-- [ ] Os sete `extractors/*.meta.json` de `tests/golden/run_dry_default/`
+- [x] Os sete `extractors/*.meta.json` de `tests/golden/run_dry_default/`
       continuam com os mesmos `agent_type` (`CookieAgent`, `CSSAgent`,
       `HeaderAgent`, `JSONPathAgent`, `RegexAgent`, `LiteralAgent`,
       `LiteralFallbackAgent`) — é o que prova que o mapa e o default foram
       reproduzidos.
-- [ ] Não-regressão: `tests/golden/run_main/stdout.txt` continua idêntico,
+- [x] Não-regressão: `tests/golden/run_main/stdout.txt` continua idêntico,
       incluindo as duas linhas `Attempt 1 failed for …`.
 
 ---
@@ -199,17 +199,17 @@ em modo `main` pode passar verde: os dois diretórios candidatos divergem
 `Content-Type`, presente nos dois. Conferir os dois explicitamente.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -n "ExtractorRunner()\|ExtractorMetadataStore()\|BaselineDiff()\|PlaceholderApplier(\|CurlGenerator()" har_reproducer/tracking/`
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -n "ExtractorRunner()\|ExtractorMetadataStore()\|BaselineDiff()\|PlaceholderApplier(\|CurlGenerator()" har_reproducer/tracking/`
       não retorna nada.
-- [ ] `TokenTracker.__init__` tem exatamente quatro parâmetros e nenhuma
+- [x] `TokenTracker.__init__` tem exatamente quatro parâmetros e nenhuma
       construção no corpo.
-- [ ] `grep -n "self.responses_dir\|self.llm\|self.session_store" har_reproducer/tracking/token_tracker.py`
+- [x] `grep -n "self.responses_dir\|self.llm\|self.session_store" har_reproducer/tracking/token_tracker.py`
       não retorna nada.
-- [ ] `Engine.__init__` constrói **uma** `SessionStore`, **um** `ExtractorRunner`
+- [x] `Engine.__init__` constrói **uma** `SessionStore`, **um** `ExtractorRunner`
       e **um** `ExtractorMetadataStore`, e os mesmos objetos chegam aos dois
       consumidores de cada.
-- [ ] Não-regressão: os sete `extractors/*.meta.json` de `run_dry_default` e o
+- [x] Não-regressão: os sete `extractors/*.meta.json` de `run_dry_default` e o
       `stdout.txt` de `run_main` continuam idênticos.
 
 ---
@@ -288,13 +288,13 @@ task ainda está em `engine.py:37`). É inócuo: `CurlHttpTransport.__init__`
 `_build_replay_runner:134` já faz hoje.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -n "_build_http_transport\|proxy_port" har_reproducer/engines/engine.py`
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -n "_build_http_transport\|proxy_port" har_reproducer/engines/engine.py`
       não retorna nada.
-- [ ] `grep -n "CurlHttpTransport" har_reproducer/engines/` não retorna nada.
-- [ ] `run --mode dry` continua com `engine.http_transport is None`; `run --mode
+- [x] `grep -n "CurlHttpTransport" har_reproducer/engines/` não retorna nada.
+- [x] `run --mode dry` continua com `engine.http_transport is None`; `run --mode
       main` continua com um transporte real.
-- [ ] Não-regressão: `tests/golden/run_main/` e os 10 goldens de `replay`
+- [x] Não-regressão: `tests/golden/run_main/` e os 10 goldens de `replay`
       continuam idênticos — é o que prova que o transporte real não mudou de
       comportamento.
 
@@ -390,23 +390,23 @@ de tipo hoje.** Ao reescrevê-los, tipar — é exigência do guia.
 `__init__`.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -n "@classmethod" har_reproducer/engines/construction/engine_factory.py`
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -n "@classmethod" har_reproducer/engines/construction/engine_factory.py`
       não retorna nada.
-- [ ] `Engine.__init__` não contém nenhuma chamada de construtor nem
+- [x] `Engine.__init__` não contém nenhuma chamada de construtor nem
       `ProjectConfigLoader` nem `Workspace`.
-- [ ] `grep -rn "ProjectConfigLoader.load" har_reproducer/` retorna **duas**
+- [x] `grep -rn "ProjectConfigLoader.load" har_reproducer/` retorna **duas**
       linhas, ambas em `cli_handlers.py` (uma em `handle_run`, uma em
       `handle_replay`), contra três hoje — `cli_handlers.py:57`, `:92` e
       `engine.py:48`.
-- [ ] `grep -n "curls_dir\|extractors_dir\|temp_extractors_dir\|self.output_dir" har_reproducer/engines/engine.py`
+- [x] `grep -n "curls_dir\|extractors_dir\|temp_extractors_dir\|self.output_dir" har_reproducer/engines/engine.py`
       não retorna nada.
-- [ ] `EngineFactory` é instanciada **uma** vez por invocação de `handle_run` —
+- [x] `EngineFactory` é instanciada **uma** vez por invocação de `handle_run` —
       conferir lendo `_run`, `_run_with_proxy` e `_run_without_proxy`.
-- [ ] `run --mode dry` e `run --mode main` recebem `tracking_responses_dir`
+- [x] `run --mode dry` e `run --mode main` recebem `tracking_responses_dir`
       diferentes (`original_responses` e `real_responses`), e o valor chega
       **idêntico** a `TokenResolver` e `CandidateResolver`.
-- [ ] Não-regressão: `tests/golden/run_dry_default/`, `run_dry_reset_removes_litter/`,
+- [x] Não-regressão: `tests/golden/run_dry_default/`, `run_dry_reset_removes_litter/`,
       `run_dry_skip_rules_methods/`, `run_main/` e os 4 de `parse` idênticos.
 
 ---
@@ -474,17 +474,17 @@ segundo produz `TypeError` que os 28 testes offline não pegam** — só o
 `--runslow`.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -rn "subprocess.run(\[sys.executable" har_reproducer/` só acha
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -rn "subprocess.run(\[sys.executable" har_reproducer/` só acha
       `script_executor.py`.
-- [ ] `BaseAgent._execute_script` não tem `except Exception`;
+- [x] `BaseAgent._execute_script` não tem `except Exception`;
       `ExtractorRunner._execute_extractor_script` tem.
-- [ ] `grep -n "ExtractorRunner(" har_reproducer/` acha exatamente **dois** call
+- [x] `grep -n "ExtractorRunner(" har_reproducer/` acha exatamente **dois** call
       sites, e os dois passam `script_executor`.
-- [ ] Não-regressão: `tests/golden/run_dry_default/temp_extractors/` continua com
+- [x] Não-regressão: `tests/golden/run_dry_default/temp_extractors/` continua com
       os **5** arquivos, e `run_main/temp_extractors/` continua vazio — é o que
       prova que o momento de `_cleanup_script`/`_cleanup_temp_file` não mudou.
-- [ ] Não-regressão: `run_main/stdout.txt` mantém as duas linhas
+- [x] Não-regressão: `run_main/stdout.txt` mantém as duas linhas
       `Attempt 1 failed for …`.
 
 ---
@@ -537,15 +537,15 @@ exige. Não atrapalha o dublê da Etapa C: uma subclasse pode sobrescrever com
 método de instância e contar chamadas.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -rn "time.sleep" har_reproducer/` acha exatamente **dois** pontos:
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -rn "time.sleep" har_reproducer/` acha exatamente **dois** pontos:
       `sleeper.py` e `mitm_proxy_orchestrator.py:101`.
-- [ ] `grep -n "CurlHttpTransport(" har_reproducer/` acha **dois** call sites, e
+- [x] `grep -n "CurlHttpTransport(" har_reproducer/` acha **dois** call sites, e
       os dois passam `sleeper`.
-- [ ] O tempo de `uv run pytest --runslow` **não cai** de forma relevante —
+- [x] O tempo de `uv run pytest --runslow` **não cai** de forma relevante —
       continua na casa dos ~32 s. Uma queda para ~12 s significa que o `Sleeper`
       de produção virou no-op por engano.
-- [ ] Não-regressão: `run_main/stdout.txt` e os 10 goldens de `replay` idênticos.
+- [x] Não-regressão: `run_main/stdout.txt` e os 10 goldens de `replay` idênticos.
 
 ---
 
@@ -677,27 +677,27 @@ passa por eles:
 mora em `<output>/extractors/`**. O layout continua contrato do arquivo gerado.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest --runslow` → 39 passed, sem regravar golden.
-- [ ] `grep -rn "Workspace\." har_reproducer/` retorna apenas
+- [x] `uv run pytest --runslow` → 39 passed, sem regravar golden.
+- [x] `grep -rn "Workspace\." har_reproducer/` retorna apenas
       `config/project_config_loader.py:37` e as ocorrências internas de
       `fs_io/workspace.py`.
-- [ ] `grep -n "init\|_ensure_initialized\|_output_dir\|classmethod" har_reproducer/fs_io/workspace.py`
+- [x] `grep -n "init\|_ensure_initialized\|_output_dir\|classmethod" har_reproducer/fs_io/workspace.py`
       não retorna nada.
-- [ ] `Workspace(tmp_path)` num REPL cria os oito subdiretórios e devolve um
+- [x] `Workspace(tmp_path)` num REPL cria os oito subdiretórios e devolve um
       objeto cujos oito atributos são `Path` existentes — sem nenhuma chamada
       prévia.
-- [ ] Duas instâncias de `Workspace` sobre diretórios diferentes coexistem sem
+- [x] Duas instâncias de `Workspace` sobre diretórios diferentes coexistem sem
       interferência (é o que o singleton impedia).
-- [ ] `replay` sobre diretório inexistente continua levantando
+- [x] `replay` sobre diretório inexistente continua levantando
       `ValueError("Workspace directory does not exist: …")` **e não cria o
       diretório**.
-- [ ] `replay` sobre `output_dir` vazio continua levantando
+- [x] `replay` sobre `output_dir` vazio continua levantando
       `ValueError("Workspace has no curl files: …")` **depois** de criar os oito
       subdiretórios.
-- [ ] Conferência manual dos dois pontos não exercitados
+- [x] Conferência manual dos dois pontos não exercitados
       (`_build_early_exit_message` e `_annotate_static_tokens`) — nenhuma
       referência a `Workspace` sobrando neles.
-- [ ] Não-regressão: os 25 diretórios de `tests/golden/` idênticos, incluindo os
+- [x] Não-regressão: os 25 diretórios de `tests/golden/` idênticos, incluindo os
       `<EMPTY_DIR>` de `mitm_capture/`, `real_responses/`, `replays/` e
       `temp_extractors/`.
 
