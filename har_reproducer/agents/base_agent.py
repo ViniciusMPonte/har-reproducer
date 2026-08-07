@@ -1,9 +1,6 @@
 import re
-import subprocess
-import sys
 import time
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -11,8 +8,9 @@ from langchain_core.messages import AIMessage
 
 from har_reproducer.contracts import Strategy
 from har_reproducer.fs_io import Workspace
-from har_reproducer.models import AgentType, Extractor
+from har_reproducer.models import AgentType, Extractor, ScriptExecutionResult
 from har_reproducer.prompts import ExtractorPrompt
+from har_reproducer.reproduction import ScriptExecutor
 from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 
 
@@ -25,6 +23,7 @@ class BaseAgent:
             token_id: str,
             response_sample: Dict[str, Any],
             expected_value: str,
+            script_executor: ScriptExecutor,
             path: Optional[str] = None,
             location: Optional[str] = None,
             llm: Optional[BaseChatModel] = None,
@@ -33,6 +32,7 @@ class BaseAgent:
         self.safe_token_id: str = IdentifierSanitizer.sanitize(token_id)
         self.response_sample: Dict[str, Any] = response_sample
         self.expected_value: str = expected_value
+        self.script_executor: ScriptExecutor = script_executor
         self.path: Optional[str] = path
         self.location: Optional[str] = location
         self.llm: Optional[BaseChatModel] = llm
@@ -179,18 +179,12 @@ class BaseAgent:
         return temp_file
 
     def _execute_script(self, script_path: Path) -> Tuple[bool, Optional[str]]:
-        try:
-            result: CompletedProcess[str] = subprocess.run(
-                [sys.executable, str(script_path)],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-        except subprocess.TimeoutExpired:
+        result: ScriptExecutionResult = self.script_executor.run(script_path, 5)
+        if result.timed_out:
             print(f"[AVISO] Timeout ao verificar extrator para {self.token_id}")
             return False, "Timeout during verification"
 
-        if result.returncode != 0:
+        if result.return_code != 0:
             return False, result.stderr.strip() or "Extractor script failed with no output."
 
         actual_value: str = result.stdout.strip()

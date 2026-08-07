@@ -17,6 +17,7 @@ from har_reproducer.reproduction import (
     ExtractorMetadataStore,
     ExtractorRunner,
     MitmProxyOrchestrator,
+    ScriptExecutor,
     StepRetryPolicy,
 )
 from har_reproducer.session.session_store import SessionStore
@@ -41,7 +42,8 @@ class CliHandlers:
 
         config_path: Optional[Path] = Path(args.config) if args.config else None
         project_config: ProjectConfig = ProjectConfigLoader.load(config_path)
-        engine_factory: EngineFactory = self._engine_factory(project_config)
+        script_executor: ScriptExecutor = ScriptExecutor()
+        engine_factory: EngineFactory = self._engine_factory(project_config, script_executor)
 
         mode: EngineMode = EngineMode(args.mode)
         result: bool = self._run(engine_factory, mode, har_path, project_config)
@@ -96,7 +98,8 @@ class CliHandlers:
         run_id: str = datetime.now().strftime("%Y%m%d_%H%M%S")
         orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(project_config.proxy_port,
                                                                     project_config.ca_cert_path)
-        runner: ReplayRunner = self._build_replay_runner(orchestrator, run_id, res_refer_dir)
+        script_executor: ScriptExecutor = ScriptExecutor()
+        runner: ReplayRunner = self._build_replay_runner(orchestrator, run_id, res_refer_dir, script_executor)
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
@@ -122,9 +125,10 @@ class CliHandlers:
             orchestrator: MitmProxyOrchestrator,
             run_id: str,
             res_refer_dir: Path,
+            script_executor: ScriptExecutor,
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
-        extractor_runner: ExtractorRunner = ExtractorRunner()
+        extractor_runner: ExtractorRunner = ExtractorRunner(script_executor)
         dependency_parser: CurlDependencyParser = CurlDependencyParser()
         metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
         replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(

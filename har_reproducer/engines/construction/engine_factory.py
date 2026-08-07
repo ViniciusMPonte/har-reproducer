@@ -15,6 +15,7 @@ from har_reproducer.reproduction import (
     CurlGenerator,
     ExtractorMetadataStore,
     ExtractorRunner,
+    ScriptExecutor,
     StepRetryPolicy,
     StepSkipEvaluator,
 )
@@ -29,8 +30,9 @@ class EngineFactory:
         EngineMode.DRY: DryEngine,
     }
 
-    def __init__(self, project_config: ProjectConfig) -> None:
+    def __init__(self, project_config: ProjectConfig, script_executor: ScriptExecutor) -> None:
         self.project_config: ProjectConfig = project_config
+        self.script_executor: ScriptExecutor = script_executor
         self.llm: Optional[BaseChatModel] = self._build_llm(project_config)
 
     def resolve_class(self, mode: EngineMode) -> Type[Engine]:
@@ -51,7 +53,7 @@ class EngineFactory:
             Workspace.real_responses if engine_cls.USES_NETWORK else Workspace.original_responses
         )
         session_store: SessionStore = SessionStore()
-        extractor_runner: ExtractorRunner = ExtractorRunner()
+        extractor_runner: ExtractorRunner = ExtractorRunner(self.script_executor)
         metadata_store: ExtractorMetadataStore = ExtractorMetadataStore()
 
         return engine_cls(
@@ -73,7 +75,7 @@ class EngineFactory:
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
     ) -> TokenTracker:
-        agent_factory: AgentFactory = AgentFactory(self.llm)
+        agent_factory: AgentFactory = AgentFactory(self.script_executor, self.llm)
         candidate_resolver: CandidateResolver = CandidateResolver(
             tracking_responses_dir, session_store, extractor_runner, metadata_store, agent_factory
         )
