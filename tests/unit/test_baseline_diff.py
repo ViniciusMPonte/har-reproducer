@@ -67,3 +67,14 @@ def test_extract_static_values_returns_only_unchanged_headers() -> None:
     result: dict = BaselineDiff.extract_static_values(step, baseline)
 
     assert result == {"header:Same": "1"}
+
+
+def test_diff_body_emits_only_changed_segment_not_whole_body() -> None:
+    baseline: Step = _step("https://x", {}, {}, '{"user": "alice", "csrf": "OLD"}')
+    step: Step = _step("https://x", {}, {}, '{"user": "alice", "csrf": "NEW"}')
+
+    result: dict = BaselineDiff().compare(step, baseline)
+
+    assert "NEW" in result["body"]
+    assert result["body"] in step.request.body
+    assert result["body"] != step.request.body
