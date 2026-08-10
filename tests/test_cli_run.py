@@ -22,9 +22,8 @@ def test_run_dry_default(
     assert result.stdout.index("Step 1 skipped (unsupported scheme 'wss')") < result.stdout.index(
         "Step 2 skipped (skippable method 'OPTIONS')")
     assert result.stdout.index("Step 2 skipped (skippable method 'OPTIONS')") < result.stdout.index(
-        "Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...")
-    assert result.stdout.index("Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...") < \
-        result.stdout.index("Step 3 completed with status 200")
+        "Step 3 completed with status 200")
+    assert "Attempt 1 failed" not in result.stdout
     assert result.stdout.index("Step 3 completed with status 200") < result.stdout.index(
         "[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.")
     output_dir.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")

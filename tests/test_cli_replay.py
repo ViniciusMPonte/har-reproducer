@@ -59,9 +59,7 @@ def test_run_main(
         golden_dir: Path,
 ) -> None:
     stdout: str = main_workspace.joinpath("stdout.txt").read_text(encoding="utf-8")
-    assert stdout.count("Attempt 1 failed") == 2
-    assert "Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying..." in stdout
-    assert "Attempt 1 failed for cd0419ee5764374946a627cd3912b819. Retrying..." in stdout
+    assert stdout.count("Attempt 1 failed") == 0
     assert stdout.rstrip().endswith("Reproduction SUCCESSFUL: Target state reached.")
     TokenFailureGuard().assert_at_most_one_failure_per_step(stdout)
 

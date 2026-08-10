@@ -10,11 +10,11 @@ class TokenLocationDetector:
 
     @classmethod
     def find(cls, value: str, response_sample: Dict[str, Any]) -> Optional[TokenLocation]:
-        location: Optional[TokenLocation] = cls._find_in_headers(value, response_sample)
+        location: Optional[TokenLocation] = cls._find_in_cookies(value, response_sample)
         if location is not None:
             return location
 
-        location = cls._find_in_cookies(value, response_sample)
+        location = cls._find_in_headers(value, response_sample)
         if location is not None:
             return location
 

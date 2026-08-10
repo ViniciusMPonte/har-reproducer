@@ -1,10 +1,10 @@
 {
   "token_id": "cd0419ee5764374946a627cd3912b819",
-  "code": "def extract_t_cd0419ee5764374946a627cd3912b819(response):\n    return 'xyz789'\n",
+  "code": "\ndef extract_t_cd0419ee5764374946a627cd3912b819(response: dict) -> str:\n    cookies = response.get('cookies', {})\n    value = cookies.get('PREFS')\n    if not value:\n        raise Exception(\"Token not found in cookies\")\n    return value\n",
   "verified": true,
-  "agent_type": "LiteralFallbackAgent",
+  "agent_type": "CookieAgent",
   "origin_step": 7,
-  "temp_file_path": null,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_cd0419ee5764374946a627cd3912b819.py",
   "valid_count": 1,
   "last_value": "xyz789",
   "ever_changed": false
