@@ -130,11 +130,13 @@ resolve; sempre cai em fallback.
 
 ## 7. `pytest` e `pytest-httpx` em `dependencies`, não num grupo dev
 
-**Ainda existe.** `pyproject.toml` só tem `[project.dependencies]`, com
+**Corrigido em 10/08/2026.** `pyproject.toml` só tinha `[project.dependencies]`, com
 `pytest>=9.1.0` e `pytest-httpx>=0.36.2` misturados às dependências de produção; não
-há `[project.optional-dependencies]`/grupo dev. `pytest-httpx` está declarado e,
-confirmado por grep, não é usado por nenhum código do repo (nem produção, nem
+havia `[project.optional-dependencies]`/grupo dev. `pytest-httpx` estava declarado e,
+confirmado por grep, não era usado por nenhum código do repo (nem produção, nem
 `tests/`). Débito já adiado duas vezes: §6.7 da Etapa A, D.8 da spec da Etapa C.
+Correção: os dois foram movidos para o grupo dev (`[dependency-groups] dev`), com
+`uv lock`/`uv sync` regerados; suíte completa passa (213 testes).
 
 ## 8. Exemplo do README para `response_reference_dir` (fallback em workspace `dry`) é inalcançável
 
@@ -191,7 +193,7 @@ Descoberto durante a Etapa C (unitários finos) ao escrever dublês de teste par
 | 4 | Token de corpo irresolvível por construção | Ainda existe |
 | 5 | Código morto (6 símbolos) | 1 removido incidentalmente, 5 ainda existem |
 | 6 | Nomes que mentem / efeitos colaterais fora de lugar (3 casos) | Ainda existe (os 3) |
-| 7 | `pytest`/`pytest-httpx` em `dependencies` | Ainda existe |
+| 7 | `pytest`/`pytest-httpx` em `dependencies` | Corrigido em 10/08/2026 |
 | 8 | Exemplo do README inalcançável | Ainda existe |
 | 9 | Token irresolvível + veredito de `replay` ignora steps intermediários | Ainda existe |
 | 10 | Acoplamento nome-de-classe ↔ `AgentType` | Ainda existe (risco latente) |
