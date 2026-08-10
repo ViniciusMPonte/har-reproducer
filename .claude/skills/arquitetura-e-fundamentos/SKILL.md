@@ -79,7 +79,13 @@ adicionar heurística nova a qualquer componente deste mapa.
      `BaseChatModel.invoke`, `prompts/extractor_prompt.py`) depois de esgotá-las
      — cada tentativa é validada de fato executando o código gerado contra a
      resposta real antes de aceitar (nunca "parece certo", sempre "roda e bate
-     com o valor esperado").
+     com o valor esperado"). ⚠️ `run_tdd_loop` deriva o `agent_type` do
+     `Extractor` gerado a partir do próprio nome da classe
+     (`AgentType(self.__class__.__name__)`, `agents/base_agent.py`) — qualquer
+     subclasse de `BaseAgent` (produção ou dublê de teste) só funciona nesse
+     método se `__class__.__name__` coincidir exatamente com um valor do enum
+     `AgentType` (`CookieAgent`, `HeaderAgent`, `JSONPathAgent`, `CSSAgent`,
+     `RegexAgent`, `LiteralAgent`, `LiteralFallbackAgent`).
    - `TokenResolver.resolve_all()` resolve os tokens pendentes desse step
      (populando `SessionStore`); `SessionStore.render` substitui os
      placeholders no template de curl gerado por `CurlGenerator`.

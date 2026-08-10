@@ -212,6 +212,9 @@ task, nunca reescrever do zero.]
     tasks do plano (não leva `T0N`, é um commit à parte).
   - `refactor:` — task é puramente estrutural, sem mudança de comportamento
     observável.
+  - ⚠️ Uma etapa que só adiciona testes (sem tocar produção) ainda usa `feat:`
+    para o commit de cada task, nunca `test:` — é o padrão já usado na Etapa A
+    (rede golden) e mantido nas etapas seguintes.
 - `T0N` é o ID exato da task no plano — permite achar a task original só lendo
   `git log --oneline`.
 - `Componente/Método` repete o nome do cabeçalho da task
