@@ -151,15 +151,18 @@ Arquivo JSON passado via `--config`, com todos os campos opcionais:
 
 ## Testes
 
-A suíte é de caracterização: para cada cenário dos três comandos, compara a árvore de arquivos gerada e o `stdout` contra uma referência gravada em `tests/golden/`.
+A suíte tem duas camadas, ambas em `tests/`:
 
-A maior parte é offline (sem rede, ~10s). Um bloco marcado `slow` sobe um servidor HTTP local e o `mitmproxy` de verdade para cobrir `run --mode main` e os 4 modos de `replay` (~30s adicionais) — fica fora da rodada padrão.
+- **`tests/golden/`** (caracterização de ponta a ponta): para cada cenário dos três comandos, compara a árvore de arquivos gerada e o `stdout` contra uma referência gravada. Um bloco marcado `slow` sobe um servidor HTTP local e o `mitmproxy` de verdade para cobrir `run --mode main` e os 4 modos de `replay` — fica fora da rodada padrão.
+- **`tests/unit/`**: testes de unidade que isolam uma classe por vez com dublês (`tests/support/`), sem invocar `main()` nem comparar árvore de diretório.
+
+Toda a suíte é offline (sem rede) exceto o bloco `slow` citado acima.
 
 ```bash
-# Rodada padrão (offline, ~10s)
+# Rodada padrão (unitários + golden offline, ~10s)
 uv run pytest
 
-# Inclui os cenários de rede (~30s adicionais)
+# Inclui os cenários de rede da suíte golden (~30s adicionais)
 uv run pytest --runslow
 
 # Regrava a referência golden após uma mudança deliberada de comportamento
