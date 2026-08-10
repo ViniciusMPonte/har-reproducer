@@ -52,13 +52,13 @@ duplicar a mesma classe fake em vários arquivos de teste (spec D.2).
   estilo) — nada de `Dict`/`List` soltos sem tipo, nada de função solta no módulo.
 
 **Critérios de aceite:**
-- [ ] `FakeScriptExecutor(ScriptExecutionResult(timed_out=False, return_code=0, stdout="x", stderr="")).run(Path("a.py"), 5)` devolve esse resultado e registra a chamada em `.calls`.
-- [ ] `FakeSleeper().sleep(5)` não bloqueia (retorna imediatamente) e `sleeper.calls == [5]` após a chamada.
-- [ ] `StubHttpTransport(StepResponse(status_code=200)).send_request("curl ...", 0)` devolve a resposta configurada e `transport.calls == [("curl ...", 0)]`.
-- [ ] `FakeExtractorRunner(run_existing_result="abc").run_existing("tok", None)` devolve `"abc"`.
-- [ ] `FakeMetadataStore().save(extractor)` seguido de `.load(extractor.token_id)` devolve o mesmo objeto (por igualdade de campos, não identidade).
-- [ ] `FakeProcess(returncode=None).poll()` devolve `None`; após `terminate()` + definir `returncode=0`, `poll()` devolve `0`.
-- [ ] Nenhum destes arquivos é importado por `har_reproducer/` (só por `tests/`).
+- [x] `FakeScriptExecutor(ScriptExecutionResult(timed_out=False, return_code=0, stdout="x", stderr="")).run(Path("a.py"), 5)` devolve esse resultado e registra a chamada em `.calls`.
+- [x] `FakeSleeper().sleep(5)` não bloqueia (retorna imediatamente) e `sleeper.calls == [5]` após a chamada.
+- [x] `StubHttpTransport(StepResponse(status_code=200)).send_request("curl ...", 0)` devolve a resposta configurada e `transport.calls == [("curl ...", 0)]`.
+- [x] `FakeExtractorRunner(run_existing_result="abc").run_existing("tok", None)` devolve `"abc"`.
+- [x] `FakeMetadataStore().save(extractor)` seguido de `.load(extractor.token_id)` devolve o mesmo objeto (por igualdade de campos, não identidade).
+- [x] `FakeProcess(returncode=None).poll()` devolve `None`; após `terminate()` + definir `returncode=0`, `poll()` devolve `0`.
+- [x] Nenhum destes arquivos é importado por `har_reproducer/` (só por `tests/`).
 
 ---
 
@@ -86,10 +86,10 @@ todos os outros testes desta etapa (spec D.3), então merece cobertura direta pr
   valor não-string (ex.: `int`) misturados.
 
 **Critérios de aceite:**
-- [ ] `store.set_token("abc123", "v1"); store.get_token("abc123") == "v1"`.
-- [ ] `store.render("Bearer {{extractor:abc123}}")` após `set_token("abc123", "tok")` devolve `"Bearer tok"`.
-- [ ] `store.render("{{extractor:naoexiste}}")` sem `set_token` prévio devolve a string idêntica (placeholder preservado).
-- [ ] `store.render_dict({"a": ["{{extractor:x}}", 3], "b": {"c": "{{extractor:x}}"}})` após `set_token("x", "V")` devolve `{"a": ["V", 3], "b": {"c": "V"}}` (o `3` não é tocado).
+- [x] `store.set_token("abc123", "v1"); store.get_token("abc123") == "v1"`.
+- [x] `store.render("Bearer {{extractor:abc123}}")` após `set_token("abc123", "tok")` devolve `"Bearer tok"`.
+- [x] `store.render("{{extractor:naoexiste}}")` sem `set_token` prévio devolve a string idêntica (placeholder preservado).
+- [x] `store.render_dict({"a": ["{{extractor:x}}", 3], "b": {"c": "{{extractor:x}}"}})` após `set_token("x", "V")` devolve `{"a": ["V", 3], "b": {"c": "V"}}` (o `3` não é tocado).
 
 ---
 
@@ -124,12 +124,12 @@ então testável direto com `StepRequest`/`Step` construídos à mão.
   de borda documentados na spec (`body=None` de um lado; `body` bytes não-UTF8).
 
 **Critérios de aceite:**
-- [ ] Dois `Step` com URLs diferentes → `compare(...)` inclui `{"url": <url do step>}`.
-- [ ] Header presente só no step atual (ausente no baseline) → aparece em `compare` como `header:<nome>`; header idêntico em ambos → não aparece.
-- [ ] `step.request.body=None`, `baseline.request.body="x"` (ou vice-versa) → `_diff_body` não contribui nenhuma chave (via `compare`).
-- [ ] `body=b"\xff\xfe"` (bytes não-UTF8) → `compare()["body"]` é uma `str` decodificada com `errors="replace"`, sem lançar exceção.
-- [ ] `detect_candidates({"cookie:sid": "abc"})` devolve uma lista com um `DynamicToken` de `destination_location=TokenLocation.COOKIE`, `status="UnderReview"`, `origin_step=None`.
-- [ ] `extract_static_values`: header igual em `step` e `baseline` aparece no retorno; header que mudou não aparece (comportamento oposto de `_diff_headers`).
+- [x] Dois `Step` com URLs diferentes → `compare(...)` inclui `{"url": <url do step>}`.
+- [x] Header presente só no step atual (ausente no baseline) → aparece em `compare` como `header:<nome>`; header idêntico em ambos → não aparece.
+- [x] `step.request.body=None`, `baseline.request.body="x"` (ou vice-versa) → `_diff_body` não contribui nenhuma chave (via `compare`).
+- [x] `body=b"\xff\xfe"` (bytes não-UTF8) → `compare()["body"]` é uma `str` decodificada com `errors="replace"`, sem lançar exceção.
+- [x] `detect_candidates({"cookie:sid": "abc"})` devolve uma lista com um `DynamicToken` de `destination_location=TokenLocation.COOKIE`, `status="UnderReview"`, `origin_step=None`.
+- [x] `extract_static_values`: header igual em `step` e `baseline` aparece no retorno; header que mudou não aparece (comportamento oposto de `_diff_headers`).
 
 ---
 
@@ -161,11 +161,11 @@ decide usar `SessionStore` real nos testes em vez de dublê.
   body `bytes` não-UTF8 permanece idêntico.
 
 **Critérios de aceite:**
-- [ ] Token com `current_value="abc"` e extractor `verified=True` no registry → aparece como `{{extractor:<token_id>}}` na URL/header/cookie que continha `"abc"`.
-- [ ] Dois tokens, `"abc"` e `"abcdef"` (um contém o outro) → depois de `apply`, nenhuma ocorrência de `"abcdef"` sobra parcialmente substituída (o mais longo é processado primeiro).
-- [ ] Token sem entrada em `session_store.state.registry` (nunca registrado) → valor original permanece intacto no request.
-- [ ] Token com `current_value=""` → `_apply_token` não altera nada (sem erro).
-- [ ] `request.body = b"\xff\xfe"` (não decodifica em UTF-8) com token cujo valor "aparece" só depois de decodificado → body permanece `b"\xff\xfe"` inalterado.
+- [x] Token com `current_value="abc"` e extractor `verified=True` no registry → aparece como `{{extractor:<token_id>}}` na URL/header/cookie que continha `"abc"`.
+- [x] Dois tokens, `"abc"` e `"abcdef"` (um contém o outro) → depois de `apply`, nenhuma ocorrência de `"abcdef"` sobra parcialmente substituída (o mais longo é processado primeiro).
+- [x] Token sem entrada em `session_store.state.registry` (nunca registrado) → valor original permanece intacto no request.
+- [x] Token com `current_value=""` → `_apply_token` não altera nada (sem erro).
+- [x] `request.body = b"\xff\xfe"` (não decodifica em UTF-8) com token cujo valor "aparece" só depois de decodificado → body permanece `b"\xff\xfe"` inalterado.
 
 ---
 
@@ -195,12 +195,12 @@ consomem depois.
   curl (headers múltiplos, cookies ausentes vs. presentes, body ausente vs. presente).
 
 **Critérios de aceite:**
-- [ ] `DynamicToken(origin_step=None, ...)` → nenhuma linha de comentário é gerada para ele.
-- [ ] `DynamicToken(origin_step=2, origin_location=None, ...)` → gera duas linhas: a de proveniência e a de "origin location undetermined".
-- [ ] `DynamicToken(origin_step=2, origin_location=TokenLocation.COOKIE, extraction_exhausted=True, ...)` → gera a linha de proveniência e a de "extraction exhausted".
-- [ ] `StepRequest` sem cookies → `generate(...)` não contém `--cookie` na saída.
-- [ ] `StepRequest` com `body="payload"` → saída contém `--data-binary` com o payload quotado (`shlex.quote`).
-- [ ] Nenhum token comentável → primeira linha da saída começa com `curl -X`.
+- [x] `DynamicToken(origin_step=None, ...)` → nenhuma linha de comentário é gerada para ele.
+- [x] `DynamicToken(origin_step=2, origin_location=None, ...)` → gera duas linhas: a de proveniência e a de "origin location undetermined".
+- [x] `DynamicToken(origin_step=2, origin_location=TokenLocation.COOKIE, extraction_exhausted=True, ...)` → gera a linha de proveniência e a de "extraction exhausted".
+- [x] `StepRequest` sem cookies → `generate(...)` não contém `--cookie` na saída.
+- [x] `StepRequest` com `body="payload"` → saída contém `--data-binary` com o payload quotado (`shlex.quote`).
+- [x] Nenhum token comentável → primeira linha da saída começa com `curl -X`.
 
 ---
 
@@ -227,10 +227,10 @@ comentário (dict vazio); texto com uma linha "extraction exhausted" extra (não
 entrada espúria no dict).
 
 **Critérios de aceite:**
-- [ ] `parse("# Token abc123 comes from response of step 4\ncurl ...")` devolve `{"abc123": 4}`.
-- [ ] `parse("curl -X GET ...")` (sem comentários) devolve `{}`.
-- [ ] Texto com duas linhas de proveniência de tokens diferentes → dict com as duas entradas.
-- [ ] Texto com a linha extra `# Token abc123 origin location determined but extraction exhausted — using literal captured value` logo abaixo da linha de proveniência → o dict tem só a entrada de `abc123: <step>`, sem entrada espúria para a segunda linha.
+- [x] `parse("# Token abc123 comes from response of step 4\ncurl ...")` devolve `{"abc123": 4}`.
+- [x] `parse("curl -X GET ...")` (sem comentários) devolve `{}`.
+- [x] Texto com duas linhas de proveniência de tokens diferentes → dict com as duas entradas.
+- [x] Texto com a linha extra `# Token abc123 origin location determined but extraction exhausted — using literal captured value` logo abaixo da linha de proveniência → o dict tem só a entrada de `abc123: <step>`, sem entrada espúria para a segunda linha.
 
 ---
 
@@ -256,11 +256,11 @@ minúsculo; scheme válido maiúsculo (`HTTPS`); scheme inválido (`ftp`); URL s
 (`urlparse("").scheme == ""`); método presente em `skip_rules.methods`; método ausente.
 
 **Critérios de aceite:**
-- [ ] `skip_reason(StepRequest(url="https://x", method="GET"))` com `SkipRulesConfig()` padrão devolve `None`.
-- [ ] `skip_reason(StepRequest(url="HTTPS://x", method="GET"))` devolve `None` (case-insensitive).
-- [ ] `skip_reason(StepRequest(url="ftp://x", method="GET"))` devolve `"unsupported scheme 'ftp'"`.
-- [ ] `skip_reason(StepRequest(url="/relative/path", method="GET"))` (sem scheme) devolve `"unsupported scheme ''"`.
-- [ ] `skip_reason(StepRequest(url="https://x", method="OPTIONS"))` com `SkipRulesConfig()` padrão (`methods=["OPTIONS"]`) devolve `"skippable method 'OPTIONS'"`.
+- [x] `skip_reason(StepRequest(url="https://x", method="GET"))` com `SkipRulesConfig()` padrão devolve `None`.
+- [x] `skip_reason(StepRequest(url="HTTPS://x", method="GET"))` devolve `None` (case-insensitive).
+- [x] `skip_reason(StepRequest(url="ftp://x", method="GET"))` devolve `"unsupported scheme 'ftp'"`.
+- [x] `skip_reason(StepRequest(url="/relative/path", method="GET"))` (sem scheme) devolve `"unsupported scheme ''"`.
+- [x] `skip_reason(StepRequest(url="https://x", method="OPTIONS"))` com `SkipRulesConfig()` padrão (`methods=["OPTIONS"]`) devolve `"skippable method 'OPTIONS'"`.
 
 ---
 
@@ -288,9 +288,9 @@ retry bem-sucedido (recovery `True` na primeira, `False`/não-chamado na segunda
 `MAX_STEP_ATTEMPTS` chamadas a `attempt_fn`, mesmo que `recovery_fn` sempre devolva `True`.
 
 **Critérios de aceite:**
-- [ ] `attempt_fn` que sempre devolve `StepResponse(status_code=200)`, `recovery_fn` sempre `False` → `execute` chama `attempt_fn` uma vez e devolve a resposta 200.
-- [ ] `attempt_fn` que devolve `401` na 1ª chamada e `200` na 2ª, `recovery_fn` que devolve `True` para `401` → `execute` devolve a resposta `200`, com `attempt_fn` chamado exatamente 2 vezes.
-- [ ] `attempt_fn` sempre devolve `401`, `recovery_fn` sempre `True` → `attempt_fn` é chamado exatamente `MAX_STEP_ATTEMPTS=2` vezes (a última tentativa é devolvida mesmo com `recovery_fn` ainda dizendo `True`, porque `is_last_attempt` bloqueia mais uma volta).
+- [x] `attempt_fn` que sempre devolve `StepResponse(status_code=200)`, `recovery_fn` sempre `False` → `execute` chama `attempt_fn` uma vez e devolve a resposta 200.
+- [x] `attempt_fn` que devolve `401` na 1ª chamada e `200` na 2ª, `recovery_fn` que devolve `True` para `401` → `execute` devolve a resposta `200`, com `attempt_fn` chamado exatamente 2 vezes.
+- [x] `attempt_fn` sempre devolve `401`, `recovery_fn` sempre `True` → `attempt_fn` é chamado exatamente `MAX_STEP_ATTEMPTS=2` vezes (a última tentativa é devolvida mesmo com `recovery_fn` ainda dizendo `True`, porque `is_last_attempt` bloqueia mais uma volta).
 
 ---
 
@@ -322,11 +322,11 @@ original, exceto quando coincidem), um valor URL-encoded, um valor base64 válid
 de índice válida/inválida.
 
 **Critérios de aceite:**
-- [ ] `try_decode("valor-simples")` devolve `"valor-simples"` (nenhuma decodificação muda o valor).
-- [ ] `try_decode("valor%20com%20espaco")` devolve `"valor com espaco"`.
-- [ ] `try_decode(base64.b64encode(b"segredo").decode())` devolve `"segredo"`.
-- [ ] `value_variants("abc")` não contém strings duplicadas nem vazias.
-- [ ] `_extract_step_index("res_0007.json")` devolve `7`; `_extract_step_index("nomeinvalido.json")` devolve `None`.
+- [x] `try_decode("valor-simples")` devolve `"valor-simples"` (nenhuma decodificação muda o valor).
+- [x] `try_decode("valor%20com%20espaco")` devolve `"valor com espaco"`.
+- [x] `try_decode(base64.b64encode(b"segredo").decode())` devolve `"segredo"`.
+- [x] `value_variants("abc")` não contém strings duplicadas nem vazias.
+- [x] `_extract_step_index("res_0007.json")` devolve `7`; `_extract_step_index("nomeinvalido.json")` devolve `None`.
 
 ---
 
@@ -356,13 +356,13 @@ Teste cobre pelo menos um `response_sample` por branch: header, cookie, redirect
 (valor só dentro do bloco), e nenhuma correspondência (→ `None`).
 
 **Critérios de aceite:**
-- [ ] `find("tok", {"headers": {"X-Csrf": "tok"}})` devolve `TokenLocation.HEADER`.
-- [ ] `find("tok", {"cookies": {"sid": "tok"}})` devolve `TokenLocation.COOKIE`.
-- [ ] `find("tok", {"redirect_url": "https://x?tok=tok"})` devolve `TokenLocation.URL_PARAM`.
-- [ ] `find("tok", {"body": '{"csrf":"tok"}', "body_mime": None})` devolve `TokenLocation.BODY_JSON` (detectado por conteúdo, sem depender do mime).
-- [ ] `find("tok", {"body": "<html><body>tok</body></html>", "body_mime": "text/html"})` devolve `TokenLocation.BODY_HTML`.
-- [ ] `find("tok", {"body": "<html><script>var x='tok';</script></html>", "body_mime": "text/html"})` devolve `TokenLocation.SCRIPT` (valor só aparece dentro do `<script>`).
-- [ ] `find("tok", {})` (nenhum campo) devolve `None`.
+- [x] `find("tok", {"headers": {"X-Csrf": "tok"}})` devolve `TokenLocation.HEADER`.
+- [x] `find("tok", {"cookies": {"sid": "tok"}})` devolve `TokenLocation.COOKIE`.
+- [x] `find("tok", {"redirect_url": "https://x?tok=tok"})` devolve `TokenLocation.URL_PARAM`.
+- [x] `find("tok", {"body": '{"csrf":"tok"}', "body_mime": None})` devolve `TokenLocation.BODY_JSON` (detectado por conteúdo, sem depender do mime).
+- [x] `find("tok", {"body": "<html><body>tok</body></html>", "body_mime": "text/html"})` devolve `TokenLocation.BODY_HTML`.
+- [x] `find("tok", {"body": "<html><script>var x='tok';</script></html>", "body_mime": "text/html"})` devolve `TokenLocation.SCRIPT` (valor só aparece dentro do `<script>`).
+- [x] `find("tok", {})` (nenhum campo) devolve `None`.
 
 ---
 
@@ -392,11 +392,11 @@ diferentes não compartilham estado; cada método de path devolve o `Path` esper
 zero-padding correto; `replay_run_dir` cria o diretório de fato.
 
 **Critérios de aceite:**
-- [ ] `Workspace(tmp_path)` — todos os 8 atributos (`.curls`, `.real_responses`, etc.) existem em disco (`Path.is_dir()`) logo após a construção.
-- [ ] `Workspace(tmp_path_a)` e `Workspace(tmp_path_b)` (dois `tmp_path` distintos) não compartilham nenhum arquivo — escrever em um não afeta o outro.
-- [ ] `workspace.response_file(7) == workspace.real_responses / "res_0007.json"`.
-- [ ] `workspace.curl_file(3) == workspace.curls / "req_0003.curl.sh"`.
-- [ ] `workspace.replay_run_dir("run-1").is_dir()` é `True` (diretório criado na chamada, não só o path calculado).
+- [x] `Workspace(tmp_path)` — todos os 8 atributos (`.curls`, `.real_responses`, etc.) existem em disco (`Path.is_dir()`) logo após a construção.
+- [x] `Workspace(tmp_path_a)` e `Workspace(tmp_path_b)` (dois `tmp_path` distintos) não compartilham nenhum arquivo — escrever em um não afeta o outro.
+- [x] `workspace.response_file(7) == workspace.real_responses / "res_0007.json"`.
+- [x] `workspace.curl_file(3) == workspace.curls / "req_0003.curl.sh"`.
+- [x] `workspace.replay_run_dir("run-1").is_dir()` é `True` (diretório criado na chamada, não só o path calculado).
 
 ---
 
@@ -420,9 +420,9 @@ Teste usa `Workspace(tmp_path)` real (sem dublê — é I/O do próprio alvo). C
 arquivo; `save` seguido de `load` (round-trip); arquivo com JSON corrompido/incompatível.
 
 **Critérios de aceite:**
-- [ ] `store.load("naoexiste")` devolve `None` sem lançar exceção.
-- [ ] `store.save(Extractor(token_id="t1", code="...", agent_type=AgentType.REGEX)); store.load("t1")` devolve um `Extractor` com os mesmos campos.
-- [ ] Escrever texto não-JSON diretamente em `workspace.extractor_meta_file("t2")` e depois chamar `store.load("t2")` devolve `None` (sem propagar a exceção de parse).
+- [x] `store.load("naoexiste")` devolve `None` sem lançar exceção.
+- [x] `store.save(Extractor(token_id="t1", code="...", agent_type=AgentType.REGEX)); store.load("t1")` devolve um `Extractor` com os mesmos campos.
+- [x] Escrever texto não-JSON diretamente em `workspace.extractor_meta_file("t2")` e depois chamar `store.load("t2")` devolve `None` (sem propagar a exceção de parse).
 
 ---
 
@@ -450,12 +450,12 @@ Teste usa `Workspace(tmp_path)` real (precisa dos diretórios `extractors`/`temp
 `FakeScriptExecutor` (T01) para controlar o resultado da execução sem `subprocess` real.
 
 **Critérios de aceite:**
-- [ ] `run(Extractor(origin_step=None, ...))` levanta `ValueError`.
-- [ ] `run_existing("token-sem-arquivo")` devolve `None` sem chamar `script_executor.run` (verificar `fake_script_executor.calls == []`).
-- [ ] `FakeScriptExecutor` configurado com `return_code=0, stdout="  valor  \n"` → `run(...)` devolve `"valor"` (stripped).
-- [ ] `FakeScriptExecutor` configurado com `return_code=1` → `run(...)` devolve `None`.
-- [ ] `FakeScriptExecutor` configurado para lançar exceção em `.run(...)` → `_execute_extractor_script` não propaga, devolve `None`.
-- [ ] `_build_env(None)` não contém `HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR`; `_build_env(Path("/x"))` contém essa chave com valor `"/x"`.
+- [x] `run(Extractor(origin_step=None, ...))` levanta `ValueError`.
+- [x] `run_existing("token-sem-arquivo")` devolve `None` sem chamar `script_executor.run` (verificar `fake_script_executor.calls == []`).
+- [x] `FakeScriptExecutor` configurado com `return_code=0, stdout="  valor  \n"` → `run(...)` devolve `"valor"` (stripped).
+- [x] `FakeScriptExecutor` configurado com `return_code=1` → `run(...)` devolve `None`.
+- [x] `FakeScriptExecutor` configurado para lançar exceção em `.run(...)` → `_execute_extractor_script` não propaga, devolve `None`.
+- [x] `_build_env(None)` não contém `HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR`; `_build_env(Path("/x"))` contém essa chave com valor `"/x"`.
 
 ---
 
@@ -480,10 +480,10 @@ Teste escreve scripts Python triviais em `tmp_path` (`print("ok")`, `import sys;
 `import time; time.sleep(5)`) e chama `run` de verdade.
 
 **Critérios de aceite:**
-- [ ] Script `print("hello")` com `timeout_seconds=5` → `result.return_code == 0`, `result.stdout.strip() == "hello"`, `result.timed_out is False`.
-- [ ] Script `import sys; sys.exit(3)` → `result.return_code == 3`.
-- [ ] Script `import time; time.sleep(2)` com `timeout_seconds=0.1` → `result.timed_out is True`, `result.return_code == ScriptExecutor.TIMEOUT_RETURN_CODE == -1`.
-- [ ] `env={"MY_VAR": "x"}` passado a um script que faz `import os; print(os.environ.get("MY_VAR"))` → `result.stdout.strip() == "x"`.
+- [x] Script `print("hello")` com `timeout_seconds=5` → `result.return_code == 0`, `result.stdout.strip() == "hello"`, `result.timed_out is False`.
+- [x] Script `import sys; sys.exit(3)` → `result.return_code == 3`.
+- [x] Script `import time; time.sleep(2)` com `timeout_seconds=0.1` → `result.timed_out is True`, `result.return_code == ScriptExecutor.TIMEOUT_RETURN_CODE == -1`.
+- [x] `env={"MY_VAR": "x"}` passado a um script que faz `import os; print(os.environ.get("MY_VAR"))` → `result.stdout.strip() == "x"`.
 
 ---
 
@@ -511,12 +511,12 @@ Teste cobre os 4 tipos de critério (caso verdadeiro e falso cada) e `validate` 
 (um critério falso já barra o resultado, independente dos outros).
 
 **Critérios de aceite:**
-- [ ] `StatusCodeCriterion(type="status_code", expected=200)` com `StepResponse(status_code=200)` → `True`; com `status_code=404` → `False`.
-- [ ] `UrlMatchCriterion(type="url_match", expected="dashboard")` com `redirect_url="https://x/dashboard"` → `True`; com `redirect_url=None` → `False` (compara contra string vazia).
-- [ ] `BodyContainsCriterion(type="body_contains", expected="ok")` com `body="status: ok"` → `True`; com `body=b"status: ok"` (bytes, não `str`) → `False` (guard explícito do código).
-- [ ] `HtmlElementPresentCriterion(type="html_element_present", expected="#success")` com `body="<div id='success'></div>"` → `True`; com body sem esse elemento → `False`.
-- [ ] `validate(response, [criterio_verdadeiro, criterio_falso])` devolve `False` (não avalia importância de ordem, só que basta um falso).
-- [ ] ⚠️ Não escrever teste para o `return False` final de `_check_criterion` (linha 47) — é inalcançável dado que `SuccessCriterion` é um `Union` discriminado com exatamente os 4 tipos acima (`models/criteria.py:26-32`); registrar isso como comentário de spec, não como caso de teste (spec, Casos de borda).
+- [x] `StatusCodeCriterion(type="status_code", expected=200)` com `StepResponse(status_code=200)` → `True`; com `status_code=404` → `False`.
+- [x] `UrlMatchCriterion(type="url_match", expected="dashboard")` com `redirect_url="https://x/dashboard"` → `True`; com `redirect_url=None` → `False` (compara contra string vazia).
+- [x] `BodyContainsCriterion(type="body_contains", expected="ok")` com `body="status: ok"` → `True`; com `body=b"status: ok"` (bytes, não `str`) → `False` (guard explícito do código).
+- [x] `HtmlElementPresentCriterion(type="html_element_present", expected="#success")` com `body="<div id='success'></div>"` → `True`; com body sem esse elemento → `False`.
+- [x] `validate(response, [criterio_verdadeiro, criterio_falso])` devolve `False` (não avalia importância de ordem, só que basta um falso).
+- [x] ⚠️ Não escrever teste para o `return False` final de `_check_criterion` (linha 47) — é inalcançável dado que `SuccessCriterion` é um `Union` discriminado com exatamente os 4 tipos acima (`models/criteria.py:26-32`); registrar isso como comentário de spec, não como caso de teste (spec, Casos de borda).
 
 ---
 
@@ -544,11 +544,11 @@ Teste monta dicts mínimos simulando uma `entry` de HAR (sem precisar de arquivo
 chama `parse_entry`/`decode_body` diretamente.
 
 **Critérios de aceite:**
-- [ ] `decode_body("", encoding=None)` devolve `""`.
-- [ ] `decode_body(base64.b64encode(b"ok").decode(), encoding="base64")` devolve `"ok"`.
-- [ ] `decode_body("!!!not-base64!!!", encoding="base64")` devolve o próprio `"!!!not-base64!!!"` (fallback ao original, sem lançar exceção).
-- [ ] `parse_entry({"request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []}, "response": {"status": 200, "headers": [], "cookies": [], "content": {"text": "body", "mimeType": "text/plain"}}}, index=3)` devolve um `Step(index=3, ...)` com `request.url == "https://x"`, `response.status_code == 200`, `response.body == "body"`.
-- [ ] `entry["request"]["postData"] = {"text": "payload"}` → `parse_entry(...).request.body == "payload"`.
+- [x] `decode_body("", encoding=None)` devolve `""`.
+- [x] `decode_body(base64.b64encode(b"ok").decode(), encoding="base64")` devolve `"ok"`.
+- [x] `decode_body("!!!not-base64!!!", encoding="base64")` devolve o próprio `"!!!not-base64!!!"` (fallback ao original, sem lançar exceção).
+- [x] `parse_entry({"request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []}, "response": {"status": 200, "headers": [], "cookies": [], "content": {"text": "body", "mimeType": "text/plain"}}}, index=3)` devolve um `Step(index=3, ...)` com `request.url == "https://x"`, `response.status_code == 200`, `response.body == "body"`.
+- [x] `entry["request"]["postData"] = {"text": "payload"}` → `parse_entry(...).request.body == "payload"`.
 
 ---
 
@@ -588,14 +588,14 @@ agent_factory=<não usado nesta fatia>)` e chama os métodos privados diretament
 teste unitário: são o alvo documentado pela spec da Etapa A).
 
 **Critérios de aceite:**
-- [ ] `_check_cached_slot` com `_validated_values={"t1": "v1"}` e `candidate.current_value="v1"` → `(MATCH, None)`.
-- [ ] Idem com `candidate.current_value="v2"` → `(MISMATCH, <mensagem com repr de "v1" e "v2">)`.
-- [ ] `_check_persisted_slot` com `FakeMetadataStore` sem nenhum extractor salvo para o slot → `(FREE, None)`.
-- [ ] `_check_persisted_slot` com extractor persistido e `FakeExtractorRunner.run_existing` devolvendo o mesmo valor do candidato → `(MATCH, None)`, e depois disso `session_store.get_token(slot_id)` devolve esse valor (efeito de `_accept_persisted_slot`).
-- [ ] `_check_persisted_slot` com `run_existing` devolvendo `None` → `(MISMATCH, "Persisted extractor failed to execute (no output).")`.
-- [ ] `_find_slot`: forçar `_check_slot` a devolver `MISMATCH` na primeira chamada e `FREE` na segunda (via `FakeMetadataStore`/`FakeExtractorRunner` configurados por chamada) → o `slot_id` final é o "forkado" (`_fork_token_id`), e o `last_error` devolvido é o erro do `MISMATCH` da primeira tentativa (não `None`).
-- [ ] `_derive_token_id("cookie:sid", 2)` é determinístico (mesmo input → mesmo hash) e difere de `_derive_token_id("cookie:sid", 3)`.
-- [ ] `_build_literal_extractor`: `Extractor.verified is True`, `agent_type` é o passado, `code` contém `return <repr do current_value>`.
+- [x] `_check_cached_slot` com `_validated_values={"t1": "v1"}` e `candidate.current_value="v1"` → `(MATCH, None)`.
+- [x] Idem com `candidate.current_value="v2"` → `(MISMATCH, <mensagem com repr de "v1" e "v2">)`.
+- [x] `_check_persisted_slot` com `FakeMetadataStore` sem nenhum extractor salvo para o slot → `(FREE, None)`.
+- [x] `_check_persisted_slot` com extractor persistido e `FakeExtractorRunner.run_existing` devolvendo o mesmo valor do candidato → `(MATCH, None)`, e depois disso `session_store.get_token(slot_id)` devolve esse valor (efeito de `_accept_persisted_slot`).
+- [x] `_check_persisted_slot` com `run_existing` devolvendo `None` → `(MISMATCH, "Persisted extractor failed to execute (no output).")`.
+- [x] `_find_slot`: forçar `_check_slot` a devolver `MISMATCH` na primeira chamada e `FREE` na segunda (via `FakeMetadataStore`/`FakeExtractorRunner` configurados por chamada) → o `slot_id` final é o "forkado" (`_fork_token_id`), e o `last_error` devolvido é o erro do `MISMATCH` da primeira tentativa (não `None`).
+- [x] `_derive_token_id("cookie:sid", 2)` é determinístico (mesmo input → mesmo hash) e difere de `_derive_token_id("cookie:sid", 3)`.
+- [x] `_build_literal_extractor`: `Extractor.verified is True`, `agent_type` é o passado, `code` contém `return <repr do current_value>`.
 
 ---
 
@@ -623,11 +623,11 @@ Teste usa `SessionStore` real e `FakeExtractorRunner` (T01); `responses_dir` é 
 onde o teste cria (ou não) o arquivo `res_NNNN.json` esperado.
 
 **Critérios de aceite:**
-- [ ] Registry com um extractor `verified=False` → `resolve_all()` não chama `extractor_runner.run` (token não é candidato a refresh).
-- [ ] Registry com extractor `verified=True, origin_step=2`, mas `responses_dir` sem `res_0002.json` → `_refresh_token` não chama `extractor_runner.run` (retorna cedo).
-- [ ] Registry com extractor válido, `res_0002.json` existente (criado vazio no `tmp_path`), `FakeExtractorRunner.run` devolvendo `"novo-valor"` → depois de `resolve_all()`, `session_store.get_token(token_id) == "novo-valor"`.
-- [ ] `FakeExtractorRunner.run` configurado para lançar exceção → `resolve_all()` não propaga a exceção.
-- [ ] `force=False` e o token já está em `state.tokens` → `extractor_runner.run` não é chamado (pulado antes mesmo de checar `_should_refresh_token`); `force=True` com o mesmo estado → é chamado.
+- [x] Registry com um extractor `verified=False` → `resolve_all()` não chama `extractor_runner.run` (token não é candidato a refresh).
+- [x] Registry com extractor `verified=True, origin_step=2`, mas `responses_dir` sem `res_0002.json` → `_refresh_token` não chama `extractor_runner.run` (retorna cedo).
+- [x] Registry com extractor válido, `res_0002.json` existente (criado vazio no `tmp_path`), `FakeExtractorRunner.run` devolvendo `"novo-valor"` → depois de `resolve_all()`, `session_store.get_token(token_id) == "novo-valor"`.
+- [x] `FakeExtractorRunner.run` configurado para lançar exceção → `resolve_all()` não propaga a exceção.
+- [x] `force=False` e o token já está em `state.tokens` → `extractor_runner.run` não é chamado (pulado antes mesmo de checar `_should_refresh_token`); `force=True` com o mesmo estado → é chamado.
 
 ---
 
@@ -654,11 +654,11 @@ livre desde que sigam o guia de estilo) que registram se foram chamados e com qu
 valores fixos configuráveis.
 
 **Critérios de aceite:**
-- [ ] `analyze_step` chama `baseline_diff.compare(step, baseline_step)` exatamente uma vez, com esses dois argumentos exatos.
-- [ ] O retorno de `baseline_diff.detect_candidates(...)` é passado como `candidates` para `candidate_resolver.resolve(candidates, step.index)`.
-- [ ] O retorno de `candidate_resolver.resolve(...)` é passado para `placeholder_applier.apply(step.request, tokens)` e também vira `StepAnalysis.dynamic_tokens`.
-- [ ] `StepAnalysis.curl_template` é exatamente o que `curl_generator.generate(...)` devolveu (dublê configurado com uma string fixa).
-- [ ] `StepAnalysis.static_values` é exatamente o que `baseline_diff.extract_static_values(...)` devolveu.
+- [x] `analyze_step` chama `baseline_diff.compare(step, baseline_step)` exatamente uma vez, com esses dois argumentos exatos.
+- [x] O retorno de `baseline_diff.detect_candidates(...)` é passado como `candidates` para `candidate_resolver.resolve(candidates, step.index)`.
+- [x] O retorno de `candidate_resolver.resolve(...)` é passado para `placeholder_applier.apply(step.request, tokens)` e também vira `StepAnalysis.dynamic_tokens`.
+- [x] `StepAnalysis.curl_template` é exatamente o que `curl_generator.generate(...)` devolveu (dublê configurado com uma string fixa).
+- [x] `StepAnalysis.static_values` é exatamente o que `baseline_diff.extract_static_values(...)` devolveu.
 
 ---
 
@@ -695,12 +695,12 @@ Teste usa `SessionStore` real, `FakeExtractorRunner`/`FakeMetadataStore` (T01),
 `CurlDependencyParser` real (é puro, sem custo).
 
 **Critérios de aceite:**
-- [ ] `_reference_dir_for_step(None, res_refer_dir, original_dir)` devolve `res_refer_dir`.
-- [ ] `_reference_dir_for_step(2, res_refer_dir, original_dir)` com `res_refer_dir/res_0002.json` existente devolve `res_refer_dir`; sem esse arquivo devolve `original_dir`.
-- [ ] `_record_observation`: extractor persistido com `valid_count=4, last_value="v", ever_changed=False`, nova observação `value="v"` → `valid_count` vira 5 e o retorno é `True` (threshold atingido, `STATIC_CONFIRMATION_THRESHOLD=5`).
-- [ ] `_record_observation`: mesma configuração, mas nova observação `value="outro"` → `ever_changed=True`, retorno `False`.
-- [ ] `_record_observation` chamado de novo depois de `ever_changed=True` já ter sido marcado, mesmo com `valid_count` voltando a acumular 5+ → retorno continua `False` sempre (`ever_changed` não é revertido).
-- [ ] `_resolve_one` com `extractor_runner.run_existing` devolvendo `None` → devolve `False` e `metadata_store.load` não é chamado (retorno antecipado antes de `_record_observation`).
+- [x] `_reference_dir_for_step(None, res_refer_dir, original_dir)` devolve `res_refer_dir`.
+- [x] `_reference_dir_for_step(2, res_refer_dir, original_dir)` com `res_refer_dir/res_0002.json` existente devolve `res_refer_dir`; sem esse arquivo devolve `original_dir`.
+- [x] `_record_observation`: extractor persistido com `valid_count=4, last_value="v", ever_changed=False`, nova observação `value="v"` → `valid_count` vira 5 e o retorno é `True` (threshold atingido, `STATIC_CONFIRMATION_THRESHOLD=5`).
+- [x] `_record_observation`: mesma configuração, mas nova observação `value="outro"` → `ever_changed=True`, retorno `False`.
+- [x] `_record_observation` chamado de novo depois de `ever_changed=True` já ter sido marcado, mesmo com `valid_count` voltando a acumular 5+ → retorno continua `False` sempre (`ever_changed` não é revertido).
+- [x] `_resolve_one` com `extractor_runner.run_existing` devolvendo `None` → devolve `False` e `metadata_store.load` não é chamado (retorno antecipado antes de `_record_observation`).
 
 ---
 
@@ -727,11 +727,11 @@ Teste usa `Workspace(tmp_path)` real, escrevendo manualmente o conteúdo de
 `real_responses/res_NNNN.json` e/ou `original_responses/res_NNNN.json` conforme o cenário.
 
 **Critérios de aceite:**
-- [ ] Escrever `'{"status_code": 200}'` em `real_responses/res_0000.json` → `matches_original(0, StepResponse(status_code=200))` é `True`.
-- [ ] Mesmo cenário com `StepResponse(status_code=404)` → `False`.
-- [ ] `real_responses/res_0001.json` ausente, mas `original_responses/res_0001.json` com `'{"status_code": 200}'` → `matches_original(1, StepResponse(status_code=200))` é `True` (fallback).
-- [ ] Nenhum dos dois arquivos existe → `matches_original(2, ...)` é `False`, sem lançar exceção.
-- [ ] Arquivo existe mas o conteúdo não contém `"status_code"` (ex.: `"{}"`) → `False`.
+- [x] Escrever `'{"status_code": 200}'` em `real_responses/res_0000.json` → `matches_original(0, StepResponse(status_code=200))` é `True`.
+- [x] Mesmo cenário com `StepResponse(status_code=404)` → `False`.
+- [x] `real_responses/res_0001.json` ausente, mas `original_responses/res_0001.json` com `'{"status_code": 200}'` → `matches_original(1, StepResponse(status_code=200))` é `True` (fallback).
+- [x] Nenhum dos dois arquivos existe → `matches_original(2, ...)` é `False`, sem lançar exceção.
+- [x] Arquivo existe mas o conteúdo não contém `"status_code"` (ex.: `"{}"`) → `False`.
 
 ---
 
@@ -778,15 +778,15 @@ comentários de proveniência gerados pelo formato de T05), `StubHttpTransport` 
 `resolve(curl_text, schedule, ...) -> Set[str]` seja respeitada.
 
 **Critérios de aceite:**
-- [ ] `_schedule_all()` com `.curl.sh` para steps 0, 2, 5 no workspace → `([0, 2, 5], {0, 2, 5})`.
-- [ ] `_schedule_slice(1, 4)` com steps existentes 0,2,5 → só o 2 sobra (`([2], {2})`).
-- [ ] `_schedule_smart(None, 5)` com step 5 dependendo do step 2 (comentário de proveniência no `.curl.sh` do step 5) e step 2 sem dependência → schedule final inclui `{2, 5}`.
-- [ ] `_schedule_list(steps_file)` com uma linha referenciando um step inexistente no workspace → `ValueError`.
-- [ ] `_run_schedule([], set())` → `ValueError` com a mensagem "schedule vazio".
-- [ ] `_mark_token_static("# Token abc comes from response of step 2\ncurl ...", "abc")` termina com a linha sufixada `" - probably static"`; chamado de novo sobre o resultado não duplica o sufixo.
-- [ ] `_mark_token_static(texto, "token-que-nao-aparece")` devolve o texto igual (só normaliza a quebra de linha final).
-- [ ] `_annotate_static_tokens`: se `replay_token_resolver.resolve` devolve um `token_id` presente no `.curl.sh`, o arquivo em disco é reescrito com o sufixo; se devolve conjunto vazio, o arquivo não é reescrito (comparar mtime ou conteúdo antes/depois).
-- [ ] `_run_step` com `StubHttpTransport` devolvendo `StepResponse(status_code=200)` → o arquivo `replay_response_file(run_id, index)` é criado com esse conteúdo.
+- [x] `_schedule_all()` com `.curl.sh` para steps 0, 2, 5 no workspace → `([0, 2, 5], {0, 2, 5})`.
+- [x] `_schedule_slice(1, 4)` com steps existentes 0,2,5 → só o 2 sobra (`([2], {2})`).
+- [x] `_schedule_smart(None, 5)` com step 5 dependendo do step 2 (comentário de proveniência no `.curl.sh` do step 5) e step 2 sem dependência → schedule final inclui `{2, 5}`.
+- [x] `_schedule_list(steps_file)` com uma linha referenciando um step inexistente no workspace → `ValueError`.
+- [x] `_run_schedule([], set())` → `ValueError` com a mensagem "schedule vazio".
+- [x] `_mark_token_static("# Token abc comes from response of step 2\ncurl ...", "abc")` termina com a linha sufixada `" - probably static"`; chamado de novo sobre o resultado não duplica o sufixo.
+- [x] `_mark_token_static(texto, "token-que-nao-aparece")` devolve o texto igual (só normaliza a quebra de linha final).
+- [x] `_annotate_static_tokens`: se `replay_token_resolver.resolve` devolve um `token_id` presente no `.curl.sh`, o arquivo em disco é reescrito com o sufixo; se devolve conjunto vazio, o arquivo não é reescrito (comparar mtime ou conteúdo antes/depois).
+- [x] `_run_step` com `StubHttpTransport` devolvendo `StepResponse(status_code=200)` → o arquivo `replay_response_file(run_id, index)` é criado com esse conteúdo.
 
 ---
 
@@ -833,14 +833,14 @@ Teste constrói uma subclasse mínima de `BaseAgent` só para o teste (ex. em
 determinísticas configuráveis, com `Workspace(tmp_path)`, `FakeScriptExecutor`, `FakeSleeper`.
 
 **Critérios de aceite:**
-- [ ] `key` com `path="header:X-Csrf"` devolve `"X-Csrf"`; com `path="url"` devolve `"url"`; com `path=None` devolve `None`.
-- [ ] `value_char_class()` com `expected_value="abc-123.x"` devolve `r"[\w\-.]+"`; com `expected_value="a b"` devolve `r".+?"`.
-- [ ] `lazy_value_char_class()` sobre `r"[\w\-.]+"` devolve `r"[\w\-.]+?"`.
-- [ ] `generate_code`: uma estratégia determinística que devolve `None` seguida de outra que devolve código válido → `generate_code()` devolve o código da segunda, sem tentar LLM.
-- [ ] `_extract_code_block("texto\n```python\ndef f(): pass\n```\nfim")` devolve `"def f(): pass"`.
-- [ ] `_extract_code_block("sem bloco de codigo")` devolve o texto stripped original.
-- [ ] `run_tdd_loop`: `FakeScriptExecutor` configurado para falhar na 1ª tentativa (`return_code=1`) e ter sucesso na 2ª (`return_code=0`, `stdout=expected_value`) → devolve um `Extractor(verified=True)`, e `fake_sleeper.calls` tem exatamente 1 entrada (dormiu entre a 1ª e a 2ª, não depois da 2ª).
-- [ ] `run_tdd_loop` com todas as tentativas falhando → devolve `None`, e o arquivo temp (`workspace.temp_extractor_file(...)`) não existe mais depois (foi limpo por `_cleanup_script`).
+- [x] `key` com `path="header:X-Csrf"` devolve `"X-Csrf"`; com `path="url"` devolve `"url"`; com `path=None` devolve `None`.
+- [x] `value_char_class()` com `expected_value="abc-123.x"` devolve `r"[\w\-.]+"`; com `expected_value="a b"` devolve `r".+?"`.
+- [x] `lazy_value_char_class()` sobre `r"[\w\-.]+"` devolve `r"[\w\-.]+?"`.
+- [x] `generate_code`: uma estratégia determinística que devolve `None` seguida de outra que devolve código válido → `generate_code()` devolve o código da segunda, sem tentar LLM.
+- [x] `_extract_code_block("texto\n```python\ndef f(): pass\n```\nfim")` devolve `"def f(): pass"`.
+- [x] `_extract_code_block("sem bloco de codigo")` devolve o texto stripped original.
+- [x] `run_tdd_loop`: `FakeScriptExecutor` configurado para falhar na 1ª tentativa (`return_code=1`) e ter sucesso na 2ª (`return_code=0`, `stdout=expected_value`) → devolve um `Extractor(verified=True)`, e `fake_sleeper.calls` tem exatamente 1 entrada (dormiu entre a 1ª e a 2ª, não depois da 2ª).
+- [x] `run_tdd_loop` com todas as tentativas falhando → devolve `None`, e o arquivo temp (`workspace.temp_extractor_file(...)`) não existe mais depois (foi limpo por `_cleanup_script`).
 
 ---
 
@@ -875,12 +875,12 @@ Um teste por agent (ou seções claramente separadas no mesmo arquivo, desde que
 estilo de decomposição), com `response_sample` dict construído à mão por cenário.
 
 **Critérios de aceite:**
-- [ ] `CookieAgent` com `path="cookie:sid"`, `response_sample={"cookies": {"sid": "prefixTOKEN"}}`, `expected_value="TOKEN"` → `_context_pattern()` não é `None` e termina em `$` (`TOKEN` está no fim do valor do cookie).
-- [ ] `HeaderAgent` com `response_sample={"headers": {"X-Token": "abc"}}` e `path="header:x-token"` (case diferente) → `_by_name` gera código que localiza o header via fallback lowercase.
-- [ ] `JSONPathAgent` com `response_sample={"body": "não é json"}` → `_find_value_paths()` devolve `[]`.
-- [ ] `JSONPathAgent` com `response_sample={"body": '{"data":{"token":"X"}}'}`, `expected_value="X"` → `_find_value_paths()` inclui o path `[("key","data"),("key","token")]`.
-- [ ] `CSSAgent` com HTML tendo dois elementos com a mesma classe (`class="tok"`) e o valor esperado presente em ambos → o seletor `.tok` **não** aparece nos candidatos (não é único).
-- [ ] `RegexAgent` com `path="body"` → `_key_pattern()` é `None`; com `path="foo:bar"` (`key="bar"`) → `_key_pattern()` não é `None` e contém `"bar"` escapado.
+- [x] `CookieAgent` com `path="cookie:sid"`, `response_sample={"cookies": {"sid": "prefixTOKEN"}}`, `expected_value="TOKEN"` → `_context_pattern()` não é `None` e termina em `$` (`TOKEN` está no fim do valor do cookie).
+- [x] `HeaderAgent` com `response_sample={"headers": {"X-Token": "abc"}}` e `path="header:x-token"` (case diferente) → `_by_name` gera código que localiza o header via fallback lowercase.
+- [x] `JSONPathAgent` com `response_sample={"body": "não é json"}` → `_find_value_paths()` devolve `[]`.
+- [x] `JSONPathAgent` com `response_sample={"body": '{"data":{"token":"X"}}'}`, `expected_value="X"` → `_find_value_paths()` inclui o path `[("key","data"),("key","token")]`.
+- [x] `CSSAgent` com HTML tendo dois elementos com a mesma classe (`class="tok"`) e o valor esperado presente em ambos → o seletor `.tok` **não** aparece nos candidatos (não é único).
+- [x] `RegexAgent` com `path="body"` → `_key_pattern()` é `None`; com `path="foo:bar"` (`key="bar"`) → `_key_pattern()` não é `None` e contém `"bar"` escapado.
 
 ---
 
@@ -905,11 +905,11 @@ DEFAULT_AGENT=RegexAgent)` e instancia passando todos os campos do `candidate` +
 Teste com `Workspace(tmp_path)`, `FakeScriptExecutor`, `FakeSleeper`, `llm=None`.
 
 **Critérios de aceite:**
-- [ ] `create(DynamicToken(origin_location=TokenLocation.COOKIE, ...), {})` devolve uma instância de `CookieAgent`.
-- [ ] `create(DynamicToken(origin_location=TokenLocation.BODY_HTML, ...), {})` devolve uma instância de `CSSAgent`.
-- [ ] `create(DynamicToken(origin_location=TokenLocation.URL_PARAM, ...), {})` devolve uma instância de `RegexAgent` (fallback, location sem mapeamento explícito).
-- [ ] `create(DynamicToken(origin_location=None, ...), {})` devolve `RegexAgent` (mesmo fallback).
-- [ ] O agent devolvido tem `.token_id`, `.expected_value`, `.path` iguais aos do `candidate` passado.
+- [x] `create(DynamicToken(origin_location=TokenLocation.COOKIE, ...), {})` devolve uma instância de `CookieAgent`.
+- [x] `create(DynamicToken(origin_location=TokenLocation.BODY_HTML, ...), {})` devolve uma instância de `CSSAgent`.
+- [x] `create(DynamicToken(origin_location=TokenLocation.URL_PARAM, ...), {})` devolve uma instância de `RegexAgent` (fallback, location sem mapeamento explícito).
+- [x] `create(DynamicToken(origin_location=None, ...), {})` devolve `RegexAgent` (mesmo fallback).
+- [x] O agent devolvido tem `.token_id`, `.expected_value`, `.path` iguais aos do `candidate` passado.
 
 ---
 
@@ -942,11 +942,11 @@ Teste com `Workspace(tmp_path)`, `ProjectConfig()` (sem `llm` configurado → `s
 None`, evita precisar de dublê de `BaseChatModel`), `FakeScriptExecutor`, `FakeSleeper`.
 
 **Critérios de aceite:**
-- [ ] `resolve_class(EngineMode.MAIN) is Engine`; `resolve_class(EngineMode.DRY) is DryEngine`.
-- [ ] `create(EngineMode.DRY, har_path, http_transport=StubHttpTransport(...))` → o `Engine` resultante tem `http_transport is None` (ignorado porque `DryEngine.USES_NETWORK is False`).
-- [ ] `create(EngineMode.DRY, har_path)` → o `TokenResolver`/`CandidateResolver` internos usam `workspace.original_responses` como `responses_dir` (inspecionar via atributo, já que são atribuições diretas).
-- [ ] `create(EngineMode.MAIN, har_path, http_transport=StubHttpTransport(...))` → `engine.http_transport` é exatamente o `StubHttpTransport` passado, e o diretório usado é `workspace.real_responses`.
-- [ ] `ProjectConfig(llm=None)` → `EngineFactory(...).llm is None` (nenhuma tentativa de construir `BaseChatModel`).
+- [x] `resolve_class(EngineMode.MAIN) is Engine`; `resolve_class(EngineMode.DRY) is DryEngine`.
+- [x] `create(EngineMode.DRY, har_path, http_transport=StubHttpTransport(...))` → o `Engine` resultante tem `http_transport is None` (ignorado porque `DryEngine.USES_NETWORK is False`).
+- [x] `create(EngineMode.DRY, har_path)` → o `TokenResolver`/`CandidateResolver` internos usam `workspace.original_responses` como `responses_dir` (inspecionar via atributo, já que são atribuições diretas).
+- [x] `create(EngineMode.MAIN, har_path, http_transport=StubHttpTransport(...))` → `engine.http_transport` é exatamente o `StubHttpTransport` passado, e o diretório usado é `workspace.real_responses`.
+- [x] `ProjectConfig(llm=None)` → `EngineFactory(...).llm is None` (nenhuma tentativa de construir `BaseChatModel`).
 
 ---
 
@@ -979,12 +979,12 @@ Teste constrói `Engine`/`DryEngine` com fakes por construtor (`workspace`, `tok
 `retry_policy=StepRetryPolicy()` real — é puro —, `validator` fake ou real, `success_criteria`).
 
 **Critérios de aceite:**
-- [ ] `handle_recovery(StepResponse(status_code=500))` devolve `False`; `token_resolver.resolve_all` (fake) não foi chamado.
-- [ ] `handle_recovery(StepResponse(status_code=401))` devolve `True`; `token_resolver` fake registra uma chamada com `force=True`.
-- [ ] `_skip_entry(3, "unsupported scheme 'ftp'")` devolve `StepResponse(status_code=0, skipped=True, skip_reason="unsupported scheme 'ftp'")`, e o arquivo `workspace.response_file(3)` é criado com esse conteúdo.
-- [ ] `_validate_final(None)` e `_validate_final(StepResponse(...), success_criteria=[])` (via engine construído com `success_criteria=[]`) devolvem `True` sem chamar `validator.validate`.
-- [ ] `DryEngine.execute_step(Step(index=0, request=..., response=StepResponse(status_code=200)))` devolve exatamente esse `StepResponse`, sem tocar `http_transport`.
-- [ ] `DryEngine()._persist_response_step(0, StepResponse(status_code=200))` não cria nenhum arquivo em `workspace.real_responses` (no-op confirmado).
+- [x] `handle_recovery(StepResponse(status_code=500))` devolve `False`; `token_resolver.resolve_all` (fake) não foi chamado.
+- [x] `handle_recovery(StepResponse(status_code=401))` devolve `True`; `token_resolver` fake registra uma chamada com `force=True`.
+- [x] `_skip_entry(3, "unsupported scheme 'ftp'")` devolve `StepResponse(status_code=0, skipped=True, skip_reason="unsupported scheme 'ftp'")`, e o arquivo `workspace.response_file(3)` é criado com esse conteúdo.
+- [x] `_validate_final(None)` e `_validate_final(StepResponse(...), success_criteria=[])` (via engine construído com `success_criteria=[]`) devolvem `True` sem chamar `validator.validate`.
+- [x] `DryEngine.execute_step(Step(index=0, request=..., response=StepResponse(status_code=200)))` devolve exatamente esse `StepResponse`, sem tocar `http_transport`.
+- [x] `DryEngine()._persist_response_step(0, StepResponse(status_code=200))` não cria nenhum arquivo em `workspace.real_responses` (no-op confirmado).
 
 ---
 
@@ -1019,13 +1019,13 @@ Teste constrói `CurlHttpTransport(workspace, port, ca_cert_path, FakeSleeper())
 sem tocar `HARParser`/arquivo de captura real.
 
 **Critérios de aceite:**
-- [ ] `_tls_flag()` com `ca_cert_path=None` devolve `"--insecure"`.
-- [ ] `_tls_flag()` com `ca_cert_path=Path("/tmp/ca.pem")` devolve `"--cacert /tmp/ca.pem"` (ou quotado, se o path tem espaço).
-- [ ] `_build_curl_command("curl -X GET https://x")` contém a flag `f"--proxy http://127.0.0.1:{port}"` e termina com `-sS`.
-- [ ] `_decode_stderr(CompletedProcess(..., stderr=b"erro\n"))` devolve `"erro"` (stripped).
-- [ ] `_build_error_response(3, "timeout")` devolve `StepResponse(status_code=0, body="timeout")`.
-- [ ] `_read_captured_response`: `monkeypatch` fazendo `_try_read_capture` devolver `None` nas 2 primeiras chamadas e uma `StepResponse` na 3ª → `_read_captured_response` devolve essa response, e `fake_sleeper.calls` tem exatamente 2 entradas (uma por tentativa falha).
-- [ ] `_read_captured_response`: `_try_read_capture` sempre `None` → devolve `None` depois de exatamente `CAPTURE_READ_ATTEMPTS=5` tentativas.
+- [x] `_tls_flag()` com `ca_cert_path=None` devolve `"--insecure"`.
+- [x] `_tls_flag()` com `ca_cert_path=Path("/tmp/ca.pem")` devolve `"--cacert /tmp/ca.pem"` (ou quotado, se o path tem espaço).
+- [x] `_build_curl_command("curl -X GET https://x")` contém a flag `f"--proxy http://127.0.0.1:{port}"` e termina com `-sS`.
+- [x] `_decode_stderr(CompletedProcess(..., stderr=b"erro\n"))` devolve `"erro"` (stripped).
+- [x] `_build_error_response(3, "timeout")` devolve `StepResponse(status_code=0, body="timeout")`.
+- [x] `_read_captured_response`: `monkeypatch` fazendo `_try_read_capture` devolver `None` nas 2 primeiras chamadas e uma `StepResponse` na 3ª → `_read_captured_response` devolve essa response, e `fake_sleeper.calls` tem exatamente 2 entradas (uma por tentativa falha).
+- [x] `_read_captured_response`: `_try_read_capture` sempre `None` → devolve `None` depois de exatamente `CAPTURE_READ_ATTEMPTS=5` tentativas.
 
 ---
 
@@ -1061,14 +1061,14 @@ Teste constrói `MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=<porta fi
 sem nunca chamar `run`/`_start_process`.
 
 **Critérios de aceite:**
-- [ ] `_build_command()` contém `str(self.port)` e o caminho do addon (`ADDON_PATH`).
-- [ ] `_build_env()` inclui `MitmEnv.CAPTURE_PATH_ENV_VAR` apontando para `workspace.mitm_capture_file()`.
-- [ ] `_prepend_package_root(None)` devolve só `str(PACKAGE_ROOT)`; `_prepend_package_root("/outro")` devolve `f"{PACKAGE_ROOT}{os.pathsep}/outro"`.
-- [ ] `_resolve_port(8080)` devolve `8080` sem abrir socket algum.
-- [ ] `_build_early_exit_message()` com `workspace.mitm_log_file()` inexistente e `orchestrator._process = FakeProcess(returncode=1)` → mensagem contém `"exit code 1"` e corpo vazio (sem lançar exceção por arquivo ausente).
-- [ ] `_terminate()` com `orchestrator._process = FakeProcess()` que responde a `wait()` sem lançar → `FakeProcess.terminate` foi chamado uma vez, `FakeProcess.kill` **não** foi chamado, e `orchestrator._process is None` no final.
-- [ ] `_terminate()` com `FakeProcess` cujo `wait()` lança `subprocess.TimeoutExpired` na primeira chamada → `FakeProcess.kill` é chamado, seguido de um segundo `wait()` sem timeout.
-- [ ] `_terminate()` com `orchestrator._process = None` → não lança exceção, é um no-op.
+- [x] `_build_command()` contém `str(self.port)` e o caminho do addon (`ADDON_PATH`).
+- [x] `_build_env()` inclui `MitmEnv.CAPTURE_PATH_ENV_VAR` apontando para `workspace.mitm_capture_file()`.
+- [x] `_prepend_package_root(None)` devolve só `str(PACKAGE_ROOT)`; `_prepend_package_root("/outro")` devolve `f"{PACKAGE_ROOT}{os.pathsep}/outro"`.
+- [x] `_resolve_port(8080)` devolve `8080` sem abrir socket algum.
+- [x] `_build_early_exit_message()` com `workspace.mitm_log_file()` inexistente e `orchestrator._process = FakeProcess(returncode=1)` → mensagem contém `"exit code 1"` e corpo vazio (sem lançar exceção por arquivo ausente).
+- [x] `_terminate()` com `orchestrator._process = FakeProcess()` que responde a `wait()` sem lançar → `FakeProcess.terminate` foi chamado uma vez, `FakeProcess.kill` **não** foi chamado, e `orchestrator._process is None` no final.
+- [x] `_terminate()` com `FakeProcess` cujo `wait()` lança `subprocess.TimeoutExpired` na primeira chamada → `FakeProcess.kill` é chamado, seguido de um segundo `wait()` sem timeout.
+- [x] `_terminate()` com `orchestrator._process = None` → não lança exceção, é um no-op.
 
 ---
 
