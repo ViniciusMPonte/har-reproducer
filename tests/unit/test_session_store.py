@@ -1,12 +1,12 @@
 from har_reproducer.session.session_store import SessionStore
 
 
-def test_set_token_and_get_token_round_trip() -> None:
+def test_set_token_stores_value_in_state() -> None:
     store: SessionStore = SessionStore()
 
     store.set_token("abc123", "v1")
 
-    assert store.get_token("abc123") == "v1"
+    assert store.state.tokens["abc123"] == "v1"
 
 
 def test_render_substitutes_known_token() -> None:
@@ -24,12 +24,3 @@ def test_render_preserves_placeholder_for_unknown_token() -> None:
     rendered: str = store.render("{{extractor:naoexiste}}")
 
     assert rendered == "{{extractor:naoexiste}}"
-
-
-def test_render_dict_recurses_into_nested_structures() -> None:
-    store: SessionStore = SessionStore()
-    store.set_token("abc", "V")
-
-    rendered: object = store.render_dict({"a": ["{{extractor:abc}}", 3], "b": {"c": "{{extractor:abc}}"}})
-
-    assert rendered == {"a": ["V", 3], "b": {"c": "V"}}

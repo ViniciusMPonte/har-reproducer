@@ -74,7 +74,7 @@ def test_check_persisted_slot_matches_and_accepts_when_rerun_output_equals_candi
 
     assert status == SlotStatus.MATCH
     assert error is None
-    assert resolver.session_store.get_token("t1") == "v1"
+    assert resolver.session_store.state.tokens["t1"] == "v1"
 
 
 def test_check_persisted_slot_mismatches_when_run_existing_returns_none(tmp_path: Path) -> None:
