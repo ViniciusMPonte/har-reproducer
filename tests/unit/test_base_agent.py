@@ -154,3 +154,39 @@ def test_run_tdd_loop_returns_none_and_cleans_temp_file_when_exhausted(tmp_path:
 
     assert extractor is None
     assert not workspace.temp_extractor_file(agent.safe_token_id).exists()
+
+
+def test_run_tdd_loop_sleeps_only_between_failed_attempts(tmp_path: Path) -> None:
+    script_executor: FakeScriptExecutor = FakeScriptExecutor([
+        ScriptExecutionResult(timed_out=False, return_code=1, stdout="", stderr="falhou"),
+        ScriptExecutionResult(timed_out=False, return_code=1, stdout="", stderr="falhou"),
+        ScriptExecutionResult(timed_out=False, return_code=1, stdout="", stderr="falhou"),
+    ])
+    sleeper: FakeSleeper = FakeSleeper()
+    agent: LiteralAgent = _agent(
+        tmp_path,
+        [_fixed_code("def extract_tok(response): return 'segredo'")] * 3,
+        script_executor, sleeper,
+    )
+
+    extractor: Optional[Extractor] = agent.run_tdd_loop(origin_step=0, max_attempts=3)
+
+    assert extractor is None
+    assert len(sleeper.calls) == 2
+
+
+def test_run_tdd_loop_single_attempt_does_not_sleep(tmp_path: Path) -> None:
+    script_executor: FakeScriptExecutor = FakeScriptExecutor([
+        ScriptExecutionResult(timed_out=False, return_code=1, stdout="", stderr="falhou"),
+    ])
+    sleeper: FakeSleeper = FakeSleeper()
+    agent: LiteralAgent = _agent(
+        tmp_path,
+        [_fixed_code("def extract_tok(response): return 'segredo'")],
+        script_executor, sleeper,
+    )
+
+    extractor: Optional[Extractor] = agent.run_tdd_loop(origin_step=0, max_attempts=1)
+
+    assert extractor is None
+    assert len(sleeper.calls) == 0
