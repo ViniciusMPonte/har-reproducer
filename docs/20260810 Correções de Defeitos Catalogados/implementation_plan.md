@@ -38,10 +38,10 @@ nenhum comportamento muda (spec seção 3.1).
 - ⚠️ Não renomear `ProjectConfig.ca_cert_path` (chave do `config.json`, breaking change — spec §3.1).
 
 **Critérios de aceite:**
-- [ ] `test_build_command_sets_confdir_to_confdir_argument`: `orchestrator._build_command()` contém `f"confdir={tmp_path}"`.
-- [ ] `test_ca_cert_path_is_derived_from_confdir`: `orchestrator.ca_cert_path == tmp_path / MitmProxyOrchestrator.CA_CERT_FILENAME`.
-- [ ] `grep -r "project_root" har_reproducer/` não retorna nada (a menos do README/docs, que não estão no escopo do grep de código).
-- [ ] Não-regressão: todos os testes de `tests/unit/test_mitm_proxy_orchestrator.py` passam.
+- [x] `test_build_command_sets_confdir_to_confdir_argument`: `orchestrator._build_command()` contém `f"confdir={tmp_path}"`.
+- [x] `test_ca_cert_path_is_derived_from_confdir`: `orchestrator.ca_cert_path == tmp_path / MitmProxyOrchestrator.CA_CERT_FILENAME`.
+- [x] `grep -r "project_root" har_reproducer/` não retorna nada (a menos do README/docs, que não estão no escopo do grep de código).
+- [x] Não-regressão: todos os testes de `tests/unit/test_mitm_proxy_orchestrator.py` passam.
 
 ## [T02] — `Workspace`/`MitmProxyOrchestrator`: mover criação de `.mitmproxy/` do load de config para o start do proxy
 
@@ -79,10 +79,10 @@ sobe (spec seção 3.2).
 - ⚠️ `mkdir(parents=True, exist_ok=True)` para confdir aninhado e já existente.
 
 **Critérios de aceite:**
-- [ ] `test_get_mitmproxy_ca_path_does_not_create_directory` (`test_workspace.py`): gravar `exists()` antes de chamar; chamar `Workspace.get_mitmproxy_ca_path()`; `exists()` continua igual ao valor antes.
-- [ ] `test_init_does_not_create_confdir`: `MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, confdir=tmp_path / "nested" / "confdir")`; após o `__init__`, o diretório **não** existe.
-- [ ] `test_ensure_confdir_creates_directory`: mesmo orchestrator; após `_ensure_confdir()`, o diretório existe (`is_dir()`).
-- [ ] Não-regressão: `uv run pytest tests/ -q` passa — em particular os golden `run_dry_*` (que deixam de escrever no repo) e `run_main`/`replay` (que continuam criando `.mitmproxy/` via `_start_process`).
+- [x] `test_get_mitmproxy_ca_path_does_not_create_directory` (`test_workspace.py`): gravar `exists()` antes de chamar; chamar `Workspace.get_mitmproxy_ca_path()`; `exists()` continua igual ao valor antes.
+- [x] `test_init_does_not_create_confdir`: `MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, confdir=tmp_path / "nested" / "confdir")`; após o `__init__`, o diretório **não** existe.
+- [x] `test_ensure_confdir_creates_directory`: mesmo orchestrator; após `_ensure_confdir()`, o diretório existe (`is_dir()`).
+- [x] Não-regressão: `uv run pytest tests/ -q` passa — em particular os golden `run_dry_*` (que deixam de escrever no repo) e `run_main`/`replay` (que continuam criando `.mitmproxy/` via `_start_process`).
 
 ## [T03] — `BaseAgent.run_tdd_loop`: não dormir após o último attempt
 
@@ -109,6 +109,6 @@ loop termina falhando de qualquer forma. O sleep só faz sentido **entre** attem
 - ⚠️ Não tocar no `print` (stdout golden dos `run_dry_*`) nem no `break` quando `generate_code` retorna `None`.
 
 **Critérios de aceite:**
-- [ ] `test_run_tdd_loop_sleeps_only_between_failed_attempts`: agent com 3 estratégias que sempre falham (FakeScriptExecutor com 3 resultados de erro); `run_tdd_loop(origin_step=0)` retorna `None` e `len(sleeper.calls) == 2`. (Antes do fix: 3 calls.)
-- [ ] `test_run_tdd_loop_single_attempt_does_not_sleep`: agent com 1 estratégia que falha; `len(sleeper.calls) == 0`.
-- [ ] Não-regressão: `test_run_tdd_loop_succeeds_on_second_attempt_and_sleeps_once_between_attempts` (`test_base_agent.py:122-138`) continua com `len(sleeper.calls) == 1`; suíte completa passa.
+- [x] `test_run_tdd_loop_sleeps_only_between_failed_attempts`: agent com 3 estratégias que sempre falham (FakeScriptExecutor com 3 resultados de erro); `run_tdd_loop(origin_step=0)` retorna `None` e `len(sleeper.calls) == 2`. (Antes do fix: 3 calls.)
+- [x] `test_run_tdd_loop_single_attempt_does_not_sleep`: agent com 1 estratégia que falha; `len(sleeper.calls) == 0`.
+- [x] Não-regressão: `test_run_tdd_loop_succeeds_on_second_attempt_and_sleeps_once_between_attempts` (`test_base_agent.py:122-138`) continua com `len(sleeper.calls) == 1`; suíte completa passa.
