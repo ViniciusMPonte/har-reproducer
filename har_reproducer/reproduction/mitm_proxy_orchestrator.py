@@ -57,6 +57,7 @@ class MitmProxyOrchestrator:
             self._terminate()
 
     def _start_process(self) -> subprocess.Popen:
+        self._ensure_confdir()
         self._log_file = open(self.workspace.mitm_log_file(), "w", encoding="utf-8")
         return subprocess.Popen(
             self._build_command(),
@@ -64,6 +65,9 @@ class MitmProxyOrchestrator:
             stdout=self._log_file,
             stderr=subprocess.STDOUT,
         )
+
+    def _ensure_confdir(self) -> None:
+        self.confdir.mkdir(parents=True, exist_ok=True)
 
     def _build_command(self) -> List[str]:
         return [

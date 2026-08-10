@@ -36,6 +36,24 @@ def test_ca_cert_path_is_derived_from_confdir(tmp_path: Path) -> None:
     assert orchestrator.ca_cert_path == tmp_path / MitmProxyOrchestrator.CA_CERT_FILENAME
 
 
+def test_init_does_not_create_confdir(tmp_path: Path) -> None:
+    confdir: Path = tmp_path / "nested" / "confdir"
+    MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, confdir=confdir)
+
+    assert not confdir.exists()
+
+
+def test_ensure_confdir_creates_directory(tmp_path: Path) -> None:
+    confdir: Path = tmp_path / "nested" / "confdir"
+    orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+        Workspace(tmp_path), proxy_port=8080, confdir=confdir
+    )
+
+    orchestrator._ensure_confdir()
+
+    assert confdir.is_dir()
+
+
 def test_build_env_includes_capture_path(tmp_path: Path) -> None:
     orchestrator: MitmProxyOrchestrator = _orchestrator(tmp_path)
 

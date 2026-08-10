@@ -46,3 +46,12 @@ def test_replay_run_dir_creates_directory(tmp_path: Path) -> None:
     replay_dir: Path = workspace.replay_run_dir("run-1")
 
     assert replay_dir.is_dir()
+
+
+def test_get_mitmproxy_ca_path_does_not_create_directory() -> None:
+    path: Path = Workspace.get_mitmproxy_ca_path()
+    existed_before: bool = path.exists()
+
+    Workspace.get_mitmproxy_ca_path()
+
+    assert path.exists() == existed_before
