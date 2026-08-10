@@ -1,4 +1,5 @@
 import hashlib
+from difflib import SequenceMatcher
 from typing import Dict, List, Union
 
 from har_reproducer.models import DynamicToken, Step, TokenLocation
@@ -43,11 +44,29 @@ class BaselineDiff:
         if step.request.body == baseline.request.body:
             return {}
 
-        body_value: Union[str, bytes] = step.request.body
-        body_str: str = (
-            body_value if isinstance(body_value, str) else body_value.decode("utf-8", errors="replace")
-        )
-        return {"body": body_str}
+        body_str: str = BaselineDiff._body_as_str(step.request.body)
+        baseline_str: str = BaselineDiff._body_as_str(baseline.request.body)
+
+        diffs: Dict[str, str] = {}
+        for segment_index, segment in enumerate(BaselineDiff._changed_segments(baseline_str, body_str)):
+            path: str = "body" if segment_index == 0 else f"body:{segment_index}"
+            diffs[path] = segment
+        return diffs
+
+    @staticmethod
+    def _body_as_str(body: Union[str, bytes]) -> str:
+        if isinstance(body, str):
+            return body
+        return body.decode("utf-8", errors="replace")
+
+    @staticmethod
+    def _changed_segments(baseline: str, current: str) -> List[str]:
+        matcher: SequenceMatcher = SequenceMatcher(None, baseline, current, autojunk=False)
+        segments: List[str] = []
+        for tag, _, _, i2, j2 in matcher.get_opcodes():
+            if tag in ("replace", "insert"):
+                segments.append(current[i2:j2])
+        return segments
 
     def detect_candidates(self, diffs: Dict[str, str]) -> List[DynamicToken]:
         return [self._build_candidate(path, value) for path, value in diffs.items()]
