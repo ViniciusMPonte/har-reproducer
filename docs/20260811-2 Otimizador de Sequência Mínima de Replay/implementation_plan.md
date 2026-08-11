@@ -53,15 +53,15 @@ def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
   comportamento observável — este é o ponto central de não-regressão da task.
 
 **Critérios de aceite:**
-- [ ] `execute_schedule([], set())` levanta `ValueError` com a mesma mensagem que
+- [x] `execute_schedule([], set())` levanta `ValueError` com a mesma mensagem que
   `_run_schedule([], set())` já levanta hoje.
-- [ ] `execute_schedule([2, 5], {2, 5})` devolve `[(2, StepResponse(...)), (5, StepResponse(...))]`
+- [x] `execute_schedule([2, 5], {2, 5})` devolve `[(2, StepResponse(...)), (5, StepResponse(...))]`
   na ordem dada, sem chamar `self.comparator`.
-- [ ] `execute_schedule(..., annotate=False)` com um `FakeReplayTokenResolver` que
+- [x] `execute_schedule(..., annotate=False)` com um `FakeReplayTokenResolver` que
   devolve `static_token_ids={"tok1"}` **não** altera o conteúdo do `.curl.sh` do step
   (garante que `_annotate_static_tokens` não foi chamada); com `annotate=True`
   (default), o `.curl.sh` é anotado como hoje.
-- [ ] Não-regressão: os testes já existentes de `test_replay_runner.py` para
+- [x] Não-regressão: os testes já existentes de `test_replay_runner.py` para
   `run_all`/`run_slice`/`run_smart`/`run_list` (veredito via comparador, anotação de
   tokens estáticos/fallback, retry em 400/401) continuam passando sem alteração.
 
@@ -97,12 +97,12 @@ def _existing_step_indexes(self) -> List[int]:
 - ⚠️ Puramente uma mudança de visibilidade — nenhuma mudança de comportamento.
 
 **Critérios de aceite:**
-- [ ] `compute_smart_schedule(0, 6)` devolve exatamente o mesmo resultado que o
+- [x] `compute_smart_schedule(0, 6)` devolve exatamente o mesmo resultado que o
   `_schedule_smart(0, 6)` de antes da renomeação (teste de paridade, reaproveitando
   os casos já cobertos pelos testes existentes de `run_smart`).
-- [ ] `existing_step_indexes()` devolve a mesma lista ordenada que
+- [x] `existing_step_indexes()` devolve a mesma lista ordenada que
   `_existing_step_indexes()` devolvia.
-- [ ] Não-regressão: `run_all`/`run_slice`/`run_smart`/`run_list` continuam
+- [x] Não-regressão: `run_all`/`run_slice`/`run_smart`/`run_list` continuam
   passando sem alteração de comportamento.
 
 ## [T03] — `contracts.ScheduleExecutor`: `Protocol` para o `ReplayOptimizer` depender de
@@ -143,11 +143,11 @@ class ScheduleExecutor(Protocol):
 mesmo padrão de `CurlHttpTransport` satisfazendo `HttpTransport` hoje.
 
 **Critérios de aceite:**
-- [ ] Uma variável anotada como `ScheduleExecutor` recebe uma instância real de
+- [x] Uma variável anotada como `ScheduleExecutor` recebe uma instância real de
   `ReplayRunner` sem erro de tipo (checagem estática/mypy, se o projeto rodar mypy;
   senão, um teste que chama os 3 métodos através da variável tipada e confirma que
   devolvem o que `ReplayRunner` devolveria diretamente).
-- [ ] Um `FakeScheduleExecutor` de teste (definido em `tests/support/`, usado a
+- [x] Um `FakeScheduleExecutor` de teste (definido em `tests/support/`, usado a
   partir de T06) implementando só esses 3 métodos também satisfaz o `Protocol`.
 
 ## [T04] — `Workspace`: caminho do `.txt` de saída do otimizador
@@ -174,11 +174,11 @@ def optimized_steps_file(self, run_id: str) -> Path:
 ao lado dos outros métodos de caminho.
 
 **Critérios de aceite:**
-- [ ] `workspace.optimized_steps_file("run-1")` devolve
+- [x] `workspace.optimized_steps_file("run-1")` devolve
   `workspace.replays / "optimized_run-1.txt"`.
-- [ ] `optimized_steps_file("run-1")` e `optimized_steps_file("run-2")` devolvem
+- [x] `optimized_steps_file("run-1")` e `optimized_steps_file("run-2")` devolvem
   caminhos diferentes (não sobrescreve otimização anterior).
-- [ ] Não-regressão: os outros métodos de caminho de `Workspace` (`curl_file`,
+- [x] Não-regressão: os outros métodos de caminho de `Workspace` (`curl_file`,
   `replay_run_dir`, etc.) continuam funcionando sem alteração.
 
 ## [T05] — `ExtractorMetadataStore`: variante silenciosa (sem persistir observação)
@@ -219,13 +219,13 @@ class SilentExtractorMetadataStore(ExtractorMetadataStore):
 `load` é reaproveitado sem alteração (herda de `ExtractorMetadataStore`).
 
 **Critérios de aceite:**
-- [ ] `SilentExtractorMetadataStore(workspace).load(token_id)` devolve o mesmo
+- [x] `SilentExtractorMetadataStore(workspace).load(token_id)` devolve o mesmo
   `Extractor` que `ExtractorMetadataStore(workspace).load(token_id)` devolveria, para
   um `extract_*.meta.json` já existente no workspace.
-- [ ] Chamar `SilentExtractorMetadataStore(workspace).save(extractor)` não cria nem
+- [x] Chamar `SilentExtractorMetadataStore(workspace).save(extractor)` não cria nem
   modifica `workspace.extractor_meta_file(extractor.token_id)` — o arquivo permanece
   exatamente como estava antes da chamada (ou continua inexistente, se nunca existiu).
-- [ ] Não-regressão: `ExtractorMetadataStore.save` (a classe base, usada por
+- [x] Não-regressão: `ExtractorMetadataStore.save` (a classe base, usada por
   `replay`/`run` normalmente) continua persistindo em disco como hoje.
 
 ## [T06] — `ReplayOptimizer`: scaffolding + Fase 1 (backbone) + estimativa/teto de requisições
@@ -275,18 +275,18 @@ imprime `custo(faixa_i) ≈ (k_i + 2) × (k_i + kept_acumulado_i + 2)` somado ao
 do backbone, com o aviso de que refreshes reativos não entram na conta.
 
 **Critérios de aceite:**
-- [ ] `anchors = [0, 3, 6, 9]`, `from_index=0` → backbone calculado é
+- [x] `anchors = [0, 3, 6, 9]`, `from_index=0` → backbone calculado é
   `[0, 1, 2, 3, 4, 5, 6]` (todos os índices existentes entre `from_index` e `a_{n-1}=6`,
   inclusive) — usando um `FakeScheduleExecutor` com `existing_step_indexes` fixo.
-- [ ] `anchors = [9]` (âncora única), `from_index=0` → backbone calculado é `[0]`
+- [x] `anchors = [9]` (âncora única), `from_index=0` → backbone calculado é `[0]`
   (caso degenerado, spec seção 3.3).
-- [ ] A Fase 1 chama `schedule_executor.execute_schedule(backbone, set(backbone), annotate=False)`
+- [x] A Fase 1 chama `schedule_executor.execute_schedule(backbone, set(backbone), annotate=False)`
   exatamente uma vez — verificável inspecionando as chamadas registradas pelo
   `FakeScheduleExecutor`.
-- [ ] `requests_made` é incrementado pelo tamanho do backbone depois da Fase 1.
-- [ ] A estimativa impressa antes da Fase 1 contém o texto de aviso sobre refreshes
+- [x] `requests_made` é incrementado pelo tamanho do backbone depois da Fase 1.
+- [x] A estimativa impressa antes da Fase 1 contém o texto de aviso sobre refreshes
   reativos não entrarem na conta (verificável via `capsys`).
-- [ ] `FakeScheduleExecutor` (novo test double, em `tests/support/`) implementa
+- [x] `FakeScheduleExecutor` (novo test double, em `tests/support/`) implementa
   `ScheduleExecutor` (T03) registrando cada chamada de `execute_schedule`
   (`ordered_indexes`, `schedule`, `annotate`) e devolvendo respostas configuráveis
   por chamada — é o que todas as tasks seguintes do otimizador reusam.
@@ -316,21 +316,21 @@ via `schedule`), chama `execute_schedule(..., annotate=False)`, aplica
 — todos os candidatos sobreviventes de todas as faixas, e o conjunto de âncoras.
 
 **Critérios de aceite:**
-- [ ] Faixa cujo atalho de duas pontas (`C=∅`) já sucede → `kept` da faixa é `[]`,
+- [x] Faixa cujo atalho de duas pontas (`C=∅`) já sucede → `kept` da faixa é `[]`,
   só 1 chamada de `execute_schedule` pra essa faixa.
-- [ ] Faixa cujo atalho falha mas a faixa inteira sucede, e a eliminação encontra
+- [x] Faixa cujo atalho falha mas a faixa inteira sucede, e a eliminação encontra
   exatamente 1 candidato necessário (o mais próximo de `L`, testado por último) →
   `kept` da faixa contém só esse candidato, na ordem certa de tentativas (atalho →
   faixa inteira → remove o mais próximo de `R` primeiro, sucesso → remove o próximo,
   falha, restaura).
-- [ ] `ordered_indexes` de cada chamada dentro de uma faixa nunca contém `L` nem
+- [x] `ordered_indexes` de cada chamada dentro de uma faixa nunca contém `L` nem
   qualquer índice menor que `L` (verificável inspecionando as chamadas do
   `FakeScheduleExecutor`).
-- [ ] Faixas processadas em sequência incluem corretamente o `kept` da(s) faixa(s)
+- [x] Faixas processadas em sequência incluem corretamente o `kept` da(s) faixa(s)
   já processada(s) em `ordered_indexes`/`schedule` das faixas seguintes (a faixa mais
   próxima do `from_index` "arrasta" os sobreviventes das faixas mais próximas do
   alvo).
-- [ ] Faixa sem candidatos (`R == L + 1`) é resolvida só com o atalho, sem chamada
+- [x] Faixa sem candidatos (`R == L + 1`) é resolvida só com o atalho, sem chamada
   extra.
 
 ## [T08] — `ReplayOptimizer`: recuperação reativa (400/401/falha de transporte)
@@ -361,18 +361,18 @@ refresh e usa o resultado que saiu (que vai, naturalmente, contar como falha de
 critério na lógica já existente da Fase 2 — T07).
 
 **Critérios de aceite:**
-- [ ] Um `FakeScheduleExecutor` configurado para devolver `status_code=401` na 1ª
+- [x] Um `FakeScheduleExecutor` configurado para devolver `status_code=401` na 1ª
   chamada de uma tentativa e `status_code=200` (com body/status que satisfaz o
   `Validator`) na 2ª → a tentativa é refeita automaticamente (backbone reexecutado
   uma vez) e o resultado final é sucesso, sem consumir a lógica de "candidato
   necessário".
-- [ ] Um `FakeScheduleExecutor` configurado para devolver `401` em todas as
+- [x] Um `FakeScheduleExecutor` configurado para devolver `401` em todas as
   tentativas (mesmo depois de 2 refreshes) → a 3ª falha consecutiva cai de volta no
   fluxo normal da Fase 2 — se for um teste de eliminação, o candidato é restaurado
   como necessário (mesmo caminho que uma falha de critério comum, T07); se for
   "faixa inteira", dispara o abort padrão da seção 5 da spec.
   cada refresh reexecuta exatamente o backbone (nem mais, nem menos índices).
-- [ ] `requests_made` conta os refreshes reativos (cada um soma `len(backbone)`).
+- [x] `requests_made` conta os refreshes reativos (cada um soma `len(backbone)`).
 
 ## [T09] — `ReplayOptimizer`: montagem final, confirmação, escrita do `.txt`
 
@@ -409,12 +409,12 @@ lista final nem escreve o `.txt`.
   última faixa concluída com sucesso (seção 5 da spec).
 
 **Critérios de aceite:**
-- [ ] Cenário de sucesso ponta a ponta (Fase 1 + Fase 2 + confirmação, usando
+- [x] Cenário de sucesso ponta a ponta (Fase 1 + Fase 2 + confirmação, usando
   `FakeScheduleExecutor`) → `.txt` escrito em `workspace.optimized_steps_file(run_id)`
   contém exatamente os índices esperados, um por linha, em ordem ascendente.
-- [ ] Confirmação final que falha (mesmo depois de faixas passarem individualmente)
+- [x] Confirmação final que falha (mesmo depois de faixas passarem individualmente)
   → nenhum arquivo é escrito, `optimize` devolve `None`.
-- [ ] Lista final nunca contém índice duplicado, mesmo quando âncoras/`kept`
+- [x] Lista final nunca contém índice duplicado, mesmo quando âncoras/`kept`
   coincidem numericamente com o `to_index` (`to_index == from_index`, spec seção 5).
 
 ## [T10] — CLI: novo comando `optimize`
@@ -452,16 +452,16 @@ do mesmo `orchestrator.run(...)`.
     caso de falha).
 
 **Critérios de aceite:**
-- [ ] `optimize --output <ws> --to 9` (sem `--config` nem `--success-criteria`, e
+- [x] `optimize --output <ws> --to 9` (sem `--config` nem `--success-criteria`, e
   `config.json` do workspace com `success_criteria` vazio ou ausente) → levanta
   `ValueError` antes de qualquer requisição de rede.
-- [ ] `optimize --output <ws> --to 9 --from 999` (`999` não existe no workspace) →
+- [x] `optimize --output <ws> --to 9 --from 999` (`999` não existe no workspace) →
   erro explícito, mesmo padrão de mensagem que `ReplayRunner._require_all_existing`.
-- [ ] `optimize --output <ws> --to 9 --success-criteria '[{"type":"status_code","expected":200}]'`
+- [x] `optimize --output <ws> --to 9 --success-criteria '[{"type":"status_code","expected":200}]'`
   sobrescreve o `success_criteria` do `config.json` só para essa chamada.
-- [ ] `--steps-out <path>` customizado é respeitado; sem a flag, cai no default de
+- [x] `--steps-out <path>` customizado é respeitado; sem a flag, cai no default de
   `Workspace.optimized_steps_file(run_id)`.
-- [ ] Teste de integração (mesmo padrão de `test_cli_replay.py`, usando
+- [x] Teste de integração (mesmo padrão de `test_cli_replay.py`, usando
   `CannedHttpServer`/`GoldenWorkspaceFactory`) cobrindo o caminho feliz de ponta a
   ponta contra um workspace golden simples (todas as âncoras bastam, nenhum
   candidato necessário) — cobertura de fiação (workspace → `ReplayOptimizer` →
