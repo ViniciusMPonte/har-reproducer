@@ -65,3 +65,6 @@ class Workspace:
 
     def replay_response_file(self, run_id: str, index: int) -> Path:
         return self.replay_run_dir(run_id) / f"res_{index:04d}.json"
+
+    def optimized_steps_file(self, run_id: str) -> Path:
+        return self.replays / f"optimized_{run_id}.txt"
