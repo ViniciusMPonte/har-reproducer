@@ -2,9 +2,11 @@ from typing import List, Set, Tuple
 
 import pytest
 
-from har_reproducer.models import StepResponse
-from har_reproducer.optimization.replay_optimizer import ReplayOptimizer
+from har_reproducer.models import StatusCodeCriterion, StepResponse, SuccessCriterion
+from har_reproducer.optimization.replay_optimizer import ReplayOptimizer, ReplayOptimizerAborted
 from tests.support.fake_schedule_executor import FakeScheduleExecutor, RecordedExecuteScheduleCall
+
+SUCCESS_CRITERIA: List[SuccessCriterion] = [StatusCodeCriterion(type="status_code", expected=200)]
 
 
 def _optimizer(executor: FakeScheduleExecutor, max_requests: int = 500) -> ReplayOptimizer:
@@ -78,3 +80,94 @@ def test_exceeding_max_requests_raises_value_error_with_counts() -> None:
 
     with pytest.raises(ValueError, match="3"):
         optimizer._run_phase1(0, 9)
+
+
+def _ok(status_code: int = 200) -> StepResponse:
+    return StepResponse(status_code=status_code)
+
+
+def test_run_phase2_range_resolved_by_shortcut_alone_yields_empty_kept() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        responses_by_call=[{9: _ok(200)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    kept: List[int] = optimizer._run_phase2(6, 9, anchors=[6, 9], backbone=[6], success_criteria=SUCCESS_CRITERIA)
+
+    assert kept == []
+    assert len(executor.calls) == 1
+    assert executor.calls[0].ordered_indexes == [9]
+
+
+def test_range_without_candidates_only_calls_shortcut() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([8, 9], {8, 9}),
+        existing_indexes=[8, 9],
+        responses_by_call=[{9: _ok(200)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    kept: List[int] = optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
+
+    assert kept == []
+    assert len(executor.calls) == 1
+
+
+def test_range_without_candidates_shortcut_failure_aborts() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([8, 9], {8, 9}),
+        existing_indexes=[8, 9],
+        responses_by_call=[{9: _ok(404)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    with pytest.raises(ReplayOptimizerAborted):
+        optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
+
+    assert len(executor.calls) == 1
+
+
+def test_run_phase2_elimination_keeps_only_the_necessary_candidate_closest_to_left() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        responses_by_call=[
+            {9: _ok(404)},
+            {9: _ok(200)},
+            {9: _ok(200)},
+            {9: _ok(404)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    kept: List[int] = optimizer._run_phase2(6, 9, anchors=[6, 9], backbone=[6], success_criteria=SUCCESS_CRITERIA)
+
+    assert kept == [7]
+    assert len(executor.calls) == 4
+    assert executor.calls[0].ordered_indexes == [9]
+    assert executor.calls[1].ordered_indexes == [7, 8, 9]
+    assert executor.calls[2].ordered_indexes == [7, 9]
+    assert executor.calls[3].ordered_indexes == [9]
+    for call in executor.calls:
+        assert all(index > 6 for index in call.ordered_indexes)
+
+
+def test_run_phase2_carries_kept_from_target_facing_ranges_into_earlier_ranges() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 3, 9], {0, 3, 9}),
+        existing_indexes=[0, 3, 4, 9],
+        responses_by_call=[
+            {9: _ok(404)},
+            {9: _ok(200)},
+            {9: _ok(404)},
+            {9: _ok(200)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    kept: List[int] = optimizer._run_phase2(0, 9, anchors=[0, 3, 9], backbone=[0], success_criteria=SUCCESS_CRITERIA)
+
+    assert kept == [4]
+    assert executor.calls[3].ordered_indexes == [3, 4, 9]

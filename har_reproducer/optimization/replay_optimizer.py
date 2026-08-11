@@ -1,8 +1,15 @@
 from typing import List, Set, Tuple
 
 from har_reproducer.contracts import ScheduleExecutor
-from har_reproducer.models import StepResponse
+from har_reproducer.models import StepResponse, SuccessCriterion
 from har_reproducer.reproduction import SilentExtractorMetadataStore
+from har_reproducer.validation import Validator
+
+
+class ReplayOptimizerAborted(Exception):
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason: str = reason
 
 
 class ReplayOptimizer:
@@ -40,6 +47,60 @@ class ReplayOptimizer:
                 f"abortando a busca."
             )
         return results
+
+    def _run_phase2(
+            self,
+            from_index: int,
+            to_index: int,
+            anchors: List[int],
+            backbone: List[int],
+            success_criteria: List[SuccessCriterion],
+    ) -> List[int]:
+        kept: List[int] = []
+        for left, right in self._ranges_target_to_from(from_index, anchors):
+            kept += self._resolve_range(left, right, to_index, backbone, kept, success_criteria)
+        return kept
+
+    def _resolve_range(
+            self,
+            left: int,
+            right: int,
+            to_index: int,
+            backbone: List[int],
+            kept_so_far: List[int],
+            success_criteria: List[SuccessCriterion],
+    ) -> List[int]:
+        if self._attempt(left, right, [], backbone, kept_so_far, to_index, success_criteria):
+            return []
+
+        candidates: List[int] = self._candidates_between(left, right)
+        if not candidates or not self._attempt(left, right, candidates, backbone, kept_so_far, to_index, success_criteria):
+            raise ReplayOptimizerAborted(
+                f"ReplayOptimizer: faixa ({left}, {right}) falhou mesmo com todos os candidatos incluídos."
+            )
+
+        working: List[int] = list(candidates)
+        for candidate in reversed(candidates):
+            trial: List[int] = [c for c in working if c != candidate]
+            if self._attempt(left, right, trial, backbone, kept_so_far, to_index, success_criteria):
+                working = trial
+        return working
+
+    def _attempt(
+            self,
+            left: int,
+            right: int,
+            extra_candidates: List[int],
+            backbone: List[int],
+            kept_so_far: List[int],
+            to_index: int,
+            success_criteria: List[SuccessCriterion],
+    ) -> bool:
+        ordered_indexes: List[int] = sorted(set([right, to_index, *kept_so_far, *extra_candidates]))
+        schedule: Set[int] = set(backbone) | set(kept_so_far) | set(ordered_indexes)
+        results: List[Tuple[int, StepResponse]] = self._execute(ordered_indexes, schedule)
+        target_response: StepResponse = next(response for index, response in results if index == to_index)
+        return Validator.validate(target_response, success_criteria)
 
     def _ranges_target_to_from(self, from_index: int, anchors: List[int]) -> List[Tuple[int, int]]:
         ranges: List[Tuple[int, int]] = [
