@@ -17,8 +17,9 @@ from tests.support.stub_http_transport import StubHttpTransport
 
 class FakeReplayTokenResolver:
 
-    def __init__(self, static_token_ids: Set[str]) -> None:
+    def __init__(self, static_token_ids: Set[str], fallback_token_ids: Optional[Set[str]] = None) -> None:
         self.static_token_ids: Set[str] = static_token_ids
+        self.fallback_token_ids: Set[str] = fallback_token_ids or set()
 
     def resolve(
             self,
@@ -28,7 +29,7 @@ class FakeReplayTokenResolver:
             res_refer_dir: Path,
             original_responses_dir: Path,
     ) -> Tuple[Set[str], Set[str]]:
-        return self.static_token_ids, set()
+        return self.static_token_ids, self.fallback_token_ids
 
 
 def _runner(
@@ -113,20 +114,20 @@ def test_run_schedule_raises_on_empty_schedule(tmp_path: Path) -> None:
         runner._run_schedule([], set())
 
 
-def test_mark_token_static_appends_suffix_once() -> None:
+def test_mark_token_appends_suffix_once() -> None:
     text: str = "# Token abc comes from response of step 2\ncurl -X GET https://x"
 
-    once: str = ReplayRunner._mark_token_static(text, "abc")
-    twice: str = ReplayRunner._mark_token_static(once, "abc")
+    once: str = ReplayRunner._mark_token(text, "abc", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
+    twice: str = ReplayRunner._mark_token(once, "abc", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
 
-    assert once.splitlines()[0].endswith(ReplayRunner.STATIC_WARNING_SUFFIX)
+    assert once.splitlines()[0].endswith(ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
     assert twice == once
 
 
-def test_mark_token_static_leaves_text_unchanged_for_absent_token() -> None:
+def test_mark_token_leaves_text_unchanged_for_absent_token() -> None:
     text: str = "# Token abc comes from response of step 2\ncurl -X GET https://x"
 
-    result: str = ReplayRunner._mark_token_static(text, "naoexiste")
+    result: str = ReplayRunner._mark_token(text, "naoexiste", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
 
     assert result.splitlines() == text.splitlines()
 
@@ -147,6 +148,39 @@ def test_annotate_static_tokens_rewrites_file_only_when_text_changes(tmp_path: P
 
     assert "probably static" not in unchanged
     assert "probably static" in changed
+
+
+def test_annotate_fallback_tokens_rewrites_file_only_when_text_changes(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text(
+        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+    )
+    runner: ReplayRunner = _runner(workspace)
+
+    runner._annotate_fallback_tokens(0, set())
+    unchanged: str = workspace.curl_file(0).read_text(encoding="utf-8")
+
+    runner._annotate_fallback_tokens(0, {"abc"})
+    changed: str = workspace.curl_file(0).read_text(encoding="utf-8")
+
+    assert "could not extract value" not in unchanged
+    assert "could not extract value" in changed
+
+
+def test_run_step_annotates_fallback_token_in_curl(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text(
+        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+    )
+    runner: ReplayRunner = _runner(
+        workspace, replay_token_resolver=FakeReplayTokenResolver(set(), fallback_token_ids={"abc"})
+    )
+
+    response: StepResponse = runner._run_step(0, schedule={0})
+
+    assert response.status_code == 200
+    annotated: str = workspace.curl_file(0).read_text(encoding="utf-8")
+    assert ReplayRunner.CAPTURED_FALLBACK_SUFFIX in annotated
 
 
 def test_run_step_persists_stub_transport_response(tmp_path: Path) -> None:

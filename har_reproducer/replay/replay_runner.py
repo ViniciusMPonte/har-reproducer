@@ -16,6 +16,7 @@ from har_reproducer.session.session_store import SessionStore
 class ReplayRunner:
     STEP_FILENAME_PATTERN: ClassVar[Pattern[str]] = re.compile(r"req_(\d+)\.curl\.sh")
     STATIC_WARNING_SUFFIX: ClassVar[str] = " - probably static"
+    CAPTURED_FALLBACK_SUFFIX: ClassVar[str] = " - could not extract value from response, using captured value"
 
     def __init__(
             self,
@@ -87,6 +88,8 @@ class ReplayRunner:
             )
             if static_token_ids:
                 self._annotate_static_tokens(index, static_token_ids)
+            if fallback_token_ids:
+                self._annotate_fallback_tokens(index, fallback_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
             return self.http_transport.send_request(curl_resolved, index)
 
@@ -108,17 +111,26 @@ class ReplayRunner:
         text: str = curl_file.read_text(encoding="utf-8")
         updated: str = text
         for token_id in token_ids:
-            updated = self._mark_token_static(updated, token_id)
+            updated = self._mark_token(updated, token_id, self.STATIC_WARNING_SUFFIX)
+        if updated != text:
+            curl_file.write_text(updated, encoding="utf-8")
+
+    def _annotate_fallback_tokens(self, index: int, token_ids: Set[str]) -> None:
+        curl_file: Path = self.workspace.curl_file(index)
+        text: str = curl_file.read_text(encoding="utf-8")
+        updated: str = text
+        for token_id in token_ids:
+            updated = self._mark_token(updated, token_id, self.CAPTURED_FALLBACK_SUFFIX)
         if updated != text:
             curl_file.write_text(updated, encoding="utf-8")
 
     @classmethod
-    def _mark_token_static(cls, text: str, token_id: str) -> str:
+    def _mark_token(cls, text: str, token_id: str, suffix: str) -> str:
         prefix: str = f"# Token {token_id} comes from response of step "
         lines: List[str] = text.splitlines()
         for i, line in enumerate(lines):
-            if line.startswith(prefix) and not line.endswith(cls.STATIC_WARNING_SUFFIX):
-                lines[i] = line + cls.STATIC_WARNING_SUFFIX
+            if line.startswith(prefix) and not line.endswith(suffix):
+                lines[i] = line + suffix
                 break
         return "\n".join(lines) + "\n"
 
