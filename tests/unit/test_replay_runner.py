@@ -150,6 +150,67 @@ def test_annotate_static_tokens_rewrites_file_only_when_text_changes(tmp_path: P
     assert "probably static" in changed
 
 
+def test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    for index in (1, 2):
+        workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
+        workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+    runner: ReplayRunner = _runner(
+        workspace, http_transport=StubHttpTransport([StepResponse(status_code=0), StepResponse(status_code=200)])
+    )
+
+    is_match: bool = runner._run_schedule([1, 2], {1, 2})
+
+    assert is_match is False
+    assert "steps diverged" in capsys.readouterr().out
+
+
+def test_run_schedule_hybrid_verdict_succeeds_with_soft_intermediate_mismatch(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    for index in (1, 2):
+        workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
+        workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+    runner: ReplayRunner = _runner(
+        workspace, http_transport=StubHttpTransport([StepResponse(status_code=404), StepResponse(status_code=200)])
+    )
+
+    is_match: bool = runner._run_schedule([1, 2], {1, 2})
+
+    assert is_match is True
+    assert "Replay Validation Result: ✓ SUCCESS" in capsys.readouterr().out
+
+
+def test_run_schedule_hybrid_verdict_all_ok(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    for index in (1, 2):
+        workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
+        workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+    runner: ReplayRunner = _runner(
+        workspace, http_transport=StubHttpTransport([StepResponse(status_code=200), StepResponse(status_code=200)])
+    )
+
+    is_match: bool = runner._run_schedule([1, 2], {1, 2})
+
+    assert is_match is True
+    assert "Replay Validation Result: ✓ SUCCESS" in capsys.readouterr().out
+
+
+def test_print_step_report_prints_each_step_in_order(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.response_file(3).write_text('{"status_code": 200}', encoding="utf-8")
+    workspace.response_file(4).write_text('{"status_code": 200}', encoding="utf-8")
+    runner: ReplayRunner = _runner(workspace)
+
+    runner._print_step_report(
+        [(4, StepResponse(status_code=200), True), (3, StepResponse(status_code=200), True)]
+    )
+
+    stdout: str = capsys.readouterr().out
+    assert "Step 4: ✓ matched (200 vs original 200)" in stdout
+    assert "Step 3: ✓ matched (200 vs original 200)" in stdout
+    assert stdout.index("Step 4") < stdout.index("Step 3")
+
+
 def test_annotate_fallback_tokens_rewrites_file_only_when_text_changes(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
