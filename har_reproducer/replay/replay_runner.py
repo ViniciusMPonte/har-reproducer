@@ -80,7 +80,9 @@ class ReplayRunner:
         curl_text: str = self.workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
-            static_token_ids: Set[str] = self.replay_token_resolver.resolve(
+            static_token_ids: Set[str]
+            fallback_token_ids: Set[str]
+            static_token_ids, fallback_token_ids = self.replay_token_resolver.resolve(
                 curl_text, schedule, self.replay_run_dir, self.res_refer_dir, self.original_responses_dir
             )
             if static_token_ids:

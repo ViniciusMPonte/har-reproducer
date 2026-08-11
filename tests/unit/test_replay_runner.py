@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import pytest
 
@@ -27,8 +27,8 @@ class FakeReplayTokenResolver:
             replay_run_dir: Path,
             res_refer_dir: Path,
             original_responses_dir: Path,
-    ) -> Set[str]:
-        return self.static_token_ids
+    ) -> Tuple[Set[str], Set[str]]:
+        return self.static_token_ids, set()
 
 
 def _runner(

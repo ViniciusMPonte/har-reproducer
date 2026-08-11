@@ -15,6 +15,7 @@ from har_reproducer.models.session import (
     Extractor,
     SessionState,
     TokenLocation,
+    TokenResolutionStatus,
 )
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "StatusCodeCriterion",
     "SuccessCriterion",
     "TokenLocation",
+    "TokenResolutionStatus",
     "UrlMatchCriterion",
 ]
