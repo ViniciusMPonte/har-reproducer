@@ -1,6 +1,7 @@
-from typing import ClassVar, List, Set, Tuple
+from typing import ClassVar, List, Optional, Set, Tuple
 
 from har_reproducer.contracts import ScheduleExecutor
+from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse, SuccessCriterion
 from har_reproducer.reproduction import SilentExtractorMetadataStore
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
@@ -28,6 +29,39 @@ class ReplayOptimizer:
         self.max_requests: int = max_requests
         self.requests_made: int = 0
         self.backbone: List[int] = []
+
+    def optimize(
+            self,
+            workspace: Workspace,
+            run_id: str,
+            from_index: int,
+            to_index: int,
+            success_criteria: List[SuccessCriterion],
+    ) -> Optional[List[int]]:
+        anchors: List[int]
+        backbone: List[int]
+        anchors, backbone = self._run_phase1(from_index, to_index)
+
+        try:
+            kept: List[int] = self._run_phase2(from_index, to_index, anchors, backbone, success_criteria)
+        except ReplayOptimizerAborted as aborted:
+            print(f"ReplayOptimizer: aborted — {aborted.reason}")
+            return None
+
+        final_list: List[int] = sorted({from_index, *anchors, *kept})
+        if not self._confirm(final_list, to_index, success_criteria):
+            print("ReplayOptimizer: aborted — final confirmation failed after all ranges passed individually.")
+            return None
+
+        workspace.optimized_steps_file(run_id).write_text(
+            "\n".join(str(index) for index in final_list) + "\n", encoding="utf-8"
+        )
+        return final_list
+
+    def _confirm(self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion]) -> bool:
+        results: List[Tuple[int, StepResponse]] = self._execute(final_list, set(final_list))
+        target_response: StepResponse = next(response for index, response in results if index == to_index)
+        return Validator.validate(target_response, success_criteria)
 
     def _run_phase1(self, from_index: int, to_index: int) -> Tuple[List[int], List[int]]:
         anchors: List[int] = self.schedule_executor.compute_smart_schedule(from_index, to_index)[0]
