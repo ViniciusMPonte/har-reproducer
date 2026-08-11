@@ -117,6 +117,55 @@ def test_derive_token_id_is_deterministic_and_sensitive_to_origin_step() -> None
     assert first != third
 
 
+def test_register_extractor_persists_captured_value(tmp_path: Path) -> None:
+    metadata_store: FakeMetadataStore = FakeMetadataStore()
+    resolver: CandidateResolver = _resolver(tmp_path, FakeExtractorRunner(), metadata_store)
+    candidate: DynamicToken = _candidate("segredo")
+    candidate.token_id = "t1"
+
+    resolver._register_extractor(candidate, response_sample={})
+
+    stored: Optional[Extractor] = metadata_store.load("t1")
+    assert stored is not None
+    assert stored.captured_value == "segredo"
+
+
+def test_accept_persisted_slot_backfills_captured_value_when_none(tmp_path: Path) -> None:
+    metadata_store: FakeMetadataStore = FakeMetadataStore()
+    metadata_store.save(Extractor(token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX))
+    extractor_runner: FakeExtractorRunner = FakeExtractorRunner(run_existing_result="v1")
+    resolver: CandidateResolver = _resolver(tmp_path, extractor_runner, metadata_store)
+
+    status: SlotStatus
+    error: Optional[str]
+    status, error = resolver._check_persisted_slot("t1", _candidate("v1"))
+
+    assert status == SlotStatus.MATCH
+    assert error is None
+    stored: Optional[Extractor] = metadata_store.load("t1")
+    assert stored is not None
+    assert stored.captured_value == "v1"
+
+
+def test_accept_persisted_slot_keeps_existing_captured_value(tmp_path: Path) -> None:
+    metadata_store: FakeMetadataStore = FakeMetadataStore()
+    metadata_store.save(
+        Extractor(token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX, captured_value="antigo")
+    )
+    extractor_runner: FakeExtractorRunner = FakeExtractorRunner(run_existing_result="v1")
+    resolver: CandidateResolver = _resolver(tmp_path, extractor_runner, metadata_store)
+
+    status: SlotStatus
+    error: Optional[str]
+    status, error = resolver._check_persisted_slot("t1", _candidate("v1"))
+
+    assert status == SlotStatus.MATCH
+    assert error is None
+    stored: Optional[Extractor] = metadata_store.load("t1")
+    assert stored is not None
+    assert stored.captured_value == "antigo"
+
+
 def test_build_literal_extractor_returns_verified_extractor_with_literal_code() -> None:
     candidate: DynamicToken = _candidate("segredo")
     candidate.token_id = "t1"

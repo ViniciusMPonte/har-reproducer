@@ -113,6 +113,9 @@ class CandidateResolver:
         return SlotStatus.MATCH, None
 
     def _accept_persisted_slot(self, slot_id: str, persisted: Extractor, result: str) -> None:
+        if persisted.captured_value is None:
+            persisted.captured_value = result
+            self.metadata_store.save(persisted)
         self.session_store.state.registry[slot_id] = persisted
         self.session_store.set_token(slot_id, result)
         self._validated_values[slot_id] = result
@@ -150,6 +153,7 @@ class CandidateResolver:
     ) -> None:
         new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample, initial_error)
         if new_extractor is not None:
+            new_extractor.captured_value = candidate.current_value
             self.session_store.state.registry[candidate.token_id] = new_extractor
             self.metadata_store.save(new_extractor)
             candidate.status = "Resolved"
