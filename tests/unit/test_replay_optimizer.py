@@ -171,3 +171,71 @@ def test_run_phase2_carries_kept_from_target_facing_ranges_into_earlier_ranges()
 
     assert kept == [4]
     assert executor.calls[3].ordered_indexes == [3, 4, 9]
+
+
+def test_execute_retries_once_after_recoverable_status_then_succeeds() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[
+            {5: _ok(401)},
+            {},
+            {5: _ok(200)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    results: List[Tuple[int, StepResponse]] = optimizer._execute([5], {5})
+
+    assert [response.status_code for _, response in results] == [200]
+    assert len(executor.calls) == 3
+    assert executor.calls[1].ordered_indexes == [0]
+    assert optimizer.requests_made == 3
+
+
+def test_execute_gives_up_after_two_refreshes_and_returns_last_result() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        default_response=_ok(401),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    results: List[Tuple[int, StepResponse]] = optimizer._execute([5], {5})
+
+    assert [response.status_code for _, response in results] == [401]
+    assert len(executor.calls) == 5
+    assert optimizer.requests_made == 5
+
+
+def test_execute_treats_transport_failure_status_zero_as_recoverable() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[
+            {5: _ok(0)},
+            {},
+            {5: _ok(200)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    results: List[Tuple[int, StepResponse]] = optimizer._execute([5], {5})
+
+    assert [response.status_code for _, response in results] == [200]
+    assert len(executor.calls) == 3
+
+
+def test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([8, 9], {8, 9}),
+        existing_indexes=[8, 9],
+        default_response=_ok(401),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    with pytest.raises(ReplayOptimizerAborted):
+        optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
