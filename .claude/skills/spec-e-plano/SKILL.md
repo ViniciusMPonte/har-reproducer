@@ -14,6 +14,10 @@ documentos existirem e **ambos** — spec e plano — estarem aprovados.
 
 Todo código citado em qualquer um dos dois documentos segue [[guia-de-estilo]].
 
+Toda implementação desta skill segue **TDD sempre que possível**: o teste que
+reproduz ou define o comportamento esperado é escrito **antes** do código — primeiro
+se confirma que ele falha (red), depois o código mínimo que o faz passar (green).
+
 ⚠️ **Sequência completa da etapa, na ordem exata** (erro já cometido mais de uma vez:
 inverter/pular um destes pontos — cada um é um portão, não uma sugestão):
 
@@ -196,6 +200,24 @@ não pedir confirmação a cada commit — a aprovação já foi dada na spec/pl
 faz parte de implementar a task. Só parar para perguntar se um critério de aceite não
 passar ou exigir uma decisão fora do que o plano previu.
 
+### TDD — teste em vermelho antes do verde
+
+A implementação de cada task é orientada a teste **sempre que possível**:
+
+1. Escrever primeiro o(s) teste(s) que reproduzem/definem o comportamento esperado
+   (para bug: o teste que falha hoje; para comportamento novo: o teste do contrato).
+2. Rodar e confirmar que falha **pelo motivo certo** (red) — o teste tem que falhar
+   antes de existir a implementação.
+3. Implementar o mínimo que faz o teste passar (green).
+4. Rodar o teste novo + a suíte do componente + a garantia de não-regressão
+   (critérios de aceite da task) antes de commitar.
+
+Exceções em que TDD não se aplica ("sempre que possível", não "sempre"):
+- Tasks puramente estruturais de `refactor:` (sem comportamento observável novo) —
+  o teste já existe e protege a mudança; não há "red" a escrever.
+- Regeneração de golden / mudanças de `docs` — a comparação de árvore ou o texto já
+  é a verificação.
+
 ### Mensagem de commit
 
 ```
@@ -212,9 +234,11 @@ task, nunca reescrever do zero.]
     tasks do plano (não leva `T0N`, é um commit à parte).
   - `refactor:` — task é puramente estrutural, sem mudança de comportamento
     observável.
-  - ⚠️ Uma etapa que só adiciona testes (sem tocar produção) ainda usa `feat:`
-    para o commit de cada task, nunca `test:` — é o padrão já usado na Etapa A
-    (rede golden) e mantido nas etapas seguintes.
+  - ⚠️ Com TDD, um commit que é **só** a reprodução/definição de comportamento por
+    teste (fase vermelha commitada à parte, ex.: `test: reproduz bug 4`, já usado
+    nesta branch) usa `test:`. Um commit que junta teste + código de comportamento
+    usa `feat:`/`fix:`. Nunca use `test:` para um commit que já carrega o código da
+    mudança.
 - `T0N` é o ID exato da task no plano — permite achar a task original só lendo
   `git log --oneline`.
 - `Componente/Método` repete o nome do cabeçalho da task
