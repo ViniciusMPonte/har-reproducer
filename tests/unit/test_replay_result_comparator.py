@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import StepResponse
@@ -42,3 +43,32 @@ def test_matches_original_false_when_reference_has_no_status_code(tmp_path: Path
     comparator: ReplayResultComparator = ReplayResultComparator(workspace)
 
     assert comparator.matches_original(0, StepResponse(status_code=200)) is False
+
+
+def test_original_status_code_returns_int_when_reference_has_status(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.response_file(0).write_text('{"status_code": 200}', encoding="utf-8")
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    result: Optional[int] = comparator.original_status_code(0)
+
+    assert result == 200
+
+
+def test_original_status_code_returns_none_without_reference(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    result: Optional[int] = comparator.original_status_code(2)
+
+    assert result is None
+
+
+def test_original_status_code_returns_none_when_reference_has_no_status(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.response_file(0).write_text("{}", encoding="utf-8")
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    result: Optional[int] = comparator.original_status_code(0)
+
+    assert result is None
