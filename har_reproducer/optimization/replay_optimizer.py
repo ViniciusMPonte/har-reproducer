@@ -1,8 +1,9 @@
-from typing import List, Set, Tuple
+from typing import ClassVar, List, Set, Tuple
 
 from har_reproducer.contracts import ScheduleExecutor
 from har_reproducer.models import StepResponse, SuccessCriterion
 from har_reproducer.reproduction import SilentExtractorMetadataStore
+from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.validation import Validator
 
 
@@ -13,6 +14,8 @@ class ReplayOptimizerAborted(Exception):
 
 
 class ReplayOptimizer:
+    RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = StepRetryPolicy.RECOVERABLE_STATUS_CODES | {0}
+    MAX_REACTIVE_REFRESHES: ClassVar[int] = 2
 
     def __init__(
             self,
@@ -24,19 +27,33 @@ class ReplayOptimizer:
         self.metadata_store: SilentExtractorMetadataStore = metadata_store
         self.max_requests: int = max_requests
         self.requests_made: int = 0
+        self.backbone: List[int] = []
 
     def _run_phase1(self, from_index: int, to_index: int) -> Tuple[List[int], List[int]]:
         anchors: List[int] = self.schedule_executor.compute_smart_schedule(from_index, to_index)[0]
         self._print_estimate(from_index, anchors)
-        backbone: List[int] = self._compute_backbone(from_index, anchors)
-        self._execute(backbone, set(backbone))
-        return anchors, backbone
+        self.backbone = self._compute_backbone(from_index, anchors)
+        self._execute(self.backbone, set(self.backbone))
+        return anchors, self.backbone
 
     def _compute_backbone(self, from_index: int, anchors: List[int]) -> List[int]:
         boundary: int = anchors[-2] if len(anchors) >= 2 else from_index
         return [i for i in self.schedule_executor.existing_step_indexes() if from_index <= i <= boundary]
 
     def _execute(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple[int, StepResponse]]:
+        refreshes: int = 0
+        results: List[Tuple[int, StepResponse]] = self._execute_raw(ordered_indexes, schedule)
+        while self._needs_reactive_refresh(results) and refreshes < self.MAX_REACTIVE_REFRESHES:
+            refreshes += 1
+            print(
+                f"ReplayOptimizer: detected recoverable status in schedule — refreshing backbone before "
+                f"retrying (attempt {refreshes}/{self.MAX_REACTIVE_REFRESHES})..."
+            )
+            self._execute_raw(self.backbone, set(self.backbone))
+            results = self._execute_raw(ordered_indexes, schedule)
+        return results
+
+    def _execute_raw(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple[int, StepResponse]]:
         results: List[Tuple[int, StepResponse]] = self.schedule_executor.execute_schedule(
             ordered_indexes, schedule, annotate=False
         )
@@ -47,6 +64,10 @@ class ReplayOptimizer:
                 f"abortando a busca."
             )
         return results
+
+    @classmethod
+    def _needs_reactive_refresh(cls, results: List[Tuple[int, StepResponse]]) -> bool:
+        return any(response.status_code in cls.RECOVERABLE_STATUS_CODES for _, response in results)
 
     def _run_phase2(
             self,
