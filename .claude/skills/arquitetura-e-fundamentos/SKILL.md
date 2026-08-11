@@ -26,7 +26,8 @@ adicionar heurística nova a qualquer componente deste mapa.
   `criteria.py`, `analysis.py`) — os dados que atravessam o pipeline:
   `Step`/`StepRequest`/`StepResponse` (um request+response do HAR),
   `DynamicToken`/`Extractor`/`TokenLocation`/`AgentType` (o que descreve um
-  valor dinâmico e como extraí-lo), `ProjectConfig`/`LLMSettings`/
+  valor dinâmico e como extraí-lo; `Extractor.captured_value` guarda o literal
+  capturado no HAR, usado como fallback no replay), `ProjectConfig`/`LLMSettings`/
   `SkipRulesConfig`/`SuccessCriterion` (config.json), `StepAnalysis` (saída da
   análise de um step).
 - **`har_reproducer/session/session_store.py`** — `SessionStore` guarda
@@ -104,8 +105,15 @@ de novo — só resolve tokens usando os extractors já persistidos
 monta o `ReplayRunner` com `CurlDependencyParser` (lê os comentários
 `# Token <id> comes from response of step <n>` de cada `.curl.sh`),
 `ReplayTokenResolver` (decide de qual diretório ler a resposta de origem de
-cada token) e `ReplayResultComparator` (compara a última resposta do replay
-com uma resposta de referência, em vez dos `success_criteria` do `Validator`).
+cada token; se a extração dinâmica falhar, cai para o `captured_value`
+persistido e devolve os conjuntos `(static, fallback)` — token que caiu no
+fallback nunca é anotado como estático) e `ReplayResultComparator` (compara a
+última resposta do replay com uma resposta de referência, em vez dos
+`success_criteria` do `Validator`). `ReplayRunner` anota no `.curl.sh` o token
+que caiu no fallback (` - could not extract value from response, using
+captured value`), reporta cada step (`Replay step results:`) e aplica o
+veredito híbrido: `✓ SUCCESS` só se o último step casar e nenhum intermediário
+tiver `status_code == 0`.
 Suporta 4 modos (`all`/`slice`/`smart`/`list`, ver `ReplayRunner._schedule_*`).
 
 ### Módulos de suporte
@@ -162,6 +170,10 @@ Onde esse princípio já está encarnado no código:
   `LITERAL_FALLBACK`) — quando a origem não pode ser determinada com
   confiança, o sistema admite isso (mantém o valor literal do HAR) em vez de
   inventar uma regra específica só para "resolver" aquele caso.
+- **Fallback para o valor capturado no replay** — quando a extração dinâmica
+  falha no replay, o sistema usa o literal que o servidor realmente enviou
+  naquele ponto do fluxo original (`Extractor.captured_value`), em vez de
+  marcar o token como falho ou inventar regra específica de site.
 
 ## Retro de arquitetura (auto-atualização)
 
