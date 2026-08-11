@@ -142,9 +142,9 @@ dinâmica falha no replay. Sem o campo, o valor só existe no `DynamicToken`
 - ⚠️ Posicionar **após** `ever_changed` para manter a ordem atual dos campos no JSON (os `.meta.json` existentes preservam a ordem dos campos anteriores).
 
 **Critérios de aceite:**
-- [ ] `test_extractor_serializes_captured_value_field`: `Extractor(token_id="t1", code="...", agent_type=AgentType.REGEX).model_dump_json()` contém `"captured_value": null`.
-- [ ] `test_extractor_round_trips_captured_value`: criar `Extractor` com `captured_value="x"`, `save`/`load` via `ExtractorMetadataStore` (padrão de `test_save_then_load_round_trips_extractor`), e `loaded.captured_value == "x"`.
-- [ ] Não-regressão: `test_save_then_load_round_trips_extractor` e demais testes de `tests/unit/test_extractor_metadata_store.py` seguem verdes (construtor sem o novo campo continua válido).
+- [x] `test_extractor_serializes_captured_value_field`: `Extractor(token_id="t1", code="...", agent_type=AgentType.REGEX).model_dump_json()` contém `"captured_value": null`.
+- [x] `test_extractor_round_trips_captured_value`: criar `Extractor` com `captured_value="x"`, `save`/`load` via `ExtractorMetadataStore` (padrão de `test_save_then_load_round_trips_extractor`), e `loaded.captured_value == "x"`.
+- [x] Não-regressão: `test_save_then_load_round_trips_extractor` e demais testes de `tests/unit/test_extractor_metadata_store.py` seguem verdes (construtor sem o novo campo continua válido).
 
 ## [T05] — `CandidateResolver`: setar `captured_value` na geração e backfill no reuse
 
@@ -177,10 +177,10 @@ fix) sem preencher o valor.
 - ⚠️ O `_register_extractor` continua salvando **uma** vez (o `save` existente) — só mudar o objeto antes.
 
 **Critérios de aceite:**
-- [ ] `test_register_extractor_persists_captured_value`: via `_register_extractor` com um candidato `current_value="segredo"` (caminho literal, como em `_generate_extractor` com `origin_location=None`), `metadata_store.load(token_id).captured_value == "segredo"`.
-- [ ] `test_accept_persisted_slot_backfills_captured_value_when_none`: slot persistido com `captured_value=None`; `_check_persisted_slot` com `run_existing_result="v1"`; após `MATCH`, `metadata_store.load(slot).captured_value == "v1"`.
-- [ ] `test_accept_persisted_slot_keeps_existing_captured_value`: slot persistido com `captured_value="antigo"` e `run_existing_result="v1"`; após `MATCH`, `captured_value` continua `"antigo"` (não vira `"v1"`).
-- [ ] Não-regressão: `test_check_persisted_slot_matches_and_accepts_when_rerun_output_equals_candidate` continua passando; suíte completa verde.
+- [x] `test_register_extractor_persists_captured_value`: via `_register_extractor` com um candidato `current_value="segredo"` (caminho literal, como em `_generate_extractor` com `origin_location=None`), `metadata_store.load(token_id).captured_value == "segredo"`.
+- [x] `test_accept_persisted_slot_backfills_captured_value_when_none`: slot persistido com `captured_value=None`; `_check_persisted_slot` com `run_existing_result="v1"`; após `MATCH`, `metadata_store.load(slot).captured_value == "v1"`.
+- [x] `test_accept_persisted_slot_keeps_existing_captured_value`: slot persistido com `captured_value="antigo"` e `run_existing_result="v1"`; após `MATCH`, `captured_value` continua `"antigo"` (não vira `"v1"`).
+- [x] Não-regressão: `test_check_persisted_slot_matches_and_accepts_when_rerun_output_equals_candidate` continua passando; suíte completa verde.
 
 ## [T06] — `ReplayTokenResolver`: `TokenResolutionStatus` e fallback para o `captured_value`
 
@@ -241,12 +241,12 @@ desfecho.
 - ⚠️ Os chamadores de `resolve` precisam acompanhar a nova assinatura: `ReplayRunner._run_step` (`replay_runner.py:83`) e o `FakeReplayTokenResolver` em `test_replay_runner.py:18-31`.
 
 **Critérios de aceite:**
-- [ ] `test_fallback_to_captured_uses_captured_value_when_extractor_yields_none`: metadata com `Extractor(captured_value="capturado")`, `run_existing_result=None`; `_resolve_one` retorna `TokenResolutionStatus.CAPTURED_FALLBACK` e `session_store.state.tokens["t1"] == "capturado"`.
-- [ ] `test_fallback_to_captured_does_not_record_observation`: mesmo cenário; `metadata_store.saved` fica intocado (nenhum `save` de observação) e `valid_count` não muda.
-- [ ] `test_fallback_to_captured_unresolved_without_captured_value`: metadata vazia, `run_existing_result=None`; retorna `TokenResolutionStatus.UNRESOLVED`; mensagem começa com `Failed to resolve token`.
-- [ ] `test_resolve_returns_static_and_fallback_sets`: token `a` confirmado estático (via `_record_observation`) → entra em `static`; token `b` com fallback → entra em `fallback`; `resolve` retorna `({a}, {b})`.
-- [ ] Atualizar `test_resolve_one_returns_false_without_calling_record_observation_when_extractor_yields_none` para o novo retorno `TokenResolutionStatus.UNRESOLVED` (metadata vazia).
-- [ ] Não-regressão: `_record_observation` continua devolvendo `bool` e os testes de threshold/ever_changed seguem verdes.
+- [x] `test_fallback_to_captured_uses_captured_value_when_extractor_yields_none`: metadata com `Extractor(captured_value="capturado")`, `run_existing_result=None`; `_resolve_one` retorna `TokenResolutionStatus.CAPTURED_FALLBACK` e `session_store.state.tokens["t1"] == "capturado"`.
+- [x] `test_fallback_to_captured_does_not_record_observation`: mesmo cenário; `metadata_store.saved` fica intocado (nenhum `save` de observação) e `valid_count` não muda.
+- [x] `test_fallback_to_captured_unresolved_without_captured_value`: metadata vazia, `run_existing_result=None`; retorna `TokenResolutionStatus.UNRESOLVED`; mensagem começa com `Failed to resolve token`.
+- [x] `test_resolve_returns_static_and_fallback_sets`: token `a` confirmado estático (via `_record_observation`) → entra em `static`; token `b` com fallback → entra em `fallback`; `resolve` retorna `({a}, {b})`.
+- [x] Atualizar `test_resolve_one_returns_false_without_calling_record_observation_when_extractor_yields_none` para o novo retorno `TokenResolutionStatus.UNRESOLVED` (metadata vazia).
+- [x] Não-regressão: `_record_observation` continua devolvendo `bool` e os testes de threshold/ever_changed seguem verdes.
 
 ## [T07] — `ReplayResultComparator`: expor `original_status_code`
 
@@ -286,10 +286,10 @@ só `bool`.
 - ⚠️ Manter a mesma semântica de `bool` e as mesmas mensagens — os testes existentes de `test_replay_result_comparator.py` seguem verdes.
 
 **Critérios de aceite:**
-- [ ] `test_original_status_code_returns_int_when_reference_has_status`: `workspace.response_file(0)` com `{"status_code": 200}`; `original_status_code(0) == 200`.
-- [ ] `test_original_status_code_returns_none_without_reference`: sem `real_responses/`/`original_responses/`; `original_status_code(2) is None`.
-- [ ] `test_original_status_code_returns_none_when_reference_has_no_status`: `workspace.response_file(0)` com `{}`; `original_status_code(0) is None`.
-- [ ] Não-regressão: os 5 testes existentes de `test_replay_result_comparator.py` passam sem alteração.
+- [x] `test_original_status_code_returns_int_when_reference_has_status`: `workspace.response_file(0)` com `{"status_code": 200}`; `original_status_code(0) == 200`.
+- [x] `test_original_status_code_returns_none_without_reference`: sem `real_responses/`/`original_responses/`; `original_status_code(2) is None`.
+- [x] `test_original_status_code_returns_none_when_reference_has_no_status`: `workspace.response_file(0)` com `{}`; `original_status_code(0) is None`.
+- [x] Não-regressão: os 5 testes existentes de `test_replay_result_comparator.py` passam sem alteração.
 
 ## [T08] — `ReplayRunner`: generalizar `_mark_token_static` → `_mark_token` e anotar o fallback no curl
 
@@ -341,11 +341,11 @@ value`. Hoje só existe anotação para tokens estáticos (`STATIC_WARNING_SUFFI
 - ⚠️ O `FakeReplayTokenResolver` em `test_replay_runner.py:18-31` passa a devolver a tupla — adaptar o fake e os testes que o usam.
 
 **Critérios de aceite:**
-- [ ] `test_mark_token_appends_suffix_once` (renomear de `test_mark_token_static_appends_suffix_once`): `_mark_token(text, "abc", CAPTURED_FALLBACK_SUFFIX)` anexa o sufixo; chamar de novo não duplica.
-- [ ] `test_mark_token_leaves_text_unchanged_for_absent_token` (renomeado): com um token que não existe no texto, retorna o texto inalterado.
-- [ ] `test_annotate_fallback_tokens_rewrites_file_only_when_text_changes`: padrão do `test_annotate_static_tokens_rewrites_file_only_when_text_changes` (`test_replay_runner.py:134-149`) mas com o novo sufixo.
-- [ ] `test_run_step_annotates_fallback_token_in_curl`: curl com `# Token abc comes from response of step 2`; fake devolve `fallback={"abc"}`; após `_run_step`, o `.curl.sh` em disco contém `CAPTURED_FALLBACK_SUFFIX` na linha do token.
-- [ ] Não-regressão: anotação estática continua funcionando (testes renomeados acima + `test_annotate_static_tokens_rewrites_file_only_when_text_changes`).
+- [x] `test_mark_token_appends_suffix_once` (renomear de `test_mark_token_static_appends_suffix_once`): `_mark_token(text, "abc", CAPTURED_FALLBACK_SUFFIX)` anexa o sufixo; chamar de novo não duplica.
+- [x] `test_mark_token_leaves_text_unchanged_for_absent_token` (renomeado): com um token que não existe no texto, retorna o texto inalterado.
+- [x] `test_annotate_fallback_tokens_rewrites_file_only_when_text_changes`: padrão do `test_annotate_static_tokens_rewrites_file_only_when_text_changes` (`test_replay_runner.py:134-149`) mas com o novo sufixo.
+- [x] `test_run_step_annotates_fallback_token_in_curl`: curl com `# Token abc comes from response of step 2`; fake devolve `fallback={"abc"}`; após `_run_step`, o `.curl.sh` em disco contém `CAPTURED_FALLBACK_SUFFIX` na linha do token.
+- [x] Não-regressão: anotação estática continua funcionando (testes renomeados acima + `test_annotate_static_tokens_rewrites_file_only_when_text_changes`).
 
 ## [T09] — `ReplayRunner`: reporte por step e veredito híbrido no `_run_schedule`
 
@@ -396,11 +396,11 @@ intermediário tiver `status_code == 0`.
 - ⚠️ Manter o `ValueError` do schedule vazio (primeira linha do método).
 
 **Critérios de aceite:**
-- [ ] `test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken`: 2 steps; step 1 (intermediário) com `status 0`, step 2 casa com original; veredito `✗ FAILURE` e bloco `steps diverged`.
-- [ ] `test_run_schedule_hybrid_verdict_succeeds_with_soft_intermediate_mismatch`: step 1 com `404` vs original `200` (mismatch suave), step 2 casa; veredito `✓ SUCCESS`.
-- [ ] `test_run_schedule_hybrid_verdict_all_ok`: todos os steps casam; `✓ SUCCESS`.
-- [ ] `test_print_step_report_prints_each_step`: `_print_step_report` com `[(4, resp200, True), (3, resp200, True)]` imprime `Step 4: ✓ matched` e `Step 3: ✓ matched` na ordem.
-- [ ] Não-regressão: `test_run_schedule_raises_on_empty_schedule` e `test_run_step_persists_stub_transport_response` seguem verdes; `test_replay_ref_fallback` e demais goldens de replay continuam `✓ SUCCESS`.
+- [x] `test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken`: 2 steps; step 1 (intermediário) com `status 0`, step 2 casa com original; veredito `✗ FAILURE` e bloco `steps diverged`.
+- [x] `test_run_schedule_hybrid_verdict_succeeds_with_soft_intermediate_mismatch`: step 1 com `404` vs original `200` (mismatch suave), step 2 casa; veredito `✓ SUCCESS`.
+- [x] `test_run_schedule_hybrid_verdict_all_ok`: todos os steps casam; `✓ SUCCESS`.
+- [x] `test_print_step_report_prints_each_step`: `_print_step_report` com `[(4, resp200, True), (3, resp200, True)]` imprime `Step 4: ✓ matched` e `Step 3: ✓ matched` na ordem.
+- [x] Não-regressão: `test_run_schedule_raises_on_empty_schedule` e `test_run_step_persists_stub_transport_response` seguem verdes; `test_replay_ref_fallback` e demais goldens de replay continuam `✓ SUCCESS`.
 
 ## [T10] — Golden e `test_cli_replay`: atualizar asserts e regenerar goldens do item 9
 
@@ -437,7 +437,7 @@ bloco `Replay step results:`, o warning do fallback e o `.meta.json`/curl anotad
   - Curls de replays de `replay_list_out_of_order` ganham o sufixo de fallback quando aplicável.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest tests/test_cli_replay.py::test_replay_list_out_of_order --runslow -q` passa com os novos asserts.
-- [ ] Golden `replay_list_out_of_order` regenerado: `stdout.txt` contém `Replay step results:` e o warning `using captured value instead.`; `req_0004.curl.sh` tem o sufixo de fallback.
-- [ ] `grep -r '"captured_value"' tests/golden/ | wc -l` == 88 (todo `.meta.json` serializa o campo).
-- [ ] Não-regressão: `uv run pytest tests/ -q` (unidades) e `uv run pytest tests/ -q --runslow` (goldens de replay e run) passam; em particular `test_replay_ref_fallback`, `test_replay_all` e `test_run_main` continuam verdes.
+- [x] `uv run pytest tests/test_cli_replay.py::test_replay_list_out_of_order --runslow -q` passa com os novos asserts.
+- [x] Golden `replay_list_out_of_order` regenerado: `stdout.txt` contém `Replay step results:` e o warning `using captured value instead.`; `req_0004.curl.sh` tem o sufixo de fallback.
+- [x] `grep -r '"captured_value"' tests/golden/ | wc -l` == 88 (todo `.meta.json` serializa o campo).
+- [x] Não-regressão: `uv run pytest tests/ -q` (unidades) e `uv run pytest tests/ -q --runslow` (goldens de replay e run) passam; em particular `test_replay_ref_fallback`, `test_replay_all` e `test_run_main` continuam verdes.
