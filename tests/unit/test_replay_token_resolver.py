@@ -7,7 +7,7 @@ from har_reproducer.models import AgentType, Extractor, TokenResolutionStatus
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.session import SessionStore
-from tests.support.fake_extractor_runner import FakeExtractorRunner
+from tests.support.fake_extractor_runner import FakeExtractorRunner, RecordedRunCall
 from tests.support.fake_metadata_store import FakeMetadataStore
 
 
@@ -187,3 +187,16 @@ def test_resolve_returns_static_and_fallback_sets() -> None:
 
     assert static_ids == {"aaa"}
     assert fallback_ids == {"bbb"}
+
+
+def test_resolve_one_passes_original_dir_as_override_when_origin_outside_schedule() -> None:
+    extractor_runner: FakeExtractorRunner = FakeExtractorRunner(run_existing_result="v")
+    resolver: ReplayTokenResolver = _resolver(extractor_runner, FakeMetadataStore())
+
+    status: TokenResolutionStatus = resolver._resolve_one(
+        "t1", {"t1": 3}, schedule={4}, replay_run_dir=Path("/replay"),
+        res_refer_dir=Path("/refer"), original_responses_dir=Path("/original"),
+    )
+
+    assert status == TokenResolutionStatus.RESOLVED
+    assert extractor_runner.run_existing_calls == [RecordedRunCall("t1", Path("/original"))]
