@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import ClassVar, List, Optional, Set, Tuple
 
 from har_reproducer.contracts import ScheduleExecutor
@@ -37,6 +38,7 @@ class ReplayOptimizer:
             from_index: int,
             to_index: int,
             success_criteria: List[SuccessCriterion],
+            output_path: Optional[Path] = None,
     ) -> Optional[List[int]]:
         anchors: List[int]
         backbone: List[int]
@@ -53,9 +55,8 @@ class ReplayOptimizer:
             print("ReplayOptimizer: aborted — final confirmation failed after all ranges passed individually.")
             return None
 
-        workspace.optimized_steps_file(run_id).write_text(
-            "\n".join(str(index) for index in final_list) + "\n", encoding="utf-8"
-        )
+        destination: Path = output_path if output_path is not None else workspace.optimized_steps_file(run_id)
+        destination.write_text("\n".join(str(index) for index in final_list) + "\n", encoding="utf-8")
         return final_list
 
     def _confirm(self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion]) -> bool:

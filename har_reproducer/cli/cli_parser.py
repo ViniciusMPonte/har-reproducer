@@ -19,6 +19,7 @@ class CliParser:
         self._build_parse_subparser(subparsers)
         self._build_run_subparser(subparsers)
         self._build_replay_subparser(subparsers)
+        self._build_optimize_subparser(subparsers)
 
         return parser
 
@@ -78,3 +79,29 @@ class CliParser:
         )
         replay_parser.add_argument("--config", help="Path to project config (JSON)")
         replay_parser.set_defaults(func=self._handlers.handle_replay)
+
+    def _build_optimize_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        optimize_parser: ArgumentParser = subparsers.add_parser("optimize")
+        optimize_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        optimize_parser.add_argument("--to", dest="to_index", type=int, required=True, help="Target step index")
+        optimize_parser.add_argument(
+            "--from", dest="from_index", type=int, default=0, help="Floor step index (default: 0)"
+        )
+        optimize_parser.add_argument("--config", help="Path to project config (JSON)")
+        optimize_parser.add_argument(
+            "--success-criteria",
+            dest="success_criteria",
+            default=None,
+            help="Inline JSON list of SuccessCriterion, overrides config.json for this call",
+        )
+        optimize_parser.add_argument(
+            "--steps-out", dest="steps_out", default=None, help="Custom output path for the optimized steps .txt"
+        )
+        optimize_parser.add_argument(
+            "--max-requests",
+            dest="max_requests",
+            type=int,
+            default=500,
+            help="Worst-case request budget before aborting",
+        )
+        optimize_parser.set_defaults(func=self._handlers.handle_optimize)

@@ -2,12 +2,15 @@ import shutil
 from argparse import Namespace
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Type
+from typing import List, Optional, Set, Type
+
+from pydantic import TypeAdapter
 
 from har_reproducer.config import ProjectConfigLoader
 from har_reproducer.engines import Engine, EngineFactory, EngineMode
 from har_reproducer.fs_io import HARParser, Workspace
-from har_reproducer.models import ProjectConfig
+from har_reproducer.models import ProjectConfig, SuccessCriterion
+from har_reproducer.optimization import ReplayOptimizer
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
@@ -18,6 +21,7 @@ from har_reproducer.reproduction import (
     ExtractorRunner,
     MitmProxyOrchestrator,
     ScriptExecutor,
+    SilentExtractorMetadataStore,
     Sleeper,
     StepRetryPolicy,
 )
@@ -125,6 +129,70 @@ class CliHandlers:
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
 
+    def handle_optimize(self, args: Namespace) -> None:
+        output_dir: Path = Path(args.output)
+        workspace: Workspace = self._prepare_replay_workspace(output_dir)
+
+        project_config: ProjectConfig = ProjectConfigLoader.load(Path(args.config) if args.config else None)
+        success_criteria: List[SuccessCriterion] = self._resolve_optimize_success_criteria(args, project_config)
+        res_refer_dir: Path = self._resolve_response_reference_dir(workspace, project_config)
+
+        run_id: str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+            workspace, project_config.proxy_port, project_config.ca_cert_path
+        )
+        script_executor: ScriptExecutor = ScriptExecutor()
+        sleeper: Sleeper = Sleeper()
+        runner: ReplayRunner = self._build_replay_runner(
+            workspace, orchestrator, run_id, res_refer_dir, script_executor, sleeper,
+            metadata_store_factory=SilentExtractorMetadataStore,
+        )
+        self._validate_optimize_from_index(runner, args.from_index)
+
+        optimizer: ReplayOptimizer = ReplayOptimizer(
+            schedule_executor=runner,
+            metadata_store=SilentExtractorMetadataStore(workspace),
+            max_requests=args.max_requests,
+        )
+        output_path: Optional[Path] = Path(args.steps_out) if args.steps_out else None
+
+        result: Optional[List[int]] = orchestrator.run(
+            lambda: optimizer.optimize(
+                workspace, run_id, args.from_index, args.to_index, success_criteria, output_path
+            )
+        )
+        self._print_optimize_result(result, output_path or workspace.optimized_steps_file(run_id))
+
+    @staticmethod
+    def _resolve_optimize_success_criteria(args: Namespace, project_config: ProjectConfig) -> List[SuccessCriterion]:
+        if args.success_criteria:
+            adapter: TypeAdapter[List[SuccessCriterion]] = TypeAdapter(List[SuccessCriterion])
+            criteria: List[SuccessCriterion] = adapter.validate_json(args.success_criteria)
+        else:
+            criteria = project_config.success_criteria
+        if not criteria:
+            raise ValueError(
+                "handle_optimize: success_criteria vazio — informe --success-criteria ou configure "
+                "success_criteria no config.json antes de rodar optimize."
+            )
+        return criteria
+
+    @staticmethod
+    def _validate_optimize_from_index(runner: ReplayRunner, from_index: int) -> None:
+        existing: Set[int] = set(runner.existing_step_indexes())
+        if from_index not in existing:
+            raise ValueError(
+                f"ReplayOptimizer: step(s) [{from_index}] não existem no workspace (nenhum curl file em disco) — "
+                f"provavelmente foram pulados por skip_rules ou estão fora do intervalo de steps existentes."
+            )
+
+    @staticmethod
+    def _print_optimize_result(result: Optional[List[int]], destination: Path) -> None:
+        if result is not None:
+            print(f"\nOptimization SUCCESSFUL: {len(result)} step(s) written to {destination}")
+        else:
+            print("\nOptimization FAILED: unable to find a passing subset (see abort reason above).")
+
     @staticmethod
     def _prepare_replay_workspace(output_dir: Path) -> Workspace:
         if not output_dir.exists():
@@ -150,11 +218,12 @@ class CliHandlers:
             res_refer_dir: Path,
             script_executor: ScriptExecutor,
             sleeper: Sleeper,
+            metadata_store_factory: Type[ExtractorMetadataStore] = ExtractorMetadataStore,
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner(workspace, script_executor)
         dependency_parser: CurlDependencyParser = CurlDependencyParser()
-        metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+        metadata_store: ExtractorMetadataStore = metadata_store_factory(workspace)
         replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(
             session_store, extractor_runner, dependency_parser, metadata_store
         )
