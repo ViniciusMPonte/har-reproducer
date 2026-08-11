@@ -22,3 +22,8 @@ class ExtractorMetadataStore:
     def save(self, extractor: Extractor) -> None:
         meta_file: Path = self.workspace.extractor_meta_file(extractor.token_id)
         meta_file.write_text(extractor.model_dump_json(indent=2), encoding="utf-8")
+
+
+class SilentExtractorMetadataStore(ExtractorMetadataStore):
+    def save(self, extractor: Extractor) -> None:
+        return None
