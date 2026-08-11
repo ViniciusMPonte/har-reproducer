@@ -7,5 +7,6 @@
   "temp_file_path": null,
   "valid_count": 1,
   "last_value": "PLAINVAL777",
-  "ever_changed": false
+  "ever_changed": false,
+  "captured_value": "PLAINVAL777"
 }

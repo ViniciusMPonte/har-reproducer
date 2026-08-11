@@ -5,6 +5,8 @@ from typing import Iterator
 
 import pytest
 
+from har_reproducer.replay import ReplayRunner
+
 from tests.support.canned_http_server import CannedHttpServer
 from tests.support.cli_invocation_result import CliInvocationResult
 from tests.support.cli_invoker import CliInvoker
@@ -229,14 +231,19 @@ def test_replay_list_out_of_order(
     result: CliInvocationResult = scenario.run(["--mode", "list", "--steps-file", str(steps_file)])
 
     assert result.exception is None
-    assert "Failed to resolve token 'ade6a53080262635799eb7ec66e824e8'" in result.stdout
-    assert "curl: (3) nested brace in URL position 30:" in result.stdout
-    assert "Step 4 completed with status 0" in result.stdout
+    assert "could not be dynamically resolved during replay; using captured value instead." in result.stdout
+    assert "curl: (3) nested brace" not in result.stdout
+    assert "Step 4 completed with status 0" not in result.stdout
+    assert "Step 4 completed with status 200" in result.stdout
+    assert "Replay step results:" in result.stdout
     assert "Replay Validation Result: ✓ SUCCESS (step 3 status code vs. original)" in result.stdout
     assert "Reproduction SUCCESSFUL" in result.stdout
     assert scenario.executed_steps(result.stdout) == [4, 3]
     assert len(scenario.replay_run_dirs()) == 1
     TokenFailureGuard().assert_at_most_one_failure_per_step(result.stdout)
+    curl_step4: str = scenario.workspace.joinpath("curls", "req_0004.curl.sh").read_text(encoding="utf-8")
+    assert "# Token ade6a53080262635799eb7ec66e824e8 comes from response of step " in curl_step4
+    assert ReplayRunner.CAPTURED_FALLBACK_SUFFIX in curl_step4
     scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
 
     golden_workspace_factory.create(scenario.workspace).assert_matches(golden_dir / "replay_list_out_of_order")

@@ -7,5 +7,6 @@
   "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_b3defec11e606afd97c5430602861f32.py",
   "valid_count": 0,
   "last_value": null,
-  "ever_changed": false
+  "ever_changed": false,
+  "captured_value": "abc123sess"
 }
