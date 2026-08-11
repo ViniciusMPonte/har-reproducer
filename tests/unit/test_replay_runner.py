@@ -80,7 +80,7 @@ def test_schedule_slice_filters_by_closed_interval(tmp_path: Path) -> None:
     assert schedule == {2}
 
 
-def test_schedule_smart_expands_through_dependency_chain(tmp_path: Path) -> None:
+def test_compute_smart_schedule_expands_through_dependency_chain(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
     workspace.curl_file(5).write_text(
@@ -90,9 +90,18 @@ def test_schedule_smart_expands_through_dependency_chain(tmp_path: Path) -> None
 
     ordered: List[int]
     schedule: Set[int]
-    ordered, schedule = runner._schedule_smart(None, 5)
+    ordered, schedule = runner.compute_smart_schedule(None, 5)
 
     assert schedule == {2, 5}
+
+
+def test_existing_step_indexes_returns_sorted_indexes_from_workspace(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    for index in (5, 0, 2):
+        workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
+    runner: ReplayRunner = _runner(workspace)
+
+    assert runner.existing_step_indexes() == [0, 2, 5]
 
 
 def test_schedule_list_raises_when_step_does_not_exist(tmp_path: Path) -> None:
