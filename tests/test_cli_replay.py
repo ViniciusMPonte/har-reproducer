@@ -54,6 +54,22 @@ def main_workspace_golden_factory(network_session_dir: Path) -> GoldenWorkspaceF
     return GoldenWorkspaceFactory(network_session_dir)
 
 
+@pytest.fixture(scope="session")
+def dry_workspace_network(canned_http_server: CannedHttpServer, network_session_dir: Path) -> Path:
+    har_source: Path = Path(__file__).parent / "fixtures" / "synthetic_flow.har"
+    har_path: Path = HarMaterializer().materialize(
+        har_source, network_session_dir / "synthetic_flow_dry.har", canned_http_server.port,
+    )
+    output_dir: Path = network_session_dir / "dry_ws"
+
+    result: CliInvocationResult = CliInvoker().invoke(
+        ["run", "--har", str(har_path), "--mode", "dry", "--output", str(output_dir)]
+    )
+    if result.exception is not None:
+        raise RuntimeError(f"run --mode dry falhou: {result.exception!r}\n{result.stdout}\n{result.stderr}")
+    return output_dir
+
+
 @pytest.mark.slow
 def test_run_main(
         main_workspace: Path,
@@ -277,6 +293,32 @@ def test_replay_ref_fallback(
     scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
 
     golden_workspace_factory.create(scenario.workspace).assert_matches(golden_dir / "replay_ref_fallback")
+
+
+@pytest.mark.slow
+def test_replay_dry_ref_fallback(
+        cli_invoker: CliInvoker,
+        dry_workspace_network: Path,
+        golden_workspace_factory: GoldenWorkspaceFactory,
+        golden_dir: Path,
+        tmp_path: Path,
+) -> None:
+    scenario: ReplayScenario = ReplayScenario(cli_invoker, dry_workspace_network, tmp_path)
+    steps_file: Path = tmp_path / "steps.txt"
+    steps_file.write_text("4\n", encoding="utf-8")
+    result: CliInvocationResult = scenario.run(["--mode", "list", "--steps-file", str(steps_file)])
+
+    assert result.exception is None
+    assert "Failed to resolve" not in result.stdout
+    assert "using captured value" not in result.stdout
+    assert "Step 4 completed with status 200" in result.stdout
+    assert "Replay Validation Result: ✓ SUCCESS" in result.stdout
+    assert scenario.executed_steps(result.stdout) == [4]
+    assert len(scenario.replay_run_dirs()) == 1
+    TokenFailureGuard().assert_at_most_one_failure_per_step(result.stdout)
+    scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
+
+    golden_workspace_factory.create(scenario.workspace).assert_matches(golden_dir / "replay_dry_ref_fallback")
 
 
 @pytest.mark.slow

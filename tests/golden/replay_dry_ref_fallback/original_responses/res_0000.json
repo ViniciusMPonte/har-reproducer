@@ -1,0 +1,15 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "text/html",
+    "Set-Cookie": "SESSIONID=abc123sess; Path=/"
+  },
+  "cookies": {
+    "SESSIONID": "abc123sess"
+  },
+  "body": "<html><body><div id=\"marker\">tok_CSS_1</div><script>var nonce = \"scr_NONCE_2\";</script></body></html>",
+  "body_mime": "text/html",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}
