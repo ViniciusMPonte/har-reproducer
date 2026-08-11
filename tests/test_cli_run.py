@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from tests.support.cli_invocation_result import CliInvocationResult
@@ -29,6 +30,15 @@ def test_run_dry_default(
     output_dir.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
 
     golden_workspace_factory.create(output_dir).assert_matches(golden_dir / "run_dry_default")
+
+
+def test_run_dry_persists_extractor_scripts(dry_workspace: Path) -> None:
+    extractors_dir: Path = dry_workspace / "extractors"
+    meta_files: list[Path] = sorted(extractors_dir.glob("extract_*.meta.json"))
+    assert len(meta_files) > 0
+    for meta_file in meta_files:
+        token_id: str = json.loads(meta_file.read_text(encoding="utf-8"))["token_id"]
+        assert (extractors_dir / f"extract_{token_id}.py").exists()
 
 
 def test_run_dry_is_idempotent_over_same_output(

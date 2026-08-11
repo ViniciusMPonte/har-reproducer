@@ -61,5 +61,16 @@ def cli_invoker() -> CliInvoker:
 
 
 @pytest.fixture
+def dry_workspace(cli_invoker: CliInvoker, synthetic_flow_har: Path, tmp_path: Path) -> Path:
+    output_dir: Path = tmp_path / "dry_ws"
+    result = cli_invoker.invoke(
+        ["run", "--har", str(synthetic_flow_har), "--mode", "dry", "--output", str(output_dir)]
+    )
+    if result.exception is not None:
+        raise RuntimeError(f"run --mode dry falhou: {result.exception!r}\n{result.stdout}\n{result.stderr}")
+    return output_dir
+
+
+@pytest.fixture
 def golden_workspace_factory(tmp_path: Path) -> GoldenWorkspaceFactory:
     return GoldenWorkspaceFactory(tmp_path)
