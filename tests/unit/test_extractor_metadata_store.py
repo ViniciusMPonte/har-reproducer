@@ -32,3 +32,25 @@ def test_load_returns_none_for_corrupted_json(tmp_path: Path) -> None:
     result: Optional[Extractor] = store.load("t2")
 
     assert result is None
+
+
+def test_extractor_serializes_captured_value_field() -> None:
+    extractor: Extractor = Extractor(token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX)
+
+    json_text: str = extractor.model_dump_json(indent=2)
+
+    assert '"captured_value": null' in json_text
+
+
+def test_extractor_round_trips_captured_value(tmp_path: Path) -> None:
+    store: ExtractorMetadataStore = ExtractorMetadataStore(Workspace(tmp_path))
+    extractor: Extractor = Extractor(
+        token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX, captured_value="x"
+    )
+
+    store.save(extractor)
+    loaded: Optional[Extractor] = store.load("t1")
+
+    assert loaded == extractor
+    assert loaded is not None
+    assert loaded.captured_value == "x"

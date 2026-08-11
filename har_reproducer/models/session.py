@@ -33,6 +33,7 @@ class Extractor(BaseModel):
     valid_count: int = 0
     last_value: Optional[str] = None
     ever_changed: bool = False
+    captured_value: Optional[str] = None
 
 
 class DynamicToken(BaseModel):
