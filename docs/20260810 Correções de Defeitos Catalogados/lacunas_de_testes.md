@@ -5,6 +5,19 @@
 > README para `original_responses/` voltou a ser alcançável — mas nenhum teste cobre
 > o cenário. Este arquivo inventaria essa lacuna para uma etapa futura de testes.
 
+> **Fechado em 11/08/2026** pela etapa
+> `docs/20260811 Testes do Replay sobre Workspace Dry/` (branch
+> `20260811-testes-do-replay-sobre-workspace-dry`). A seção 3 foi implementada como:
+> **3.1(a)** — `test_resolve_one_passes_original_dir_as_override_when_origin_outside_schedule`
+> (`tests/unit/test_replay_token_resolver.py`); **3.1(b)** —
+> `test_replay_resolves_tokens_from_original_responses_in_dry_workspace`
+> (`tests/unit/test_replay_dry_resolution.py`); **3.2** —
+> `test_run_dry_persists_extractor_scripts` (`tests/test_cli_run.py`, com a fixture
+> `dry_workspace` em `tests/conftest.py`); **3.3** —
+> `test_replay_dry_ref_fallback` (`tests/test_cli_replay.py`, golden
+> `tests/golden/replay_dry_ref_fallback/`). As seções 4 e 5 seguem valendo como
+> referência do cenário.
+
 ## 1. O cenário sem cobertura
 
 `replay` sobre um workspace que só rodou `run --mode dry` deve resolver tokens
@@ -41,6 +54,13 @@ ser gravado em `dry`), o item 8 volta silenciosamente — nada na suíte pega.
 
 ### 3.1 Unitário — resolução de token no workspace `dry` via `original_responses/` (sem rede)
 
+✅ **Implementado** (etapa `20260811 Testes do Replay sobre Workspace Dry`):
+- decisão de fallback com dublê → `test_resolve_one_passes_original_dir_as_override_when_origin_outside_schedule`
+  (`tests/unit/test_replay_token_resolver.py`);
+- caminho real offline → `test_replay_resolves_tokens_from_original_responses_in_dry_workspace`
+  (`tests/unit/test_replay_dry_resolution.py`, roda `run --mode dry` real via fixture
+  `dry_workspace` e resolve via `ScriptExecutor` com `original_responses/`).
+
 Local sugerido: `tests/unit/test_replay_token_resolver.py` (ou
 `tests/unit/test_extractor_runner.py` para a parte do runner).
 
@@ -68,6 +88,11 @@ Isso não exige rede (só o `ReplayTokenResolver`), então fica na rodada padrã
 
 ### 3.2 Unitário — regressão do item 2: `dry` grava o `.py` do extrator
 
+✅ **Implementado** (etapa `20260811 Testes do Replay sobre Workspace Dry`):
+`test_run_dry_persists_extractor_scripts` (`tests/test_cli_run.py`, com a fixture
+`dry_workspace` em `tests/conftest.py`) — todo `extract_<id>.meta.json` de um
+workspace `dry` tem seu `extract_<id>.py`.
+
 Local sugerido: `tests/unit/test_token_resolver.py` (ou `tests/unit/test_engine.py`).
 
 Já há cobertura parcial via golden (árvore de `run_dry_*`), mas um teste fino
@@ -77,6 +102,12 @@ resolvido — e, em consequência, `ExtractorRunner.run_existing(token_id, dir)`
 executa o script (não retorna `None` prematuro).
 
 ### 3.3 Golden (slow) — replay de ponta a ponta sobre workspace `dry`
+
+✅ **Implementado** (etapa `20260811 Testes do Replay sobre Workspace Dry`):
+`test_replay_dry_ref_fallback` (`tests/test_cli_replay.py`, `@pytest.mark.slow`) com
+golden em `tests/golden/replay_dry_ref_fallback/`. Usa a fixture session-scope
+`dry_workspace_network` (HAR materializado na porta do `CannedHttpServer`) e
+`ReplayScenario`; reproduziria o item 8 se ele voltasse.
 
 Local sugerido: `tests/test_cli_replay.py`, novo cenário com
 `@pytest.mark.slow`, análogo a `test_replay_ref_fallback` (linhas 245-272).

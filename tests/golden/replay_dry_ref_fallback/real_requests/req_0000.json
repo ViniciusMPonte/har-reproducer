@@ -1,0 +1,10 @@
+{
+  "url": "http://127.0.0.1:<PORT>/login",
+  "method": "GET",
+  "headers": {
+    "Accept": "text/html"
+  },
+  "cookies": {},
+  "body": null,
+  "is_skippable": false
+}
