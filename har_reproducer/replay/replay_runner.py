@@ -16,6 +16,7 @@ from har_reproducer.session.session_store import SessionStore
 class ReplayRunner:
     STEP_FILENAME_PATTERN: ClassVar[Pattern[str]] = re.compile(r"req_(\d+)\.curl\.sh")
     STATIC_WARNING_SUFFIX: ClassVar[str] = " - probably static"
+    CAPTURED_FALLBACK_SUFFIX: ClassVar[str] = " - could not extract value from response, using captured value"
 
     def __init__(
             self,
@@ -63,28 +64,46 @@ class ReplayRunner:
         if not ordered_indexes:
             raise ValueError("ReplayRunner: schedule vazio — nenhum step para processar.")
 
-        last_index: int = ordered_indexes[0]
-        last_response: StepResponse = self._run_step(last_index, schedule)
-        for index in ordered_indexes[1:]:
-            last_response = self._run_step(index, schedule)
-            last_index = index
+        results: List[Tuple[int, StepResponse, bool]] = []
+        for index in ordered_indexes:
+            response: StepResponse = self._run_step(index, schedule)
+            results.append((index, response, self.comparator.matches_original(index, response)))
 
-        is_match: bool = self.comparator.matches_original(last_index, last_response)
+        self._print_step_report(results)
+
+        target_index: int = results[-1][0]
+        target_matched: bool = results[-1][2]
+        intermediate_broken: bool = any(response.status_code == 0 for _, response, _ in results[:-1])
+        is_match: bool = target_matched and not intermediate_broken
+        failed_steps: List[int] = [index for index, _, matched in results if not matched]
+
         print(
-            f"\nReplay Validation Result: {'✓ SUCCESS' if is_match else '✗ MISMATCH'} "
-            f"(step {last_index} status code vs. original)"
+            f"\nReplay Validation Result: {'✓ SUCCESS' if is_match else '✗ FAILURE'}"
+            f"{' (step ' + str(target_index) + ' status code vs. original)' if is_match else ' (steps diverged: ' + ', '.join(str(s) for s in failed_steps) + ')'}"
         )
         return is_match
+
+    def _print_step_report(self, results: List[Tuple[int, StepResponse, bool]]) -> None:
+        print("Replay step results:")
+        for index, response, matched in results:
+            original: Optional[int] = self.comparator.original_status_code(index)
+            original_display: str = str(original) if original is not None else "?"
+            verdict: str = "✓ matched" if matched else "✗ MISMATCH"
+            print(f"  Step {index}: {verdict} ({response.status_code} vs original {original_display})")
 
     def _run_step(self, index: int, schedule: Set[int]) -> StepResponse:
         curl_text: str = self.workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
-            static_token_ids: Set[str] = self.replay_token_resolver.resolve(
+            static_token_ids: Set[str]
+            fallback_token_ids: Set[str]
+            static_token_ids, fallback_token_ids = self.replay_token_resolver.resolve(
                 curl_text, schedule, self.replay_run_dir, self.res_refer_dir, self.original_responses_dir
             )
             if static_token_ids:
                 self._annotate_static_tokens(index, static_token_ids)
+            if fallback_token_ids:
+                self._annotate_fallback_tokens(index, fallback_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
             return self.http_transport.send_request(curl_resolved, index)
 
@@ -106,17 +125,26 @@ class ReplayRunner:
         text: str = curl_file.read_text(encoding="utf-8")
         updated: str = text
         for token_id in token_ids:
-            updated = self._mark_token_static(updated, token_id)
+            updated = self._mark_token(updated, token_id, self.STATIC_WARNING_SUFFIX)
+        if updated != text:
+            curl_file.write_text(updated, encoding="utf-8")
+
+    def _annotate_fallback_tokens(self, index: int, token_ids: Set[str]) -> None:
+        curl_file: Path = self.workspace.curl_file(index)
+        text: str = curl_file.read_text(encoding="utf-8")
+        updated: str = text
+        for token_id in token_ids:
+            updated = self._mark_token(updated, token_id, self.CAPTURED_FALLBACK_SUFFIX)
         if updated != text:
             curl_file.write_text(updated, encoding="utf-8")
 
     @classmethod
-    def _mark_token_static(cls, text: str, token_id: str) -> str:
+    def _mark_token(cls, text: str, token_id: str, suffix: str) -> str:
         prefix: str = f"# Token {token_id} comes from response of step "
         lines: List[str] = text.splitlines()
         for i, line in enumerate(lines):
-            if line.startswith(prefix) and not line.endswith(cls.STATIC_WARNING_SUFFIX):
-                lines[i] = line + cls.STATIC_WARNING_SUFFIX
+            if line.startswith(prefix) and not line.endswith(suffix):
+                lines[i] = line + suffix
                 break
         return "\n".join(lines) + "\n"
 

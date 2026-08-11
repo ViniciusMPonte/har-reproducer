@@ -1,11 +1,12 @@
 {
   "token_id": "b3defec11e606afd97c5430602861f32",
-  "code": "def extract_t_b3defec11e606afd97c5430602861f32(response):\n    return 'abc123sess'\n",
+  "code": "\ndef extract_t_b3defec11e606afd97c5430602861f32(response: dict) -> str:\n    cookies = response.get('cookies', {})\n    value = cookies.get('SESSIONID')\n    if not value:\n        raise Exception(\"Token not found in cookies\")\n    return value\n",
   "verified": true,
-  "agent_type": "LiteralFallbackAgent",
+  "agent_type": "CookieAgent",
   "origin_step": 0,
-  "temp_file_path": null,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_b3defec11e606afd97c5430602861f32.py",
   "valid_count": 1,
   "last_value": "abc123sess",
-  "ever_changed": false
+  "ever_changed": false,
+  "captured_value": "abc123sess"
 }

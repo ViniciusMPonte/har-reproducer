@@ -20,4 +20,3 @@ class StepRetryPolicy:
                 print(f"Recovery successful for step {step_index}. Retrying request...")
                 continue
             return response
-        raise RuntimeError(f"execute exhausted {self.MAX_STEP_ATTEMPTS} attempts for step {step_index}")

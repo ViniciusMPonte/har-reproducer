@@ -23,6 +23,13 @@ class TokenLocation(str, Enum):
     URL_PARAM = "UrlParam"
 
 
+class TokenResolutionStatus(str, Enum):
+    STATIC = "static"
+    RESOLVED = "resolved"
+    CAPTURED_FALLBACK = "captured_fallback"
+    UNRESOLVED = "unresolved"
+
+
 class Extractor(BaseModel):
     token_id: str
     code: str
@@ -33,6 +40,7 @@ class Extractor(BaseModel):
     valid_count: int = 0
     last_value: Optional[str] = None
     ever_changed: bool = False
+    captured_value: Optional[str] = None
 
 
 class DynamicToken(BaseModel):

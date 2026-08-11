@@ -1,14 +1,12 @@
 Step 0 completed with status 200
 Step 1 skipped (unsupported scheme 'wss')
 Step 2 skipped (skippable method 'OPTIONS')
-Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...
 Step 3 completed with status 200
 Step 4 completed with status 200
 Step 5 completed with status 200
 [AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.
 Step 6 completed with status 200
 Step 7 completed with status 200
-Attempt 1 failed for cd0419ee5764374946a627cd3912b819. Retrying...
 Step 8 completed with status 200
 Step 9 completed with status 200
 

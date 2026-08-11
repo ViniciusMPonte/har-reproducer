@@ -1,8 +1,9 @@
 
+import os
 import sys
 import json
+from pathlib import Path
 from typing import Dict
-class ExtractorError(Exception): pass
 
 
 import json
@@ -19,11 +20,18 @@ def extract_t_ade6a53080262635799eb7ec66e824e8(response: dict) -> str:
     return str(value)
 
 
+def _load_response() -> Dict:
+    override_dir = os.environ.get("HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR")
+    if override_dir:
+        response_file: Path = Path(override_dir) / "res_0003.json"
+    else:
+        response_file: Path = Path(__file__).resolve().parent.parent / "real_responses" / "res_0003.json"
+    return json.loads(response_file.read_text(encoding="utf-8"))
+
 if __name__ == "__main__":
-    response = {'status_code': 200, 'headers': {'Content-Type': 'application/json'}, 'cookies': {}, 'body': '{"id": 4242, "ok": true}', 'body_mime': 'application/json', 'redirect_url': None, 'skipped': False, 'skip_reason': None}
     try:
+        response = _load_response()
         result = extract_t_ade6a53080262635799eb7ec66e824e8(response)
         print(result)
-    except Exception as e:
-        print(f"ERROR: {e}", file=sys.stderr)
+    except Exception:
         sys.exit(1)

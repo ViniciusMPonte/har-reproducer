@@ -29,9 +29,7 @@ class Workspace:
 
     @staticmethod
     def get_mitmproxy_ca_path() -> Path:
-        path: Path = Workspace.get_root_path().parent / ".mitmproxy"
-        path.mkdir(parents=True, exist_ok=True)
-        return path
+        return Workspace.get_root_path().parent / ".mitmproxy"
 
     def temp_extractor_file(self, safe_token_id: str) -> Path:
         return self.temp_extractors / f"temp_extractor_{safe_token_id}.py"

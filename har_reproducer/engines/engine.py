@@ -70,8 +70,7 @@ class Engine:
             return self._skip_entry(index, skip_reason)
 
         step.analysis = self.tracker.analyze_step(step, first_entry)
-        if self.USES_NETWORK:
-            self.token_resolver.resolve_all()
+        self.token_resolver.resolve_all()
 
         response: StepResponse = self.execute_step(step)
         self._persist_response_step(index, response)

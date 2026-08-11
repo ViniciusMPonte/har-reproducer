@@ -22,14 +22,33 @@ def test_run_dry_default(
     assert result.stdout.index("Step 1 skipped (unsupported scheme 'wss')") < result.stdout.index(
         "Step 2 skipped (skippable method 'OPTIONS')")
     assert result.stdout.index("Step 2 skipped (skippable method 'OPTIONS')") < result.stdout.index(
-        "Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...")
-    assert result.stdout.index("Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...") < \
-        result.stdout.index("Step 3 completed with status 200")
+        "Step 3 completed with status 200")
+    assert "Attempt 1 failed" not in result.stdout
     assert result.stdout.index("Step 3 completed with status 200") < result.stdout.index(
         "[AVISO] Não foi possível determinar a origem do token 'PLAINVAL777...'.")
     output_dir.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
 
     golden_workspace_factory.create(output_dir).assert_matches(golden_dir / "run_dry_default")
+
+
+def test_run_dry_is_idempotent_over_same_output(
+        cli_invoker: CliInvoker,
+        synthetic_flow_har: Path,
+        tmp_path: Path,
+) -> None:
+    output_dir: Path = tmp_path / "out"
+    argv: list[str] = ["run", "--har", str(synthetic_flow_har), "--mode", "dry", "--output", str(output_dir)]
+
+    first: CliInvocationResult = cli_invoker.invoke(argv)
+    assert first.exception is None
+    extractors_after_first: int = len(list((output_dir / "extractors").glob("*.meta.json")))
+
+    second: CliInvocationResult = cli_invoker.invoke(argv)
+    assert second.exception is None
+    extractors_after_second: int = len(list((output_dir / "extractors").glob("*.meta.json")))
+
+    assert extractors_after_first > 0
+    assert extractors_after_second == extractors_after_first
 
 
 def test_run_dry_reset_removes_litter(

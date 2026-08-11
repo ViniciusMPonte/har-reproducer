@@ -5,8 +5,13 @@ import json
 from pathlib import Path
 from typing import Dict
 
-def extract_t_cd0419ee5764374946a627cd3912b819(response):
-    return 'xyz789'
+
+def extract_t_cd0419ee5764374946a627cd3912b819(response: dict) -> str:
+    cookies = response.get('cookies', {})
+    value = cookies.get('PREFS')
+    if not value:
+        raise Exception("Token not found in cookies")
+    return value
 
 
 def _load_response() -> Dict:

@@ -10,7 +10,7 @@ from tests.support.fake_process import FakeProcess
 
 
 def _orchestrator(tmp_path: Path) -> MitmProxyOrchestrator:
-    return MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, project_root=tmp_path)
+    return MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, confdir=tmp_path)
 
 
 def test_build_command_includes_port_and_addon_path(tmp_path: Path) -> None:
@@ -20,6 +20,38 @@ def test_build_command_includes_port_and_addon_path(tmp_path: Path) -> None:
 
     assert str(orchestrator.port) in command
     assert str(MitmProxyOrchestrator.ADDON_PATH) in command
+
+
+def test_build_command_sets_confdir_to_confdir_argument(tmp_path: Path) -> None:
+    orchestrator: MitmProxyOrchestrator = _orchestrator(tmp_path)
+
+    command: List[str] = orchestrator._build_command()
+
+    assert f"confdir={tmp_path}" in command
+
+
+def test_ca_cert_path_is_derived_from_confdir(tmp_path: Path) -> None:
+    orchestrator: MitmProxyOrchestrator = _orchestrator(tmp_path)
+
+    assert orchestrator.ca_cert_path == tmp_path / MitmProxyOrchestrator.CA_CERT_FILENAME
+
+
+def test_init_does_not_create_confdir(tmp_path: Path) -> None:
+    confdir: Path = tmp_path / "nested" / "confdir"
+    MitmProxyOrchestrator(Workspace(tmp_path), proxy_port=8080, confdir=confdir)
+
+    assert not confdir.exists()
+
+
+def test_ensure_confdir_creates_directory(tmp_path: Path) -> None:
+    confdir: Path = tmp_path / "nested" / "confdir"
+    orchestrator: MitmProxyOrchestrator = MitmProxyOrchestrator(
+        Workspace(tmp_path), proxy_port=8080, confdir=confdir
+    )
+
+    orchestrator._ensure_confdir()
+
+    assert confdir.is_dir()
 
 
 def test_build_env_includes_capture_path(tmp_path: Path) -> None:

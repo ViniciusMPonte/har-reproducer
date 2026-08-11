@@ -43,7 +43,7 @@ def test_resolve_all_sets_token_when_response_exists_and_run_succeeds(tmp_path: 
 
     resolver.resolve_all()
 
-    assert session_store.get_token("t1") == "novo-valor"
+    assert session_store.state.tokens["t1"] == "novo-valor"
 
 
 def test_resolve_all_does_not_propagate_extractor_runner_exception(tmp_path: Path) -> None:

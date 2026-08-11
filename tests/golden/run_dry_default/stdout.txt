@@ -1,7 +1,6 @@
 Step 0 completed with status 200
 Step 1 skipped (unsupported scheme 'wss')
 Step 2 skipped (skippable method 'OPTIONS')
-Attempt 1 failed for b3defec11e606afd97c5430602861f32. Retrying...
 Step 3 completed with status 200
 Step 4 completed with status 200
 Step 5 completed with status 200

@@ -53,3 +53,14 @@ def test_find_returns_none_when_value_not_found_anywhere() -> None:
     location: Optional[TokenLocation] = TokenLocationDetector.find("tok", {})
 
     assert location is None
+
+
+def test_find_classifies_value_as_cookie_when_set_cookie_header_also_present() -> None:
+    sample: Dict[str, Any] = {
+        "headers": {"Set-Cookie": "SESSIONID=tok; Path=/; HttpOnly"},
+        "cookies": {"SESSIONID": "tok"},
+    }
+
+    location: Optional[TokenLocation] = TokenLocationDetector.find("tok", sample)
+
+    assert location == TokenLocation.COOKIE

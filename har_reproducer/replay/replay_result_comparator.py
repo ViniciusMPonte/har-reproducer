@@ -13,15 +13,20 @@ class ReplayResultComparator:
         self.workspace: Workspace = workspace
 
     def matches_original(self, index: int, response: StepResponse) -> bool:
-        original_text: Optional[str] = self._read_reference_text(index)
-        if original_text is None:
-            return False
-
-        match: Optional[Match[str]] = self.STATUS_CODE_PATTERN.search(original_text)
-        if match is None:
+        original: Optional[int] = self.original_status_code(index)
+        if original is None:
             print(f"Could not find status_code in original response for step {index} to compare.")
             return False
-        return int(match.group(1)) == response.status_code
+        return original == response.status_code
+
+    def original_status_code(self, index: int) -> Optional[int]:
+        original_text: Optional[str] = self._read_reference_text(index)
+        if original_text is None:
+            return None
+        match: Optional[Match[str]] = self.STATUS_CODE_PATTERN.search(original_text)
+        if match is None:
+            return None
+        return int(match.group(1))
 
     def _read_reference_text(self, index: int) -> Optional[str]:
         for candidate in (self.workspace.response_file(index), self.workspace.original_response_file(index)):

@@ -23,11 +23,11 @@ class MitmProxyOrchestrator:
     TERMINATE_TIMEOUT_SECONDS: ClassVar[float] = 5.0
     MITMDUMP_EXECUTABLE_NAME: ClassVar[str] = "mitmdump.exe" if sys.platform == "win32" else "mitmdump"
 
-    def __init__(self, workspace: Workspace, proxy_port: Optional[int], project_root: Path) -> None:
+    def __init__(self, workspace: Workspace, proxy_port: Optional[int], confdir: Path) -> None:
         self.workspace: Workspace = workspace
-        self.project_root: Path = project_root
+        self.confdir: Path = confdir
         self.port: int = self._resolve_port(proxy_port)
-        self.ca_cert_path: Path = self.project_root / self.CA_CERT_FILENAME
+        self.ca_cert_path: Path = self.confdir / self.CA_CERT_FILENAME
         self._process: Optional[subprocess.Popen] = None
         self._log_file: Optional[IO[str]] = None
 
@@ -57,6 +57,7 @@ class MitmProxyOrchestrator:
             self._terminate()
 
     def _start_process(self) -> subprocess.Popen:
+        self._ensure_confdir()
         self._log_file = open(self.workspace.mitm_log_file(), "w", encoding="utf-8")
         return subprocess.Popen(
             self._build_command(),
@@ -65,12 +66,15 @@ class MitmProxyOrchestrator:
             stderr=subprocess.STDOUT,
         )
 
+    def _ensure_confdir(self) -> None:
+        self.confdir.mkdir(parents=True, exist_ok=True)
+
     def _build_command(self) -> List[str]:
         return [
             str(self._resolve_mitmdump_path()),
             "-s", str(self.ADDON_PATH),
             "--listen-port", str(self.port),
-            "--set", f"confdir={self.project_root}",
+            "--set", f"confdir={self.confdir}",
         ]
 
     def _build_env(self) -> Dict[str, str]:

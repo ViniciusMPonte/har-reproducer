@@ -1,8 +1,9 @@
 
+import os
 import sys
 import json
+from pathlib import Path
 from typing import Dict
-class ExtractorError(Exception): pass
 
 
 from bs4 import BeautifulSoup
@@ -19,11 +20,18 @@ def extract_t_47ee3e04bc14c64ddd36aae983d6cb84(response: dict) -> str:
     return value
 
 
+def _load_response() -> Dict:
+    override_dir = os.environ.get("HAR_REPRODUCER_RESPONSE_OVERRIDE_DIR")
+    if override_dir:
+        response_file: Path = Path(override_dir) / "res_0000.json"
+    else:
+        response_file: Path = Path(__file__).resolve().parent.parent / "real_responses" / "res_0000.json"
+    return json.loads(response_file.read_text(encoding="utf-8"))
+
 if __name__ == "__main__":
-    response = {'status_code': 200, 'headers': {'Content-Type': 'text/html', 'Set-Cookie': 'SESSIONID=abc123sess; Path=/'}, 'cookies': {'SESSIONID': 'abc123sess'}, 'body': '<html><body><div id="marker">tok_CSS_1</div><script>var nonce = "scr_NONCE_2";</script></body></html>', 'body_mime': 'text/html', 'redirect_url': None, 'skipped': False, 'skip_reason': None}
     try:
+        response = _load_response()
         result = extract_t_47ee3e04bc14c64ddd36aae983d6cb84(response)
         print(result)
-    except Exception as e:
-        print(f"ERROR: {e}", file=sys.stderr)
+    except Exception:
         sys.exit(1)

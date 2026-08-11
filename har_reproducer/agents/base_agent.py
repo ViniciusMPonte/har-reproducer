@@ -161,7 +161,8 @@ class BaseAgent:
 
             last_error = error
             print(f"Attempt {attempt + 1} failed for {self.token_id}. Retrying...")
-            self.sleeper.sleep(self.RETRY_DELAY_SECONDS)
+            if attempt < total - 1:
+                self.sleeper.sleep(self.RETRY_DELAY_SECONDS)
 
         self._cleanup_script(self.workspace.temp_extractor_file(self.safe_token_id))
         return None

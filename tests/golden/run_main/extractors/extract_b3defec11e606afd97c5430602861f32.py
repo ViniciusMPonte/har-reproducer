@@ -5,8 +5,13 @@ import json
 from pathlib import Path
 from typing import Dict
 
-def extract_t_b3defec11e606afd97c5430602861f32(response):
-    return 'abc123sess'
+
+def extract_t_b3defec11e606afd97c5430602861f32(response: dict) -> str:
+    cookies = response.get('cookies', {})
+    value = cookies.get('SESSIONID')
+    if not value:
+        raise Exception("Token not found in cookies")
+    return value
 
 
 def _load_response() -> Dict:
