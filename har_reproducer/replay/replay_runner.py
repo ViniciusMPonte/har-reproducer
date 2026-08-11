@@ -60,14 +60,18 @@ class ReplayRunner:
         ordered_indexes, schedule = self._schedule_list(steps_file)
         return self._run_schedule(ordered_indexes, schedule)
 
-    def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
+    def execute_schedule(
+            self, ordered_indexes: List[int], schedule: Set[int], annotate: bool = True
+    ) -> List[Tuple[int, StepResponse]]:
         if not ordered_indexes:
             raise ValueError("ReplayRunner: schedule vazio — nenhum step para processar.")
+        return [(index, self._run_step(index, schedule, annotate)) for index in ordered_indexes]
 
-        results: List[Tuple[int, StepResponse, bool]] = []
-        for index in ordered_indexes:
-            response: StepResponse = self._run_step(index, schedule)
-            results.append((index, response, self.comparator.matches_original(index, response)))
+    def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
+        results: List[Tuple[int, StepResponse, bool]] = [
+            (index, response, self.comparator.matches_original(index, response))
+            for index, response in self.execute_schedule(ordered_indexes, schedule)
+        ]
 
         self._print_step_report(results)
 
@@ -91,7 +95,7 @@ class ReplayRunner:
             verdict: str = "✓ matched" if matched else "✗ MISMATCH"
             print(f"  Step {index}: {verdict} ({response.status_code} vs original {original_display})")
 
-    def _run_step(self, index: int, schedule: Set[int]) -> StepResponse:
+    def _run_step(self, index: int, schedule: Set[int], annotate: bool = True) -> StepResponse:
         curl_text: str = self.workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
@@ -100,9 +104,9 @@ class ReplayRunner:
             static_token_ids, fallback_token_ids = self.replay_token_resolver.resolve(
                 curl_text, schedule, self.replay_run_dir, self.res_refer_dir, self.original_responses_dir
             )
-            if static_token_ids:
+            if annotate and static_token_ids:
                 self._annotate_static_tokens(index, static_token_ids)
-            if fallback_token_ids:
+            if annotate and fallback_token_ids:
                 self._annotate_fallback_tokens(index, fallback_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
             return self.http_transport.send_request(curl_resolved, index)
