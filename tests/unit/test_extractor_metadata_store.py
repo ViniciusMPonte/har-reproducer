@@ -3,54 +3,47 @@ from typing import Optional
 
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import AgentType, Extractor
-from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore
+from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore, SilentExtractorMetadataStore
 
 
-def test_load_returns_none_when_file_missing(tmp_path: Path) -> None:
-    store: ExtractorMetadataStore = ExtractorMetadataStore(Workspace(tmp_path))
-
-    result: Optional[Extractor] = store.load("naoexiste")
-
-    assert result is None
+def _extractor(token_id: str) -> Extractor:
+    return Extractor(token_id=token_id, code="return 1", agent_type=AgentType.REGEX, valid_count=3)
 
 
-def test_save_then_load_round_trips_extractor(tmp_path: Path) -> None:
-    store: ExtractorMetadataStore = ExtractorMetadataStore(Workspace(tmp_path))
-    extractor: Extractor = Extractor(token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX)
-
-    store.save(extractor)
-    loaded: Optional[Extractor] = store.load("t1")
-
-    assert loaded == extractor
-
-
-def test_load_returns_none_for_corrupted_json(tmp_path: Path) -> None:
+def test_silent_store_load_returns_same_extractor_as_base_store(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
-    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
-    workspace.extractor_meta_file("t2").write_text("nao e json valido", encoding="utf-8")
+    ExtractorMetadataStore(workspace).save(_extractor("tok1"))
 
-    result: Optional[Extractor] = store.load("t2")
+    base_loaded: Optional[Extractor] = ExtractorMetadataStore(workspace).load("tok1")
+    silent_loaded: Optional[Extractor] = SilentExtractorMetadataStore(workspace).load("tok1")
 
-    assert result is None
-
-
-def test_extractor_serializes_captured_value_field() -> None:
-    extractor: Extractor = Extractor(token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX)
-
-    json_text: str = extractor.model_dump_json(indent=2)
-
-    assert '"captured_value": null' in json_text
+    assert silent_loaded == base_loaded
 
 
-def test_extractor_round_trips_captured_value(tmp_path: Path) -> None:
-    store: ExtractorMetadataStore = ExtractorMetadataStore(Workspace(tmp_path))
-    extractor: Extractor = Extractor(
-        token_id="t1", code="def f(r): pass", agent_type=AgentType.REGEX, captured_value="x"
-    )
+def test_silent_store_save_does_not_create_meta_file(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    meta_file: Path = workspace.extractor_meta_file("tok1")
 
-    store.save(extractor)
-    loaded: Optional[Extractor] = store.load("t1")
+    SilentExtractorMetadataStore(workspace).save(_extractor("tok1"))
 
-    assert loaded == extractor
-    assert loaded is not None
-    assert loaded.captured_value == "x"
+    assert not meta_file.exists()
+
+
+def test_silent_store_save_does_not_modify_existing_meta_file(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    ExtractorMetadataStore(workspace).save(_extractor("tok1"))
+    meta_file: Path = workspace.extractor_meta_file("tok1")
+    before: str = meta_file.read_text(encoding="utf-8")
+
+    SilentExtractorMetadataStore(workspace).save(_extractor("tok1", ))
+
+    assert meta_file.read_text(encoding="utf-8") == before
+
+
+def test_base_store_save_still_persists_to_disk(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    meta_file: Path = workspace.extractor_meta_file("tok1")
+
+    ExtractorMetadataStore(workspace).save(_extractor("tok1"))
+
+    assert meta_file.exists()
