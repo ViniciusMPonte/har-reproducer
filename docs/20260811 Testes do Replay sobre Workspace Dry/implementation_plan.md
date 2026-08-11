@@ -58,10 +58,10 @@ Hoje a suíte só constrói workspace `dry` localmente dentro de cada `test_run_
     meta, ou derivar do nome do arquivo).
 
 **Critérios de aceite:**
-- [ ] `uv run pytest tests/test_cli_run.py::test_run_dry_persists_extractor_scripts -q` passa e verifica um `.py` para cada `.meta.json` do workspace `dry`.
-- [ ] A fixture segue o padrão `raise RuntimeError` de `main_workspace` para falha do dry (checagem por inspeção; o caminho feliz é o teste acima).
-- [ ] Não-regressão: `uv run pytest tests/test_cli_run.py -q` passa (os `test_run_dry_*` existentes seguem verdes).
-- [ ] `git diff` não toca em `har_reproducer/`.
+- [x] `uv run pytest tests/test_cli_run.py::test_run_dry_persists_extractor_scripts -q` passa e verifica um `.py` para cada `.meta.json` do workspace `dry`.
+- [x] A fixture segue o padrão `raise RuntimeError` de `main_workspace` para falha do dry (checagem por inspeção; o caminho feliz é o teste acima).
+- [x] Não-regressão: `uv run pytest tests/test_cli_run.py -q` passa (os `test_run_dry_*` existentes seguem verdes).
+- [x] `git diff` não toca em `har_reproducer/`.
 
 ---
 
@@ -105,9 +105,9 @@ imediato) que fica vermelho se o fallback para `original_responses/` quebrar.
   resolve → `_record_observation` retorna `False` com metadata vazio → `RESOLVED`).
 
 **Critérios de aceite:**
-- [ ] O teste passa (green imediato — comportamento atual já é o correto).
-- [ ] `run_existing_calls == [RecordedRunCall("t1", Path("/original"))]` prova que o override entregue foi `original_responses_dir`.
-- [ ] Não-regressão: `uv run pytest tests/unit/test_replay_token_resolver.py -q` passa (demais testes do arquivo intactos).
+- [x] O teste passa (green imediato — comportamento atual já é o correto).
+- [x] `run_existing_calls == [RecordedRunCall("t1", Path("/original"))]` prova que o override entregue foi `original_responses_dir`.
+- [x] Não-regressão: `uv run pytest tests/unit/test_replay_token_resolver.py -q` passa (demais testes do arquivo intactos).
 
 ---
 
@@ -170,10 +170,10 @@ script roda e extrai o valor.
 - ⚠️ Teste offline e rápido (subprocess `python` em scripts locais); não marcar `slow`.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest tests/unit/test_replay_dry_resolution.py -q` passa.
-- [ ] `session_store.state.tokens` tem exatamente `{"ade6a53080262635799eb7ec66e824e8": "4242", "f04743b512e6241375b3226e7f7c69d3": "scr_NONCE_2"}`.
-- [ ] Pré-condições assertadas no teste: `real_responses/` vazio; origens do curl fora do schedule.
-- [ ] Não-regressão: rodada padrão offline `uv run pytest -q` (sem `--runslow`) continua passando.
+- [x] `uv run pytest tests/unit/test_replay_dry_resolution.py -q` passa.
+- [x] `session_store.state.tokens` tem exatamente `{"ade6a53080262635799eb7ec66e824e8": "4242", "f04743b512e6241375b3226e7f7c69d3": "scr_NONCE_2"}`.
+- [x] Pré-condições assertadas no teste: `real_responses/` vazio; origens do curl fora do schedule.
+- [x] Não-regressão: rodada padrão offline `uv run pytest -q` (sem `--runslow`) continua passando.
 
 ---
 
@@ -224,11 +224,11 @@ proxy + `CannedHttpServer`) respondendo 200 (spec §3.4). Molde: `test_replay_re
   têm path absoluto (`Path(__file__).resolve().parent.parent`), então a cópia funciona.
 
 **Critérios de aceite:**
-- [ ] Fase vermelha: sem o golden gravado, o teste falha com `Apenas no workspace atual: ...` no `assert_matches`.
-- [ ] `HAR_REPRODUCER_UPDATE_GOLDEN=1 uv run pytest tests/test_cli_replay.py::test_replay_dry_ref_fallback --runslow` grava `tests/golden/replay_dry_ref_fallback/`.
-- [ ] `uv run pytest tests/test_cli_replay.py::test_replay_dry_ref_fallback --runslow` passa (verde) sem o env de update.
-- [ ] stdout do replay: nenhuma linha `Failed to resolve token`; `Step 4 completed with status 200`; `✓ SUCCESS`.
-- [ ] Não-regressão: `uv run pytest --runslow -q` passa (goldens de rede existentes intactos).
+- [x] Fase vermelha: sem o golden gravado, o teste falha com `Apenas no workspace atual: ...` no `assert_matches`.
+- [x] `HAR_REPRODUCER_UPDATE_GOLDEN=1 uv run pytest tests/test_cli_replay.py::test_replay_dry_ref_fallback --runslow` grava `tests/golden/replay_dry_ref_fallback/`.
+- [x] `uv run pytest tests/test_cli_replay.py::test_replay_dry_ref_fallback --runslow` passa (verde) sem o env de update.
+- [x] stdout do replay: nenhuma linha `Failed to resolve token`; `Step 4 completed with status 200`; `✓ SUCCESS`.
+- [x] Não-regressão: `uv run pytest --runslow -q` passa (goldens de rede existentes intactos).
 
 ---
 
@@ -254,5 +254,5 @@ posterior fechando inventário de etapa anterior (`99b468e`, `8074cbd`; spec §3
   valendo como referência do cenário.
 
 **Critérios de aceite:**
-- [ ] O documento indica de forma explícita que o cenário está coberto e onde estão os testes.
-- [ ] Nenhuma alteração além deste arquivo neste commit (`git diff --stat` só mostra o `lacunas_de_testes.md`).
+- [x] O documento indica de forma explícita que o cenário está coberto e onde estão os testes.
+- [x] Nenhuma alteração além deste arquivo neste commit (`git diff --stat` só mostra o `lacunas_de_testes.md`).
