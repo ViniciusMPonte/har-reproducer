@@ -6,7 +6,7 @@ import pytest
 from tests.support.cli_invocation_result import CliInvocationResult
 from tests.support.cli_invoker import CliInvoker
 from tests.support.replay_scenario import ReplayScenario
-from tests.test_cli_replay import (  # noqa: F401 — reaproveita os fixtures session-scoped de rede
+from tests.test_cli_replay import (
     canned_http_server,
     main_workspace,
     network_session_dir,
