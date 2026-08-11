@@ -1,7 +1,9 @@
-from typing import List, Set, Tuple
+from pathlib import Path
+from typing import List, Optional, Set, Tuple
 
 import pytest
 
+from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import StatusCodeCriterion, StepResponse, SuccessCriterion
 from har_reproducer.optimization.replay_optimizer import ReplayOptimizer, ReplayOptimizerAborted
 from tests.support.fake_schedule_executor import FakeScheduleExecutor, RecordedExecuteScheduleCall
@@ -239,3 +241,67 @@ def test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted() -
 
     with pytest.raises(ReplayOptimizerAborted):
         optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
+
+
+def test_optimize_end_to_end_success_writes_steps_file(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 6, 9, SUCCESS_CRITERIA)
+
+    assert result == [6, 9]
+    written: str = workspace.optimized_steps_file("run-1").read_text(encoding="utf-8")
+    assert written.splitlines() == ["6", "9"]
+
+
+def test_optimize_confirmation_failure_writes_no_file_and_returns_none(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        responses_by_call=[
+            {6: _ok(200)},
+            {9: _ok(200)},
+            {9: _ok(404)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 6, 9, SUCCESS_CRITERIA)
+
+    assert result is None
+    assert not workspace.optimized_steps_file("run-1").exists()
+
+
+def test_optimize_final_list_has_no_duplicate_when_to_index_equals_from_index(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([5], {5}),
+        existing_indexes=[5],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 5, 5, SUCCESS_CRITERIA)
+
+    assert result == [5]
+
+
+def test_optimize_range_abort_writes_no_file_and_returns_none(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([8, 9], {8, 9}),
+        existing_indexes=[8, 9],
+        default_response=_ok(404),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 8, 9, SUCCESS_CRITERIA)
+
+    assert result is None
+    assert not workspace.optimized_steps_file("run-1").exists()
