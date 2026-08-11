@@ -5,11 +5,13 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Callable, ClassVar, Dict, IO, List, Optional
+from typing import Callable, ClassVar, Dict, IO, List, Optional, TypeVar
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.proxy_readiness import ProxyReadiness
+
+CallbackResult = TypeVar("CallbackResult")
 
 
 class MitmProxyOrchestrator:
@@ -48,7 +50,7 @@ class MitmProxyOrchestrator:
         executable_dir: Path = Path(sys.executable).parent
         return executable_dir / MitmProxyOrchestrator.MITMDUMP_EXECUTABLE_NAME
 
-    def run(self, callback: Callable[[], bool]) -> bool:
+    def run(self, callback: Callable[[], CallbackResult]) -> CallbackResult:
         self._process = self._start_process()
         try:
             self._wait_until_ready()

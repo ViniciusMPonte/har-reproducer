@@ -305,3 +305,22 @@ def test_optimize_range_abort_writes_no_file_and_returns_none(tmp_path: Path) ->
 
     assert result is None
     assert not workspace.optimized_steps_file("run-1").exists()
+
+
+def test_optimize_writes_to_custom_output_path_when_given(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    custom_output: Path = tmp_path / "custom.txt"
+
+    result: Optional[List[int]] = optimizer.optimize(
+        workspace, "run-1", 6, 9, SUCCESS_CRITERIA, output_path=custom_output
+    )
+
+    assert result == [6, 9]
+    assert custom_output.read_text(encoding="utf-8").splitlines() == ["6", "9"]
+    assert not workspace.optimized_steps_file("run-1").exists()
