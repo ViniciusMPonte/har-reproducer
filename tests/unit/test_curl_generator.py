@@ -1,6 +1,7 @@
 from typing import Optional
 
 from har_reproducer.models import DynamicToken, StepRequest, TokenLocation
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.reproduction.curl_generator import CurlGenerator
 
 
@@ -19,8 +20,12 @@ def _token(
     )
 
 
+def _generator() -> CurlGenerator:
+    return CurlGenerator(CurlTokenComment(step_index_width=4))
+
+
 def test_generate_without_commentable_tokens_returns_only_curl_block() -> None:
-    generator: CurlGenerator = CurlGenerator()
+    generator: CurlGenerator = _generator()
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [_token(None, None)])
@@ -29,27 +34,27 @@ def test_generate_without_commentable_tokens_returns_only_curl_block() -> None:
 
 
 def test_generate_adds_undetermined_location_comment() -> None:
-    generator: CurlGenerator = CurlGenerator()
+    generator: CurlGenerator = _generator()
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [_token(2, None)])
 
-    assert "# Token abc comes from response of step 2" in output
+    assert "# [Token abc comes from response of step 0002]" in output
     assert "origin location undetermined" in output
 
 
 def test_generate_adds_extraction_exhausted_comment() -> None:
-    generator: CurlGenerator = CurlGenerator()
+    generator: CurlGenerator = _generator()
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [_token(2, TokenLocation.COOKIE, extraction_exhausted=True)])
 
-    assert "# Token abc comes from response of step 2" in output
+    assert "# [Token abc comes from response of step 0002]" in output
     assert "extraction exhausted" in output
 
 
 def test_generate_omits_cookie_flag_when_no_cookies() -> None:
-    generator: CurlGenerator = CurlGenerator()
+    generator: CurlGenerator = _generator()
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [])
@@ -58,7 +63,7 @@ def test_generate_omits_cookie_flag_when_no_cookies() -> None:
 
 
 def test_generate_includes_body_flag_with_payload() -> None:
-    generator: CurlGenerator = CurlGenerator()
+    generator: CurlGenerator = _generator()
     request: StepRequest = StepRequest(url="https://x", method="POST", body="payload")
 
     output: str = generator.generate(request, [])

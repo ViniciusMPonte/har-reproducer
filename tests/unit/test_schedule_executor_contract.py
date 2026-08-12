@@ -4,7 +4,7 @@ from typing import List, Set, Tuple
 from har_reproducer.contracts import ScheduleExecutor
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import StepResponse
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
@@ -19,7 +19,7 @@ def test_replay_runner_satisfies_schedule_executor_protocol(tmp_path: Path) -> N
     workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
     runner: ReplayRunner = ReplayRunner(
         workspace=workspace,
-        dependency_parser=CurlDependencyParser(),
+        curl_token_comment=CurlTokenComment(step_index_width=4),
         session_store=SessionStore(),
         http_transport=StubHttpTransport(StepResponse(status_code=200)),
         replay_token_resolver=FakeReplayTokenResolver(set()),

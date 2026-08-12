@@ -6,13 +6,15 @@ import pytest
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import StepResponse
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.session.session_store import SessionStore
 from tests.support.stub_http_transport import StubHttpTransport
+
+_CURL_TOKEN_COMMENT: CurlTokenComment = CurlTokenComment(step_index_width=4)
 
 
 class FakeReplayTokenResolver:
@@ -39,7 +41,7 @@ def _runner(
 ) -> ReplayRunner:
     return ReplayRunner(
         workspace=workspace,
-        dependency_parser=CurlDependencyParser(),
+        curl_token_comment=_CURL_TOKEN_COMMENT,
         session_store=SessionStore(),
         http_transport=http_transport or StubHttpTransport(StepResponse(status_code=200)),
         replay_token_resolver=replay_token_resolver or FakeReplayTokenResolver(set()),
@@ -84,9 +86,25 @@ def test_compute_smart_schedule_expands_through_dependency_chain(tmp_path: Path)
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
     workspace.curl_file(5).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://y", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://y", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(workspace)
+
+    ordered: List[int]
+    schedule: Set[int]
+    ordered, schedule = runner.compute_smart_schedule(None, 5)
+
+    assert schedule == {2, 5}
+
+
+def test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.curl_file(5).write_text(
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://y", encoding="utf-8"
+    )
+    runner: ReplayRunner = _runner(workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"}))
+    runner._run_step(5, schedule={5})
 
     ordered: List[int]
     schedule: Set[int]
@@ -123,20 +141,22 @@ def test_run_schedule_raises_on_empty_schedule(tmp_path: Path) -> None:
         runner._run_schedule([], set())
 
 
-def test_mark_token_appends_suffix_once() -> None:
-    text: str = "# Token abc comes from response of step 2\ncurl -X GET https://x"
+def test_apply_replay_status_appends_status_once(tmp_path: Path) -> None:
+    runner: ReplayRunner = _runner(Workspace(tmp_path))
+    text: str = _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x"
 
-    once: str = ReplayRunner._mark_token(text, "abc", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
-    twice: str = ReplayRunner._mark_token(once, "abc", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
+    once: str = runner._apply_replay_status(text, "abc", ReplayStatusPhrase.COULD_NOT_EXTRACT)
+    twice: str = runner._apply_replay_status(once, "abc", ReplayStatusPhrase.COULD_NOT_EXTRACT)
 
-    assert once.splitlines()[0].endswith(ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
+    assert once.splitlines()[0].endswith(ReplayStatusPhrase.COULD_NOT_EXTRACT.value)
     assert twice == once
 
 
-def test_mark_token_leaves_text_unchanged_for_absent_token() -> None:
-    text: str = "# Token abc comes from response of step 2\ncurl -X GET https://x"
+def test_apply_replay_status_leaves_text_unchanged_for_absent_token(tmp_path: Path) -> None:
+    runner: ReplayRunner = _runner(Workspace(tmp_path))
+    text: str = _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x"
 
-    result: str = ReplayRunner._mark_token(text, "naoexiste", ReplayRunner.CAPTURED_FALLBACK_SUFFIX)
+    result: str = runner._apply_replay_status(text, "naoexiste", ReplayStatusPhrase.COULD_NOT_EXTRACT)
 
     assert result.splitlines() == text.splitlines()
 
@@ -144,7 +164,7 @@ def test_mark_token_leaves_text_unchanged_for_absent_token() -> None:
 def test_annotate_static_tokens_rewrites_file_only_when_text_changes(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(workspace)
     before: float = workspace.curl_file(0).stat().st_mtime
@@ -155,8 +175,8 @@ def test_annotate_static_tokens_rewrites_file_only_when_text_changes(tmp_path: P
     runner._annotate_static_tokens(0, {"abc"})
     changed: str = workspace.curl_file(0).read_text(encoding="utf-8")
 
-    assert "probably static" not in unchanged
-    assert "probably static" in changed
+    assert ReplayStatusPhrase.PROBABLY_STATIC.value not in unchanged
+    assert ReplayStatusPhrase.PROBABLY_STATIC.value in changed
 
 
 def test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -223,7 +243,7 @@ def test_print_step_report_prints_each_step_in_order(tmp_path: Path, capsys: pyt
 def test_annotate_fallback_tokens_rewrites_file_only_when_text_changes(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(workspace)
 
@@ -233,14 +253,14 @@ def test_annotate_fallback_tokens_rewrites_file_only_when_text_changes(tmp_path:
     runner._annotate_fallback_tokens(0, {"abc"})
     changed: str = workspace.curl_file(0).read_text(encoding="utf-8")
 
-    assert "could not extract value" not in unchanged
-    assert "could not extract value" in changed
+    assert ReplayStatusPhrase.COULD_NOT_EXTRACT.value not in unchanged
+    assert ReplayStatusPhrase.COULD_NOT_EXTRACT.value in changed
 
 
 def test_run_step_annotates_fallback_token_in_curl(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver(set(), fallback_token_ids={"abc"})
@@ -250,7 +270,7 @@ def test_run_step_annotates_fallback_token_in_curl(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     annotated: str = workspace.curl_file(0).read_text(encoding="utf-8")
-    assert ReplayRunner.CAPTURED_FALLBACK_SUFFIX in annotated
+    assert ReplayStatusPhrase.COULD_NOT_EXTRACT.value in annotated
 
 
 def test_run_step_persists_stub_transport_response(tmp_path: Path) -> None:
@@ -291,7 +311,7 @@ def test_execute_schedule_returns_index_response_pairs_without_comparator(tmp_pa
 def test_execute_schedule_annotate_false_suppresses_curl_annotation(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"})
@@ -299,13 +319,13 @@ def test_execute_schedule_annotate_false_suppresses_curl_annotation(tmp_path: Pa
 
     runner.execute_schedule([0], {0}, annotate=False)
 
-    assert "probably static" not in workspace.curl_file(0).read_text(encoding="utf-8")
+    assert ReplayStatusPhrase.PROBABLY_STATIC.value not in workspace.curl_file(0).read_text(encoding="utf-8")
 
 
 def test_execute_schedule_annotate_true_default_keeps_curl_annotation(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text(
-        "# Token abc comes from response of step 2\ncurl -X GET https://x", encoding="utf-8"
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"})
@@ -313,4 +333,4 @@ def test_execute_schedule_annotate_true_default_keeps_curl_annotation(tmp_path: 
 
     runner.execute_schedule([0], {0})
 
-    assert "probably static" in workspace.curl_file(0).read_text(encoding="utf-8")
+    assert ReplayStatusPhrase.PROBABLY_STATIC.value in workspace.curl_file(0).read_text(encoding="utf-8")
