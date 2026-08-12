@@ -1,9 +1,12 @@
 from pathlib import Path
+from typing import ClassVar
 
 from har_reproducer.fs_io.workspace_dir import WorkspaceDir
 
 
 class Workspace:
+
+    STEP_INDEX_WIDTH: ClassVar[int] = 4
 
     def __init__(self, output_dir: Path) -> None:
         self.output_dir: Path = Path(output_dir)
@@ -41,13 +44,13 @@ class Workspace:
         return self.extractors / f"extract_{safe_token_id}.meta.json"
 
     def request_file(self, index: int) -> Path:
-        return self.real_requests / f"req_{index:04d}.json"
+        return self.real_requests / f"req_{index:0{self.STEP_INDEX_WIDTH}d}.json"
 
     def response_file(self, index: int) -> Path:
-        return self.real_responses / f"res_{index:04d}.json"
+        return self.real_responses / f"res_{index:0{self.STEP_INDEX_WIDTH}d}.json"
 
     def original_response_file(self, index: int) -> Path:
-        return self.original_responses / f"res_{index:04d}.json"
+        return self.original_responses / f"res_{index:0{self.STEP_INDEX_WIDTH}d}.json"
 
     def mitm_capture_file(self) -> Path:
         return self.mitm_capture / "capture.har"
@@ -56,7 +59,7 @@ class Workspace:
         return self.mitm_capture / "mitmdump.log"
 
     def curl_file(self, index: int) -> Path:
-        return self.curls / f"req_{index:04d}.curl.sh"
+        return self.curls / f"req_{index:0{self.STEP_INDEX_WIDTH}d}.curl.sh"
 
     def replay_run_dir(self, run_id: str) -> Path:
         path: Path = self.replays / run_id
@@ -64,7 +67,7 @@ class Workspace:
         return path
 
     def replay_response_file(self, run_id: str, index: int) -> Path:
-        return self.replay_run_dir(run_id) / f"res_{index:04d}.json"
+        return self.replay_run_dir(run_id) / f"res_{index:0{self.STEP_INDEX_WIDTH}d}.json"
 
     def optimized_steps_file(self, run_id: str) -> Path:
         return self.replays / f"optimized_{run_id}.txt"
