@@ -5,7 +5,7 @@ from typing import Iterator
 
 import pytest
 
-from har_reproducer.replay import ReplayRunner
+from har_reproducer.replay.curl_token_comment import ReplayStatusPhrase
 
 from tests.support.canned_http_server import CannedHttpServer
 from tests.support.cli_invocation_result import CliInvocationResult
@@ -259,7 +259,7 @@ def test_replay_list_out_of_order(
     TokenFailureGuard().assert_at_most_one_failure_per_step(result.stdout)
     curl_step4: str = scenario.workspace.joinpath("curls", "req_0004.curl.sh").read_text(encoding="utf-8")
     assert "# Token ade6a53080262635799eb7ec66e824e8 comes from response of step " in curl_step4
-    assert ReplayRunner.CAPTURED_FALLBACK_SUFFIX in curl_step4
+    assert ReplayStatusPhrase.COULD_NOT_EXTRACT.value in curl_step4
     scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
 
     golden_workspace_factory.create(scenario.workspace).assert_matches(golden_dir / "replay_list_out_of_order")
