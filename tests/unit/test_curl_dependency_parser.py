@@ -1,4 +1,5 @@
 from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.replay_runner import ReplayRunner
 
 
 def test_parse_extracts_single_dependency() -> None:
@@ -28,6 +29,18 @@ def test_parse_extracts_multiple_dependencies() -> None:
     result: dict = parser.parse(text)
 
     assert result == {"abc": 1, "def": 3}
+
+
+def test_parse_still_extracts_dependency_annotated_as_probably_static() -> None:
+    parser: CurlDependencyParser = CurlDependencyParser()
+    text: str = (
+        f"# Token abc comes from response of step 2{ReplayRunner.STATIC_WARNING_SUFFIX}\n"
+        "curl -X GET https://x"
+    )
+
+    result: dict = parser.parse(text)
+
+    assert result == {"abc": 2}
 
 
 def test_parse_ignores_exhausted_annotation_line() -> None:

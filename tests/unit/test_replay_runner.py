@@ -95,6 +95,22 @@ def test_compute_smart_schedule_expands_through_dependency_chain(tmp_path: Path)
     assert schedule == {2, 5}
 
 
+def test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.curl_file(5).write_text(
+        "# Token abc comes from response of step 2\ncurl -X GET https://y", encoding="utf-8"
+    )
+    runner: ReplayRunner = _runner(workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"}))
+    runner._run_step(5, schedule={5})
+
+    ordered: List[int]
+    schedule: Set[int]
+    ordered, schedule = runner.compute_smart_schedule(None, 5)
+
+    assert schedule == {2, 5}
+
+
 def test_existing_step_indexes_returns_sorted_indexes_from_workspace(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     for index in (5, 0, 2):
