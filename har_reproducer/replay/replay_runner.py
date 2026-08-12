@@ -1,12 +1,12 @@
 import re
 from pathlib import Path
 from re import Match, Pattern
-from typing import ClassVar, Iterable, List, Optional, Set, Tuple
+from typing import ClassVar, Dict, Iterable, List, Optional, Set, Tuple
 
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.reproduction import StepRetryPolicy
@@ -15,13 +15,11 @@ from har_reproducer.session.session_store import SessionStore
 
 class ReplayRunner:
     STEP_FILENAME_PATTERN: ClassVar[Pattern[str]] = re.compile(r"req_(\d+)\.curl\.sh")
-    STATIC_WARNING_SUFFIX: ClassVar[str] = " - probably static"
-    CAPTURED_FALLBACK_SUFFIX: ClassVar[str] = " - could not extract value from response, using captured value"
 
     def __init__(
             self,
             workspace: Workspace,
-            dependency_parser: CurlDependencyParser,
+            curl_token_comment: CurlTokenComment,
             session_store: SessionStore,
             http_transport: HttpTransport,
             replay_token_resolver: ReplayTokenResolver,
@@ -33,7 +31,7 @@ class ReplayRunner:
             original_responses_dir: Path,
     ) -> None:
         self.workspace: Workspace = workspace
-        self.dependency_parser: CurlDependencyParser = dependency_parser
+        self.curl_token_comment: CurlTokenComment = curl_token_comment
         self.session_store: SessionStore = session_store
         self.http_transport: HttpTransport = http_transport
         self.replay_token_resolver: ReplayTokenResolver = replay_token_resolver
@@ -125,30 +123,26 @@ class ReplayRunner:
         return response
 
     def _annotate_static_tokens(self, index: int, token_ids: Set[str]) -> None:
-        curl_file: Path = self.workspace.curl_file(index)
-        text: str = curl_file.read_text(encoding="utf-8")
-        updated: str = text
-        for token_id in token_ids:
-            updated = self._mark_token(updated, token_id, self.STATIC_WARNING_SUFFIX)
-        if updated != text:
-            curl_file.write_text(updated, encoding="utf-8")
+        self._annotate(index, token_ids, ReplayStatusPhrase.PROBABLY_STATIC)
 
     def _annotate_fallback_tokens(self, index: int, token_ids: Set[str]) -> None:
+        self._annotate(index, token_ids, ReplayStatusPhrase.COULD_NOT_EXTRACT)
+
+    def _annotate(self, index: int, token_ids: Set[str], phrase: ReplayStatusPhrase) -> None:
         curl_file: Path = self.workspace.curl_file(index)
         text: str = curl_file.read_text(encoding="utf-8")
         updated: str = text
         for token_id in token_ids:
-            updated = self._mark_token(updated, token_id, self.CAPTURED_FALLBACK_SUFFIX)
+            updated = self._apply_replay_status(updated, token_id, phrase)
         if updated != text:
             curl_file.write_text(updated, encoding="utf-8")
 
-    @classmethod
-    def _mark_token(cls, text: str, token_id: str, suffix: str) -> str:
-        prefix: str = f"# Token {token_id} comes from response of step "
+    def _apply_replay_status(self, text: str, token_id: str, phrase: ReplayStatusPhrase) -> str:
+        prefix: str = f"# [Token {token_id} "
         lines: List[str] = text.splitlines()
         for i, line in enumerate(lines):
-            if line.startswith(prefix) and not line.endswith(suffix):
-                lines[i] = line + suffix
+            if line.startswith(prefix):
+                lines[i] = self.curl_token_comment.with_replay_status(line, phrase)
                 break
         return "\n".join(lines) + "\n"
 
@@ -182,7 +176,7 @@ class ReplayRunner:
             self, current: int, floor: int, existing_set: Set[int], schedule: Set[int], pending: Set[int]
     ) -> None:
         curl_text: str = self.workspace.curl_file(current).read_text(encoding="utf-8")
-        dependencies = self.dependency_parser.parse(curl_text)
+        dependencies: Dict[str, int] = self.curl_token_comment.parse(curl_text)
         for origin_step in dependencies.values():
             if origin_step >= floor and origin_step not in schedule and origin_step in existing_set:
                 schedule.add(origin_step)
