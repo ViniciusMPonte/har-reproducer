@@ -48,10 +48,10 @@ def replay_response_file(self, run_id: str, index: int) -> Path:
   escrever, guia-de-estilo, exceção de refactor estrutural).
 
 **Critérios de aceite:**
-- [ ] `Workspace.STEP_INDEX_WIDTH == 4`.
-- [ ] `Workspace(tmp_path).curl_file(5)` continua retornando um `Path`
+- [x] `Workspace.STEP_INDEX_WIDTH == 4`.
+- [x] `Workspace(tmp_path).curl_file(5)` continua retornando um `Path`
       terminando em `req_0005.curl.sh` (não-regressão).
-- [ ] Suíte completa de testes que usa `Workspace` (`tests/unit/test_replay_runner.py`,
+- [x] Suíte completa de testes que usa `Workspace` (`tests/unit/test_replay_runner.py`,
       `tests/unit/test_replay_token_resolver.py`, golden) continua passando sem
       nenhuma mudança de asserção.
 
@@ -93,19 +93,19 @@ class ReplayStatusPhrase(str, Enum):
   nesta task — os enums existem isolados, sem nenhum consumidor ainda.
 
 **Critérios de aceite:**
-- [ ] `DependencyPhrase.COMES_FROM_STEP.value == "comes from response of step"`.
-- [ ] `OriginStatusPhrase.UNDETERMINED.value` é idêntico ao texto hoje escrito
+- [x] `DependencyPhrase.COMES_FROM_STEP.value == "comes from response of step"`.
+- [x] `OriginStatusPhrase.UNDETERMINED.value` é idêntico ao texto hoje escrito
       em `curl_generator.py:65`.
-- [ ] `OriginStatusPhrase.EXTRACTION_EXHAUSTED.value` é idêntico ao texto hoje
+- [x] `OriginStatusPhrase.EXTRACTION_EXHAUSTED.value` é idêntico ao texto hoje
       escrito em `curl_generator.py:67-69` (concatenado).
-- [ ] `ReplayStatusPhrase.PROBABLY_STATIC.value == "probably static"` — mesmo
+- [x] `ReplayStatusPhrase.PROBABLY_STATIC.value == "probably static"` — mesmo
       texto de `ReplayRunner.STATIC_WARNING_SUFFIX` hoje (`" - probably static"`),
       sem o prefixo `" - "` (o prefixo/separador passa a ser responsabilidade
       de composição de `CurlTokenComment`, não do enum).
-- [ ] `ReplayStatusPhrase.COULD_NOT_EXTRACT.value == "could not extract value from response, using captured value"`
+- [x] `ReplayStatusPhrase.COULD_NOT_EXTRACT.value == "could not extract value from response, using captured value"`
       — mesmo texto de `ReplayRunner.CAPTURED_FALLBACK_SUFFIX` hoje, sem o
       prefixo `" - "`.
-- [ ] As 3 classes são `str, Enum` (checável via `isinstance(DependencyPhrase.COMES_FROM_STEP, str)`).
+- [x] As 3 classes são `str, Enum` (checável via `isinstance(DependencyPhrase.COMES_FROM_STEP, str)`).
 
 ## [T03] — `CurlTokenComment`: formata, compõe e faz parse do comentário — núcleo da correção
 
@@ -175,33 +175,33 @@ class CurlTokenComment:
 vermelho, cada cenário abaixo antes de implementar `CurlTokenComment`.
 
 **Critérios de aceite:**
-- [ ] `format_dependency_line("abc", 5)` retorna
+- [x] `format_dependency_line("abc", 5)` retorna
       `"# [Token abc comes from response of step 0005]"` (sem status, sem
       espaço sobrando no fim).
-- [ ] `format_dependency_line("abc", 5, OriginStatusPhrase.UNDETERMINED)` retorna
+- [x] `format_dependency_line("abc", 5, OriginStatusPhrase.UNDETERMINED)` retorna
       a linha com `"] origin location undetermined — using literal captured value"`
       no final.
-- [ ] `with_replay_status(line_sem_status, ReplayStatusPhrase.PROBABLY_STATIC)`
+- [x] `with_replay_status(line_sem_status, ReplayStatusPhrase.PROBABLY_STATIC)`
       anexa `"probably static"` após o `]`.
-- [ ] `with_replay_status` chamado sobre uma linha que já tem
+- [x] `with_replay_status` chamado sobre uma linha que já tem
       `OriginStatusPhrase.UNDETERMINED` preserva esse status e concatena o
       `ReplayStatusPhrase` novo com `"; "`, nesta ordem: origem antes de
       replay.
-- [ ] `with_replay_status` chamado duas vezes seguidas com
+- [x] `with_replay_status` chamado duas vezes seguidas com
       `ReplayStatusPhrase` diferente (`PROBABLY_STATIC` depois
       `COULD_NOT_EXTRACT`) resulta em **só o segundo** presente na linha final
       (substitui, não acumula) — cenário do relatório (spec seção 5).
-- [ ] `parse(texto)` com uma linha no formato novo, sem nenhum status,
+- [x] `parse(texto)` com uma linha no formato novo, sem nenhum status,
       retorna `{"abc": 5}`.
-- [ ] `parse(texto)` com uma linha no formato novo **com qualquer status
+- [x] `parse(texto)` com uma linha no formato novo **com qualquer status
       anexado** (`OriginStatusPhrase`, `ReplayStatusPhrase`, ou os dois
       concatenados) continua retornando `{"abc": 5}` — este é o teste que
       reproduz e fecha o bug original (equivalente adaptado de
       `test_parse_still_extracts_dependency_annotated_as_probably_static`).
-- [ ] `parse(texto)` ignora uma linha de comentário arbitrária que não bate
+- [x] `parse(texto)` ignora uma linha de comentário arbitrária que não bate
       no padrão (`"# nota qualquer sobre este step"`) sem lançar exceção e
       sem incluí-la no resultado.
-- [ ] `parse(texto)` com múltiplas linhas de dependência retorna todas
+- [x] `parse(texto)` com múltiplas linhas de dependência retorna todas
       (não-regressão de `test_parse_extracts_multiple_dependencies`).
 
 ## [T04] — `CurlGenerator`: passa a delegar para `CurlTokenComment`
@@ -252,18 +252,18 @@ class CurlGenerator:
   mais uma lista de até 2 linhas por token, é sempre 1.
 
 **Critérios de aceite:**
-- [ ] `CurlGenerator(CurlTokenComment(4))` — construtor aceita a dependência.
-- [ ] `generate(...)` para um token com `origin_location is None` produz uma
+- [x] `CurlGenerator(CurlTokenComment(4))` — construtor aceita a dependência.
+- [x] `generate(...)` para um token com `origin_location is None` produz uma
       única linha de comentário terminando em
       `"origin location undetermined — using literal captured value"`, no
       formato novo (`# [Token ...] ...`).
-- [ ] `generate(...)` para um token com `origin_location` resolvido e
+- [x] `generate(...)` para um token com `origin_location` resolvido e
       `extraction_exhausted=False` produz a linha só com a cláusula `[...]`,
       sem status.
-- [ ] `generate(...)` para múltiplos tokens preserva a ordem original (uma
+- [x] `generate(...)` para múltiplos tokens preserva a ordem original (uma
       linha por token, na ordem em que os tokens foram passados) —
       não-regressão.
-- [ ] `tests/unit/test_curl_generator.py` atualizado: as 5 instanciações de
+- [x] `tests/unit/test_curl_generator.py` atualizado: as 5 instanciações de
       `CurlGenerator()` sem argumento passam a receber
       `CurlTokenComment(step_index_width=4)`; as asserções que checavam o
       texto antigo (linhas 37/47 hoje) passam a checar o formato novo.
@@ -317,33 +317,33 @@ def _mark_token(cls, text: str, token_id: str, suffix: str) -> str:
   encolher entre execuções (é a correção do bug em si).
 
 **Critérios de aceite:**
-- [ ] `test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static`
+- [x] `test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static`
       (já commitado, vermelho) passa a **verde**: anotar o step 5 como
       estático via `_run_step` não faz o step 2 desaparecer de
       `compute_smart_schedule(None, 5)`.
-- [ ] `test_mark_token_appends_suffix_once`/`test_mark_token_leaves_text_unchanged_for_absent_token`
+- [x] `test_mark_token_appends_suffix_once`/`test_mark_token_leaves_text_unchanged_for_absent_token`
       (hoje testam `_mark_token` diretamente) são adaptados para testar
       `with_replay_status` via `curl_token_comment` (o método `_mark_token` não
       existe mais).
-- [ ] `test_annotate_static_tokens_rewrites_file_only_when_text_changes`/
+- [x] `test_annotate_static_tokens_rewrites_file_only_when_text_changes`/
       `test_annotate_fallback_tokens_rewrites_file_only_when_text_changes`
       continuam passando, checando o novo texto de status em vez de
       `"probably static"`/`"could not extract value"` soltos (agora vía
       `ReplayStatusPhrase.PROBABLY_STATIC.value`/`.COULD_NOT_EXTRACT.value`).
-- [ ] `test_run_step_annotates_fallback_token_in_curl` atualizado: referência a
+- [x] `test_run_step_annotates_fallback_token_in_curl` atualizado: referência a
       `ReplayRunner.CAPTURED_FALLBACK_SUFFIX` troca para
       `ReplayStatusPhrase.COULD_NOT_EXTRACT.value`.
-- [ ] `test_execute_schedule_annotate_false_suppresses_curl_annotation`/
+- [x] `test_execute_schedule_annotate_false_suppresses_curl_annotation`/
       `test_execute_schedule_annotate_true_default_keeps_curl_annotation`
       atualizados na mesma linha.
-- [ ] Helper `_runner(...)` em `tests/unit/test_replay_runner.py` passa a
+- [x] Helper `_runner(...)` em `tests/unit/test_replay_runner.py` passa a
       construir `CurlTokenComment(step_index_width=4)` em vez de
       `CurlDependencyParser()`.
-- [ ] Fixtures hardcoded como `"# Token abc comes from response of step 2\ncurl..."`
+- [x] Fixtures hardcoded como `"# Token abc comes from response of step 2\ncurl..."`
       nos testes deste arquivo passam a ser construídas chamando
       `CurlTokenComment.format_dependency_line("abc", 2)` (spec seção 5,
       convenção de teste) em vez de string solta.
-- [ ] `tests/test_cli_replay.py:262` (referência a `CAPTURED_FALLBACK_SUFFIX`)
+- [x] `tests/test_cli_replay.py:262` (referência a `CAPTURED_FALLBACK_SUFFIX`)
       atualizado para `ReplayStatusPhrase.COULD_NOT_EXTRACT.value`.
 
 ## [T06] — `ReplayTokenResolver`: passa a receber `CurlTokenComment`
@@ -372,14 +372,14 @@ def __init__(self, session_store, extractor_runner, dependency_parser: CurlDepen
   anteriores terem anotado a linha (correção implícita do bug secundário).
 
 **Critérios de aceite:**
-- [ ] Helper `_resolver(...)` em `tests/unit/test_replay_token_resolver.py`
+- [x] Helper `_resolver(...)` em `tests/unit/test_replay_token_resolver.py`
       passa a construir `CurlTokenComment(step_index_width=4)` em vez de
       `CurlDependencyParser()`.
-- [ ] Teste novo: `resolve` sobre um `curl_text` já anotado (via
+- [x] Teste novo: `resolve` sobre um `curl_text` já anotado (via
       `CurlTokenComment.with_replay_status`) continua retornando o
       `origin_step` correto para o token — não-regressão do bug secundário
       (spec seção 1, consequência sobre `ReplayTokenResolver`).
-- [ ] Suíte existente de `test_replay_token_resolver.py` passa sem outra
+- [x] Suíte existente de `test_replay_token_resolver.py` passa sem outra
       mudança de asserção.
 
 ## [T07] — Remove `CurlDependencyParser`, atualiza `replay/__init__.py`
@@ -409,10 +409,10 @@ remove-se para não deixar duas fontes de verdade do mesmo formato coexistindo
   importar os enums ou só `CurlTokenComment`).
 
 **Critérios de aceite:**
-- [ ] `grep -r "CurlDependencyParser" har_reproducer/ tests/` não retorna
+- [x] `grep -r "CurlDependencyParser" har_reproducer/ tests/` não retorna
       nenhuma ocorrência.
-- [ ] `from har_reproducer.replay import CurlTokenComment` funciona.
-- [ ] Suíte completa (`uv run pytest`) roda sem erro de import.
+- [x] `from har_reproducer.replay import CurlTokenComment` funciona.
+- [x] Suíte completa (`uv run pytest`) roda sem erro de import.
 
 ## [T08] — Composition roots: `EngineFactory` e `CliHandlers._build_replay_runner` passam a construir `CurlTokenComment`
 
@@ -454,11 +454,11 @@ curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspa
   compartilha uma única instância entre os dois).
 
 **Critérios de aceite:**
-- [ ] `uv run python -m har_reproducer.main run --har ... --config ...`
+- [x] `uv run python -m har_reproducer.main run --har ... --config ...`
       executa sem `TypeError` (smoke test manual ou via golden existente).
-- [ ] `uv run python -m har_reproducer.main replay --output ... --mode all`
+- [x] `uv run python -m har_reproducer.main replay --output ... --mode all`
       executa sem `TypeError`.
-- [ ] Golden suite (`tests/golden/run_main`, `tests/golden/replay_all`, etc.)
+- [x] Golden suite (`tests/golden/run_main`, `tests/golden/replay_all`, etc.)
       continua passando com o composition root atualizado (antes de
       regenerar em T09 — nesta task ainda deve estar vermelho/divergente
       porque o formato do fixture ainda é o antigo; ver T09).
@@ -489,12 +489,12 @@ comes from response of step 5`, sem colchetes).
   de comportamento de request/response.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest` (suíte padrão) passa 100%.
-- [ ] `uv run pytest --runslow` (inclui golden de rede) passa 100%.
-- [ ] `git diff tests/golden/` mostra só mudanças nas linhas de comentário
+- [x] `uv run pytest` (suíte padrão) passa 100%.
+- [x] `uv run pytest --runslow` (inclui golden de rede) passa 100%.
+- [x] `git diff tests/golden/` mostra só mudanças nas linhas de comentário
       `# Token ...`/`# [Token ...]` — nenhum outro campo do `.curl.sh`
       (método, URL, headers, body) muda.
-- [ ] Os 2 testes vermelhos originais desta etapa
+- [x] Os 2 testes vermelhos originais desta etapa
       (`test_parse_still_extracts_dependency_annotated_as_probably_static`,
       migrado para `test_curl_token_comment.py` em T03;
       `test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static`,
