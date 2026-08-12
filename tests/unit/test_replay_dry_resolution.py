@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Dict, Set
 
 from har_reproducer.fs_io import Workspace
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.reproduction.script_executor import ScriptExecutor
@@ -15,14 +15,15 @@ def test_replay_resolves_tokens_from_original_responses_in_dry_workspace(
 ) -> None:
     assert list((dry_workspace / "real_responses").glob("res_*.json")) == []
 
+    curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH)
     curl_text: str = (dry_workspace / "curls" / "req_0004.curl.sh").read_text(encoding="utf-8")
-    dependencies: Dict[str, int] = CurlDependencyParser().parse(curl_text)
+    dependencies: Dict[str, int] = curl_token_comment.parse(curl_text)
     assert set(dependencies.values()).isdisjoint({4})
 
     resolver: ReplayTokenResolver = ReplayTokenResolver(
         SessionStore(),
         ExtractorRunner(Workspace(dry_workspace), ScriptExecutor()),
-        CurlDependencyParser(),
+        curl_token_comment,
         ExtractorMetadataStore(Workspace(dry_workspace)),
     )
 

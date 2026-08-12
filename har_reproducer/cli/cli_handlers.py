@@ -11,7 +11,7 @@ from har_reproducer.engines import Engine, EngineFactory, EngineMode
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.models import ProjectConfig, SuccessCriterion
 from har_reproducer.optimization import ReplayOptimizer
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
@@ -222,7 +222,7 @@ class CliHandlers:
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner(workspace, script_executor)
-        dependency_parser: CurlDependencyParser = CurlDependencyParser()
+        dependency_parser: CurlTokenComment = CurlTokenComment()
         metadata_store: ExtractorMetadataStore = metadata_store_factory(workspace)
         replay_token_resolver: ReplayTokenResolver = ReplayTokenResolver(
             session_store, extractor_runner, dependency_parser, metadata_store
