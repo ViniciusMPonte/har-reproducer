@@ -53,21 +53,25 @@ class ReplayRunner:
         return self._run_schedule(ordered_indexes, schedule)
 
     def run_smart(self, from_index: Optional[int], to_index: Optional[int]) -> bool:
-        ordered_indexes, schedule = self._schedule_smart(from_index, to_index)
+        ordered_indexes, schedule = self.compute_smart_schedule(from_index, to_index)
         return self._run_schedule(ordered_indexes, schedule)
 
     def run_list(self, steps_file: Path) -> bool:
         ordered_indexes, schedule = self._schedule_list(steps_file)
         return self._run_schedule(ordered_indexes, schedule)
 
-    def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
+    def execute_schedule(
+            self, ordered_indexes: List[int], schedule: Set[int], annotate: bool = True
+    ) -> List[Tuple[int, StepResponse]]:
         if not ordered_indexes:
             raise ValueError("ReplayRunner: schedule vazio — nenhum step para processar.")
+        return [(index, self._run_step(index, schedule, annotate)) for index in ordered_indexes]
 
-        results: List[Tuple[int, StepResponse, bool]] = []
-        for index in ordered_indexes:
-            response: StepResponse = self._run_step(index, schedule)
-            results.append((index, response, self.comparator.matches_original(index, response)))
+    def _run_schedule(self, ordered_indexes: List[int], schedule: Set[int]) -> bool:
+        results: List[Tuple[int, StepResponse, bool]] = [
+            (index, response, self.comparator.matches_original(index, response))
+            for index, response in self.execute_schedule(ordered_indexes, schedule)
+        ]
 
         self._print_step_report(results)
 
@@ -91,7 +95,7 @@ class ReplayRunner:
             verdict: str = "✓ matched" if matched else "✗ MISMATCH"
             print(f"  Step {index}: {verdict} ({response.status_code} vs original {original_display})")
 
-    def _run_step(self, index: int, schedule: Set[int]) -> StepResponse:
+    def _run_step(self, index: int, schedule: Set[int], annotate: bool = True) -> StepResponse:
         curl_text: str = self.workspace.curl_file(index).read_text(encoding="utf-8")
 
         def attempt() -> StepResponse:
@@ -100,9 +104,9 @@ class ReplayRunner:
             static_token_ids, fallback_token_ids = self.replay_token_resolver.resolve(
                 curl_text, schedule, self.replay_run_dir, self.res_refer_dir, self.original_responses_dir
             )
-            if static_token_ids:
+            if annotate and static_token_ids:
                 self._annotate_static_tokens(index, static_token_ids)
-            if fallback_token_ids:
+            if annotate and fallback_token_ids:
                 self._annotate_fallback_tokens(index, fallback_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
             return self.http_transport.send_request(curl_resolved, index)
@@ -149,18 +153,18 @@ class ReplayRunner:
         return "\n".join(lines) + "\n"
 
     def _schedule_all(self) -> Tuple[List[int], Set[int]]:
-        ordered_indexes: List[int] = self._existing_step_indexes()
+        ordered_indexes: List[int] = self.existing_step_indexes()
         return ordered_indexes, set(ordered_indexes)
 
     def _schedule_slice(self, from_index: Optional[int], to_index: Optional[int]) -> Tuple[List[int], Set[int]]:
-        existing: List[int] = self._existing_step_indexes()
+        existing: List[int] = self.existing_step_indexes()
         effective_from: int = from_index if from_index is not None else 0
         effective_to: int = to_index if to_index is not None else max(existing)
         ordered_indexes: List[int] = [index for index in existing if effective_from <= index <= effective_to]
         return ordered_indexes, set(ordered_indexes)
 
-    def _schedule_smart(self, from_index: Optional[int], to_index: Optional[int]) -> Tuple[List[int], Set[int]]:
-        existing: List[int] = self._existing_step_indexes()
+    def compute_smart_schedule(self, from_index: Optional[int], to_index: Optional[int]) -> Tuple[List[int], Set[int]]:
+        existing: List[int] = self.existing_step_indexes()
         existing_set: Set[int] = set(existing)
         floor: int = from_index if from_index is not None else 0
         target: int = to_index if to_index is not None else max(existing)
@@ -185,7 +189,7 @@ class ReplayRunner:
                 pending.add(origin_step)
 
     def _schedule_list(self, steps_file: Path) -> Tuple[List[int], Set[int]]:
-        existing_set: Set[int] = set(self._existing_step_indexes())
+        existing_set: Set[int] = set(self.existing_step_indexes())
         lines: List[str] = steps_file.read_text(encoding="utf-8").splitlines()
         ordered_indexes: List[int] = [int(line.strip()) for line in lines if line.strip()]
         self._require_all_existing(ordered_indexes, existing_set)
@@ -200,7 +204,7 @@ class ReplayRunner:
                 f"provavelmente foram pulados por skip_rules ou estão fora do intervalo de steps existentes."
             )
 
-    def _existing_step_indexes(self) -> List[int]:
+    def existing_step_indexes(self) -> List[int]:
         indexes: List[int] = []
         for path in self.workspace.curls.glob("req_*.curl.sh"):
             match: Optional[Match[str]] = self.STEP_FILENAME_PATTERN.match(path.name)
