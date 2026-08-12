@@ -3,7 +3,7 @@ from typing import ClassVar, Dict, Optional, Set, Tuple
 
 from har_reproducer.models import Extractor, TokenResolutionStatus
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.session import SessionStore
 
 
@@ -14,12 +14,12 @@ class ReplayTokenResolver:
             self,
             session_store: SessionStore,
             extractor_runner: ExtractorRunner,
-            dependency_parser: CurlDependencyParser,
+            curl_token_comment: CurlTokenComment,
             metadata_store: ExtractorMetadataStore,
     ) -> None:
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = extractor_runner
-        self.dependency_parser: CurlDependencyParser = dependency_parser
+        self.curl_token_comment: CurlTokenComment = curl_token_comment
         self.metadata_store: ExtractorMetadataStore = metadata_store
 
     def resolve(
@@ -30,7 +30,7 @@ class ReplayTokenResolver:
             res_refer_dir: Path,
             original_responses_dir: Path,
     ) -> Tuple[Set[str], Set[str]]:
-        dependencies: Dict[str, int] = self.dependency_parser.parse(curl_text)
+        dependencies: Dict[str, int] = self.curl_token_comment.parse(curl_text)
         token_ids: Set[str] = set(SessionStore.TOKEN_PLACEHOLDER_PATTERN.findall(curl_text))
         static_token_ids: Set[str] = set()
         fallback_token_ids: Set[str] = set()
