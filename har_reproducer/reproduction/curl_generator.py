@@ -2,9 +2,13 @@ import shlex
 from typing import List, Optional, Union
 
 from har_reproducer.models import DynamicToken, StepRequest
+from har_reproducer.replay.curl_token_comment import CurlTokenComment, OriginStatusPhrase
 
 
 class CurlGenerator:
+
+    def __init__(self, curl_token_comment: CurlTokenComment) -> None:
+        self.curl_token_comment: CurlTokenComment = curl_token_comment
 
     def generate(self, request: StepRequest, tokens: List[DynamicToken]) -> str:
         comment_lines: List[str] = self._token_comments(tokens)
@@ -54,21 +58,23 @@ class CurlGenerator:
         quoted_body: str = shlex.quote(self._decode_body(body))
         return [f"--data-binary {quoted_body}"]
 
-    @staticmethod
-    def _token_comments(tokens: List[DynamicToken]) -> List[str]:
+    def _token_comments(self, tokens: List[DynamicToken]) -> List[str]:
         lines: List[str] = []
         for token in tokens:
             if token.origin_step is None:
                 continue
-            lines.append(f"# Token {token.token_id} comes from response of step {token.origin_step}")
-            if token.origin_location is None:
-                lines.append(f"# Token {token.token_id} origin location undetermined — using literal captured value")
-            elif token.extraction_exhausted:
-                lines.append(
-                    f"# Token {token.token_id} origin location determined but extraction exhausted — "
-                    f"using literal captured value"
-                )
+            lines.append(self.curl_token_comment.format_dependency_line(
+                token.token_id, token.origin_step, self._origin_status(token)
+            ))
         return lines
+
+    @staticmethod
+    def _origin_status(token: DynamicToken) -> Optional[OriginStatusPhrase]:
+        if token.origin_location is None:
+            return OriginStatusPhrase.UNDETERMINED
+        if token.extraction_exhausted:
+            return OriginStatusPhrase.EXTRACTION_EXHAUSTED
+        return None
 
     @staticmethod
     def _decode_body(body: Union[str, bytes]) -> str:

@@ -4,15 +4,17 @@ from typing import Optional, Set, Tuple
 import pytest
 
 from har_reproducer.models import AgentType, Extractor, TokenResolutionStatus
-from har_reproducer.replay.curl_dependency_parser import CurlDependencyParser
+from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.session import SessionStore
 from tests.support.fake_extractor_runner import FakeExtractorRunner, RecordedRunCall
 from tests.support.fake_metadata_store import FakeMetadataStore
 
+_CURL_TOKEN_COMMENT: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
 
 def _resolver(extractor_runner: FakeExtractorRunner, metadata_store: FakeMetadataStore) -> ReplayTokenResolver:
-    return ReplayTokenResolver(SessionStore(), extractor_runner, CurlDependencyParser(), metadata_store)
+    return ReplayTokenResolver(SessionStore(), extractor_runner, _CURL_TOKEN_COMMENT, metadata_store)
 
 
 def test_reference_dir_for_step_without_origin_uses_refer_dir(tmp_path: Path) -> None:
@@ -187,6 +189,27 @@ def test_resolve_returns_static_and_fallback_sets() -> None:
 
     assert static_ids == {"aaa"}
     assert fallback_ids == {"bbb"}
+
+
+def test_resolve_recovers_origin_step_after_curl_text_annotated_with_replay_status() -> None:
+    metadata_store: FakeMetadataStore = FakeMetadataStore()
+    extractor_runner: FakeExtractorRunner = FakeExtractorRunner(run_existing_result="v")
+    resolver: ReplayTokenResolver = _resolver(extractor_runner, metadata_store)
+    line: str = _CURL_TOKEN_COMMENT.with_replay_status(
+        _CURL_TOKEN_COMMENT.format_dependency_line("aaa", 3), ReplayStatusPhrase.PROBABLY_STATIC
+    )
+    curl_text: str = f"{line}\ncurl -X GET 'https://x?t={{{{extractor:aaa}}}}'"
+
+    static_ids: Set[str]
+    fallback_ids: Set[str]
+    static_ids, fallback_ids = resolver.resolve(
+        curl_text, schedule=set(), replay_run_dir=Path("/replay"),
+        res_refer_dir=Path("/refer"), original_responses_dir=Path("/original"),
+    )
+
+    assert extractor_runner.run_existing_calls == [RecordedRunCall("aaa", Path("/original"))]
+    assert static_ids == set()
+    assert fallback_ids == set()
 
 
 def test_resolve_one_passes_original_dir_as_override_when_origin_outside_schedule() -> None:

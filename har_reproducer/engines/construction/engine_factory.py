@@ -11,6 +11,7 @@ from har_reproducer.engines.engine import Engine
 from har_reproducer.fs_io import Workspace
 from har_reproducer.llm import LLMFactory
 from har_reproducer.models import ProjectConfig
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.reproduction import (
     CurlGenerator,
     ExtractorMetadataStore,
@@ -89,8 +90,9 @@ class EngineFactory:
         candidate_resolver: CandidateResolver = CandidateResolver(
             tracking_responses_dir, session_store, extractor_runner, metadata_store, agent_factory
         )
+        curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH)
         return TokenTracker(
-            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store), CurlGenerator()
+            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store), CurlGenerator(curl_token_comment)
         )
 
     @staticmethod
