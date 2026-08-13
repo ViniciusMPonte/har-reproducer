@@ -5,6 +5,7 @@ from har_reproducer.tracking.response_grep import ResponseGrep
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
 from har_reproducer.tracking.token_resolver import TokenResolver
 from har_reproducer.tracking.token_tracker import TokenTracker
+from har_reproducer.tracking.value_variants import ValueVariants
 
 __all__ = [
     "BaselineDiff",
@@ -14,4 +15,5 @@ __all__ = [
     "TokenLocationDetector",
     "TokenResolver",
     "TokenTracker",
+    "ValueVariants",
 ]

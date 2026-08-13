@@ -1,9 +1,9 @@
-import base64
 import subprocess
-import urllib.parse
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
+
+from har_reproducer.tracking.value_variants import ValueVariants
 
 
 class ResponseGrep:
@@ -14,49 +14,11 @@ class ResponseGrep:
         if not candidate_files:
             return None
 
-        for variant in cls.value_variants(pattern):
+        for variant in ValueVariants.of(pattern):
             match: Optional[Tuple[int, str]] = cls._grep_single_pattern(candidate_files, variant)
             if match is not None:
                 return match
         return None
-
-    @staticmethod
-    def try_decode(value: str) -> str:
-        current: str = value
-
-        decoded_url: str = urllib.parse.unquote(current)
-        if decoded_url != current:
-            current = decoded_url
-
-        try:
-            b64_bytes: bytes = base64.b64decode(current, validate=True)
-            decoded_b64: str = b64_bytes.decode("utf-8")
-            if decoded_b64.isprintable():
-                current = decoded_b64
-        except Exception:
-            pass
-
-        return current
-
-    @classmethod
-    def value_variants(cls, value: str) -> List[str]:
-        candidates: List[str] = [
-            value,
-            cls.try_decode(value),
-            urllib.parse.quote(value, safe=""),
-            base64.b64encode(value.encode("utf-8")).decode("ascii"),
-        ]
-        return cls._deduplicate(candidates)
-
-    @staticmethod
-    def _deduplicate(values: List[str]) -> List[str]:
-        seen: Set[str] = set()
-        unique: List[str] = []
-        for value in values:
-            if value and value not in seen:
-                seen.add(value)
-                unique.append(value)
-        return unique
 
     @classmethod
     def _grep_single_pattern(cls, candidate_files: List[Path], pattern: str) -> Optional[Tuple[int, str]]:
