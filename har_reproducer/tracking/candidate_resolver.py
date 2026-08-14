@@ -1,15 +1,14 @@
 import hashlib
-import json
 from enum import Enum
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from har_reproducer.agents import AgentFactory, BaseAgent
-from har_reproducer.models import AgentType, DynamicToken, Extractor
+from har_reproducer.models import AgentType, DynamicToken, Extractor, OriginMatch
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import IdentifierSanitizer
-from har_reproducer.tracking.response_grep import ResponseGrep
+from har_reproducer.tracking.origin_finder import OriginFinder
+from har_reproducer.tracking.response_corpus import ResponseCorpus
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
 
 
@@ -23,30 +22,35 @@ class CandidateResolver:
 
     def __init__(
             self,
-            responses_dir: Path,
+            response_corpus: ResponseCorpus,
+            origin_finder: OriginFinder,
             session_store: SessionStore,
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
             agent_factory: AgentFactory,
     ) -> None:
-        self.responses_dir: Path = responses_dir
+        self.response_corpus: ResponseCorpus = response_corpus
+        self.origin_finder: OriginFinder = origin_finder
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = extractor_runner
         self.metadata_store: ExtractorMetadataStore = metadata_store
         self.agent_factory: AgentFactory = agent_factory
         self._validated_values: Dict[str, str] = {}
-        self._origin_cache: Dict[str, Tuple[int, str]] = {}
+        self._origin_cache: Dict[str, OriginMatch] = {}
+        self._origin_misses: Dict[str, int] = {}
 
     def resolve(self, candidates: List[DynamicToken], step_index: int) -> List[DynamicToken]:
         return [self._process_candidate(candidate, step_index) for candidate in candidates]
 
     def _process_candidate(self, candidate: DynamicToken, step_index: int) -> DynamicToken:
-        origin: Optional[Tuple[int, str]] = self._find_origin(candidate.current_value, step_index)
-        if not origin:
+        origin: Optional[OriginMatch] = self._find_origin(candidate.current_value, step_index)
+        if origin is None:
             candidate.status = "NotFound"
             return candidate
 
-        candidate.origin_step = origin[0]
+        candidate.origin_step = origin.step_index
+        candidate.origin_key = origin.origin_key
+        candidate.origin_container = origin.origin_container
         base_token_id: str = self._derive_token_id(candidate.path, candidate.origin_step)
 
         slot_id: str
@@ -60,13 +64,18 @@ class CandidateResolver:
 
         return self._generate_new_extractor(candidate, initial_error)
 
-    def _find_origin(self, value: str, step_index: int) -> Optional[Tuple[int, str]]:
-        cached_origin: Optional[Tuple[int, str]] = self._origin_cache.get(value)
+    def _find_origin(self, value: str, step_index: int) -> Optional[OriginMatch]:
+        cached_origin: Optional[OriginMatch] = self._origin_cache.get(value)
         if cached_origin is not None:
             return cached_origin
-        origin: Optional[Tuple[int, str]] = ResponseGrep.find(self.responses_dir, value, step_index)
-        if origin is not None:
-            self._origin_cache[value] = origin
+
+        from_step_index: int = self._origin_misses.get(value, 0)
+        origin: Optional[OriginMatch] = self.origin_finder.find(value, from_step_index, step_index)
+        if origin is None:
+            self._origin_misses[value] = step_index
+            return None
+
+        self._origin_cache[value] = origin
         return origin
 
     def _find_slot(self, base_token_id: str, candidate: DynamicToken) -> Tuple[str, Optional[str]]:
@@ -105,7 +114,7 @@ class CandidateResolver:
         if persisted is None:
             return SlotStatus.FREE, None
 
-        result: Optional[str] = self.extractor_runner.run_existing(slot_id, self.responses_dir)
+        result: Optional[str] = self.extractor_runner.run_existing(slot_id, self.response_corpus.responses_dir)
         if result != candidate.current_value:
             return SlotStatus.MISMATCH, self._mismatch_error(result, candidate.current_value)
 
@@ -123,7 +132,7 @@ class CandidateResolver:
     def _generate_new_extractor(self, candidate: DynamicToken, initial_error: Optional[str]) -> DynamicToken:
         candidate.status = "UnderReview"
 
-        response_sample: Optional[Dict[str, Any]] = self._load_response(candidate.origin_step)
+        response_sample: Optional[Dict[str, Any]] = self.response_corpus.response(candidate.origin_step)
         if response_sample is None:
             return candidate
 
@@ -159,17 +168,6 @@ class CandidateResolver:
             candidate.status = "Resolved"
         else:
             candidate.status = "Unresolved"
-
-    def _load_response(self, step_index: int) -> Optional[Dict[str, Any]]:
-        res_file: Path = self.responses_dir / f"res_{step_index:04d}.json"
-        if not res_file.exists():
-            return None
-        try:
-            data: Dict[str, Any] = json.loads(res_file.read_text(encoding="utf-8"))
-            return data
-        except Exception as e:
-            print(f"[AVISO] Falha ao carregar response do step {step_index}: {e}")
-            return None
 
     def _generate_extractor(
             self,

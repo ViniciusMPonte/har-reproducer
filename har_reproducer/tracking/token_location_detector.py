@@ -3,7 +3,7 @@ import re
 from typing import Any, Dict, Optional
 
 from har_reproducer.models import TokenLocation
-from har_reproducer.tracking.response_grep import ResponseGrep
+from har_reproducer.tracking.value_variants import ValueVariants
 
 
 class TokenLocationDetector:
@@ -112,4 +112,4 @@ class TokenLocationDetector:
 
     @classmethod
     def _value_present(cls, value: str, text: str) -> bool:
-        return any(variant in text for variant in ResponseGrep.value_variants(value))
+        return any(variant in text for variant in ValueVariants.of(value))

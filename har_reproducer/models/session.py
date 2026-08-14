@@ -23,6 +23,11 @@ class TokenLocation(str, Enum):
     URL_PARAM = "UrlParam"
 
 
+class OriginContainer(str, Enum):
+    HEADER = "Header"
+    COOKIE = "Cookie"
+
+
 class TokenResolutionStatus(str, Enum):
     STATIC = "static"
     RESOLVED = "resolved"
@@ -50,6 +55,8 @@ class DynamicToken(BaseModel):
     destination_location: TokenLocation
     origin_location: Optional[TokenLocation] = None
     origin_step: Optional[int] = None
+    origin_key: Optional[str] = None
+    origin_container: Optional[OriginContainer] = None
     status: Literal["UnderReview", "NotFound", "Unresolved", "Resolved"]
     extraction_exhausted: bool = False
 
