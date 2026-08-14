@@ -27,6 +27,7 @@ class BaseAgent:
             sleeper: Sleeper,
             path: Optional[str] = None,
             location: Optional[str] = None,
+            origin_key: Optional[str] = None,
             llm: Optional[BaseChatModel] = None,
     ) -> None:
         self.token_id: str = token_id
@@ -38,12 +39,15 @@ class BaseAgent:
         self.sleeper: Sleeper = sleeper
         self.path: Optional[str] = path
         self.location: Optional[str] = location
+        self.origin_key: Optional[str] = origin_key
         self.llm: Optional[BaseChatModel] = llm
         self._attempt_index: int = 0
         self._strategies: Optional[List[Strategy]] = None
 
     @property
     def key(self) -> Optional[str]:
+        if self.origin_key is not None:
+            return self.origin_key
         if self.path is None:
             return None
         if ":" in self.path:

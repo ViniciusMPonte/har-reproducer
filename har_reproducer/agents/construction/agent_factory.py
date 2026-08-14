@@ -9,7 +9,7 @@ from har_reproducer.agents.header_agent import HeaderAgent
 from har_reproducer.agents.jsonpath_agent import JSONPathAgent
 from har_reproducer.agents.regex_agent import RegexAgent
 from har_reproducer.fs_io import Workspace
-from har_reproducer.models import DynamicToken, TokenLocation
+from har_reproducer.models import DynamicToken, OriginContainer, TokenLocation
 from har_reproducer.reproduction import ScriptExecutor, Sleeper
 
 
@@ -22,6 +22,10 @@ class AgentFactory:
         TokenLocation.SCRIPT: RegexAgent,
     }
     DEFAULT_AGENT: ClassVar[Type[BaseAgent]] = RegexAgent
+    CONTAINER_LOCATIONS: ClassVar[Dict[OriginContainer, TokenLocation]] = {
+        OriginContainer.HEADER: TokenLocation.HEADER,
+        OriginContainer.COOKIE: TokenLocation.COOKIE,
+    }
 
     def __init__(
             self,
@@ -47,5 +51,14 @@ class AgentFactory:
             sleeper=self.sleeper,
             path=candidate.path,
             location=candidate.origin_location.value if candidate.origin_location else None,
+            origin_key=self._origin_key_for(candidate),
             llm=self.llm,
         )
+
+    @classmethod
+    def _origin_key_for(cls, candidate: DynamicToken) -> Optional[str]:
+        if candidate.origin_container is None:
+            return None
+        if cls.CONTAINER_LOCATIONS.get(candidate.origin_container) != candidate.origin_location:
+            return None
+        return candidate.origin_key
