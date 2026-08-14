@@ -59,13 +59,15 @@ class CurlGenerator:
         return [f"--data-binary {quoted_body}"]
 
     def _token_comments(self, tokens: List[DynamicToken]) -> List[str]:
-        lines: List[str] = []
-        for token in tokens:
-            if token.origin_step is None:
-                continue
-            lines.append(self.curl_token_comment.format_dependency_line(
+        lines: List[str] = [
+            self.curl_token_comment.format_dependency_line(
                 token.token_id, token.origin_step, self._origin_status(token)
-            ))
+            )
+            for token in tokens if token.origin_step is not None
+        ]
+        unresolved: List[str] = [token.path for token in tokens if token.origin_step is None]
+        if unresolved:
+            lines.append(self.curl_token_comment.format_unresolved_line(unresolved))
         return lines
 
     @staticmethod

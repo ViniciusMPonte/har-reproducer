@@ -39,6 +39,7 @@ def _agent(
         sleeper: FakeSleeper,
         expected_value: str = "segredo",
         path: Optional[str] = None,
+        origin_key: Optional[str] = None,
 ) -> LiteralAgent:
     return LiteralAgent(
         strategies,
@@ -49,7 +50,30 @@ def _agent(
         script_executor=script_executor,
         sleeper=sleeper,
         path=path,
+        origin_key=origin_key,
     )
+
+
+def test_key_prefers_origin_key_over_destination_path(tmp_path: Path) -> None:
+    agent: LiteralAgent = _agent(
+        tmp_path, [], FakeScriptExecutor([]), FakeSleeper(), path="header:If-None-Match", origin_key="ETag"
+    )
+
+    assert agent.key == "ETag"
+
+
+def test_key_falls_back_to_path_without_origin_key(tmp_path: Path) -> None:
+    agent: LiteralAgent = _agent(
+        tmp_path, [], FakeScriptExecutor([]), FakeSleeper(), path="header:If-None-Match", origin_key=None
+    )
+
+    assert agent.key == "If-None-Match"
+
+
+def test_key_is_none_without_path_and_without_origin_key(tmp_path: Path) -> None:
+    agent: LiteralAgent = _agent(tmp_path, [], FakeScriptExecutor([]), FakeSleeper(), path=None, origin_key=None)
+
+    assert agent.key is None
 
 
 def test_key_splits_path_after_first_colon(tmp_path: Path) -> None:

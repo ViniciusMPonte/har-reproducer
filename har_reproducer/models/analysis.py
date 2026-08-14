@@ -1,8 +1,14 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from har_reproducer.models.session import DynamicToken
+from har_reproducer.models.session import DynamicToken, OriginContainer
+
+
+class OriginMatch(BaseModel):
+    step_index: int
+    origin_key: Optional[str] = None
+    origin_container: Optional[OriginContainer] = None
 
 
 class StepAnalysis(BaseModel):

@@ -1,5 +1,6 @@
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Match, Optional, Tuple
 
 from har_reproducer.agents.cookie_agent import CookieAgent
 from har_reproducer.agents.css_agent import CSSAgent
@@ -105,3 +106,65 @@ def test_regex_agent_key_pattern_escapes_key_for_other_paths(tmp_path: Path) -> 
 
     assert pattern is not None
     assert "bar" in pattern
+
+
+def test_regex_agent_context_pattern_stops_at_the_real_value_boundary(tmp_path: Path) -> None:
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": "abc: token123-suffix"}, "token123", None)
+
+    pattern: Optional[str] = agent._context_pattern()
+
+    assert pattern is not None
+    match: Optional[Match[str]] = re.search(pattern, "abc: token123-suffix", re.DOTALL)
+    assert match is not None
+    assert match.group(1) == "token123"
+
+
+def test_regex_agent_context_pattern_captures_value_with_unsafe_characters(tmp_path: Path) -> None:
+    body: str = "import x from '/src/a/B.js'"
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": body}, "/src/a/B.js", None)
+
+    pattern: Optional[str] = agent._context_pattern()
+
+    assert pattern is not None
+    match: Optional[Match[str]] = re.search(pattern, body, re.DOTALL)
+    assert match is not None
+    assert match.group(1) == "/src/a/B.js"
+
+
+def test_regex_agent_context_pattern_anchors_at_string_end(tmp_path: Path) -> None:
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": "prefixo token123"}, "token123", None)
+
+    pattern: Optional[str] = agent._context_pattern()
+
+    assert pattern is not None
+    assert pattern.endswith("$")
+
+
+def test_regex_agent_context_pattern_handles_single_character_value(tmp_path: Path) -> None:
+    body: str = "campo: X;"
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": body}, "X", None)
+
+    pattern: Optional[str] = agent._context_pattern()
+
+    assert pattern is not None
+    match: Optional[Match[str]] = re.search(pattern, body, re.DOTALL)
+    assert match is not None
+    assert match.group(1) == "X"
+
+
+def test_regex_agent_context_pattern_is_none_when_value_absent_from_body(tmp_path: Path) -> None:
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": "sem o valor"}, "ausente", None)
+
+    assert agent._context_pattern() is None
+
+
+def test_regex_agent_context_pattern_is_none_when_prefix_is_blank(tmp_path: Path) -> None:
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": "   token123"}, "token123", None)
+
+    assert agent._context_pattern() is None
+
+
+def test_regex_agent_context_pattern_is_none_for_non_string_body(tmp_path: Path) -> None:
+    agent: RegexAgent = _regex_agent(tmp_path, {"body": None}, "token123", None)
+
+    assert agent._context_pattern() is None

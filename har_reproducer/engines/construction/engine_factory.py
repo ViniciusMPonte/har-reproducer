@@ -22,7 +22,15 @@ from har_reproducer.reproduction import (
     StepSkipEvaluator,
 )
 from har_reproducer.session import SessionStore
-from har_reproducer.tracking import BaselineDiff, CandidateResolver, PlaceholderApplier, TokenResolver, TokenTracker
+from har_reproducer.tracking import (
+    BaselineDiff,
+    CandidateResolver,
+    OriginFinder,
+    PlaceholderApplier,
+    ResponseCorpus,
+    TokenResolver,
+    TokenTracker,
+)
 from har_reproducer.validation import Validator
 
 
@@ -65,12 +73,13 @@ class EngineFactory:
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner(self.workspace, self.script_executor)
         metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(self.workspace)
+        response_corpus: ResponseCorpus = ResponseCorpus(tracking_responses_dir, Workspace.STEP_INDEX_WIDTH)
 
         return engine_cls(
             har_path,
             self.workspace,
             session_store,
-            self._build_tracker(tracking_responses_dir, session_store, extractor_runner, metadata_store),
+            self._build_tracker(response_corpus, session_store, extractor_runner, metadata_store),
             TokenResolver(tracking_responses_dir, session_store, extractor_runner),
             StepSkipEvaluator(self.project_config.skip_rules),
             StepRetryPolicy(),
@@ -81,14 +90,19 @@ class EngineFactory:
 
     def _build_tracker(
             self,
-            tracking_responses_dir: Path,
+            response_corpus: ResponseCorpus,
             session_store: SessionStore,
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
     ) -> TokenTracker:
         agent_factory: AgentFactory = AgentFactory(self.workspace, self.script_executor, self.sleeper, self.llm)
         candidate_resolver: CandidateResolver = CandidateResolver(
-            tracking_responses_dir, session_store, extractor_runner, metadata_store, agent_factory
+            response_corpus,
+            OriginFinder(response_corpus),
+            session_store,
+            extractor_runner,
+            metadata_store,
+            agent_factory,
         )
         curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH)
         return TokenTracker(
