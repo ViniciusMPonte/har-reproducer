@@ -136,3 +136,63 @@ def test_parse_returns_empty_dict_without_comments() -> None:
     result: dict = comment.parse("curl -X GET https://x")
 
     assert result == {}
+
+
+def test_format_unresolved_line_joins_paths_with_the_category_separator() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    line: str = comment.format_unresolved_line(["header:Accept", "url"])
+
+    assert line == "# [Unresolved 2] header:Accept; url"
+
+
+def test_parse_unresolved_round_trips_the_formatted_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert comment.parse_unresolved(comment.format_unresolved_line(["a", "b"])) == ["a", "b"]
+
+
+def test_parse_unresolved_returns_empty_list_for_empty_text() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert comment.parse_unresolved("") == []
+
+
+def test_parse_unresolved_returns_empty_list_for_curl_without_the_clause() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert comment.parse_unresolved("#!/bin/bash\ncurl -X GET x") == []
+
+
+def test_dependency_pattern_does_not_match_the_unresolved_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert CurlTokenComment.DEPENDENCY_PATTERN.findall(comment.format_unresolved_line(["a"])) == []
+
+
+def test_parse_unresolved_does_not_match_the_dependency_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert comment.parse_unresolved(comment.format_dependency_line("abc123", 7)) == []
+
+
+def test_parse_still_finds_the_dependency_when_both_lines_are_present() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    curl_text: str = "\n".join([
+        comment.format_dependency_line("abc123", 7),
+        comment.format_unresolved_line(["header:Accept", "url"]),
+        "curl -X GET x",
+    ])
+
+    assert comment.parse(curl_text) == {"abc123": 7}
+    assert comment.parse_unresolved(curl_text) == ["header:Accept", "url"]
+
+
+def test_parse_unresolved_returns_the_first_occurrence_only() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    curl_text: str = "\n".join([
+        comment.format_unresolved_line(["primeiro"]),
+        comment.format_unresolved_line(["segundo"]),
+    ])
+
+    assert comment.parse_unresolved(curl_text) == ["primeiro"]
