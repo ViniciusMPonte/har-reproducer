@@ -35,11 +35,11 @@
 - ⚠️ `value_variants` → `of` é renomeação deliberada; não deixar alias.
 
 **Critérios de aceite:**
-- [ ] `ValueVariants.try_decode("valor%20com%20espaco")` retorna `"valor com espaco"`.
-- [ ] `ValueVariants.try_decode(base64.b64encode(b"segredo").decode("ascii"))` retorna `"segredo"`.
-- [ ] `ValueVariants.of("abc")` não tem duplicatas nem string vazia, e `ValueVariants.of("abc")[0] == "abc"`.
-- [ ] `grep -rn "ResponseGrep.value_variants\|ResponseGrep.try_decode" har_reproducer/ tests/` não retorna nada.
-- [ ] Não-regressão: `uv run pytest` passa **inteiro**, golden incluído — a task não altera comportamento observável.
+- [x] `ValueVariants.try_decode("valor%20com%20espaco")` retorna `"valor com espaco"`.
+- [x] `ValueVariants.try_decode(base64.b64encode(b"segredo").decode("ascii"))` retorna `"segredo"`.
+- [x] `ValueVariants.of("abc")` não tem duplicatas nem string vazia, e `ValueVariants.of("abc")[0] == "abc"`.
+- [x] `grep -rn "ResponseGrep.value_variants\|ResponseGrep.try_decode" har_reproducer/ tests/` não retorna nada.
+- [x] Não-regressão: `uv run pytest` passa **inteiro**, golden incluído — a task não altera comportamento observável.
 
 ---
 
@@ -74,12 +74,12 @@
 - ⚠️ `origin_step` continua `Optional[int]`.
 
 **Critérios de aceite:**
-- [ ] `OriginMatch(step_index=7)` é válido, com `origin_key is None` e `origin_container is None`.
-- [ ] `OriginMatch(step_index=7, origin_key="ETag", origin_container=OriginContainer.HEADER)` preserva os três campos.
-- [ ] `OriginContainer("Cookie") is OriginContainer.COOKIE`.
-- [ ] `DynamicToken(...)` construído como todos os call sites atuais fazem continua válido, com os dois campos novos em `None`.
-- [ ] `from har_reproducer.models import OriginContainer, OriginMatch` funciona.
-- [ ] Não-regressão: `uv run pytest` passa inteiro; nenhum `.meta.json` do golden muda.
+- [x] `OriginMatch(step_index=7)` é válido, com `origin_key is None` e `origin_container is None`.
+- [x] `OriginMatch(step_index=7, origin_key="ETag", origin_container=OriginContainer.HEADER)` preserva os três campos.
+- [x] `OriginContainer("Cookie") is OriginContainer.COOKIE`.
+- [x] `DynamicToken(...)` construído como todos os call sites atuais fazem continua válido, com os dois campos novos em `None`.
+- [x] `from har_reproducer.models import OriginContainer, OriginMatch` funciona.
+- [x] Não-regressão: `uv run pytest` passa inteiro; nenhum `.meta.json` do golden muda.
 
 ---
 
@@ -107,16 +107,16 @@ A busca de origem roda `grep -lF <valor> res_NNNN.json` sobre o **texto do arqui
 - ⚠️ O corpus descarta `status_code`, `body_mime`, `skipped`, `skip_reason` e nomes de campo JSON, que o texto do arquivo continha. Aperto intencional (spec 3.2).
 
 **Critérios de aceite:**
-- [ ] `eligible_indexes(3)` sobre diretório com `res_0000.json`…`res_0005.json` retorna `[0, 1, 2]`; `eligible_indexes(0)` retorna `[]`.
-- [ ] Arquivo com nome fora do padrão é ignorado sem quebrar.
-- [ ] Resposta com `headers={"ETag": 'W/"9b1-19a1d941a25"'}` → `searchable_text` **contém** `W/"9b1-19a1d941a25"` com aspas cruas (o caso que o `grep` sobre arquivo não acha).
-- [ ] Resposta com body `'{"token":"abc"}'` → `searchable_text` contém `{"token":"abc"}` sem barras de escape.
-- [ ] Resposta totalmente vazia → `searchable_text` retorna `""`, não `None`.
-- [ ] `response(7)` de arquivo inexistente retorna `None` sem lançar; de JSON corrompido retorna `None` e imprime aviso.
-- [ ] **Memoização**: duas chamadas a `searchable_text(1)` leem o arquivo uma vez (verificar apagando o arquivo entre as chamadas e conferindo que a segunda ainda devolve o texto).
-- [ ] **Não memoiza falha**: `response(9)` com arquivo ausente devolve `None`; criado o arquivo, a chamada seguinte devolve o conteúdo.
-- [ ] **Não memoiza `eligible_indexes`**: `eligible_indexes(9)` devolve `[0]`; criado `res_0001.json`, a chamada seguinte devolve `[0, 1]`.
-- [ ] Não-regressão: `uv run pytest` passa inteiro (a classe ainda não tem consumidor).
+- [x] `eligible_indexes(3)` sobre diretório com `res_0000.json`…`res_0005.json` retorna `[0, 1, 2]`; `eligible_indexes(0)` retorna `[]`.
+- [x] Arquivo com nome fora do padrão é ignorado sem quebrar.
+- [x] Resposta com `headers={"ETag": 'W/"9b1-19a1d941a25"'}` → `searchable_text` **contém** `W/"9b1-19a1d941a25"` com aspas cruas (o caso que o `grep` sobre arquivo não acha).
+- [x] Resposta com body `'{"token":"abc"}'` → `searchable_text` contém `{"token":"abc"}` sem barras de escape.
+- [x] Resposta totalmente vazia → `searchable_text` retorna `""`, não `None`.
+- [x] `response(7)` de arquivo inexistente retorna `None` sem lançar; de JSON corrompido retorna `None` e imprime aviso.
+- [x] **Memoização**: duas chamadas a `searchable_text(1)` leem o arquivo uma vez (verificar apagando o arquivo entre as chamadas e conferindo que a segunda ainda devolve o texto).
+- [x] **Não memoiza falha**: `response(9)` com arquivo ausente devolve `None`; criado o arquivo, a chamada seguinte devolve o conteúdo.
+- [x] **Não memoiza `eligible_indexes`**: `eligible_indexes(9)` devolve `[0]`; criado `res_0001.json`, a chamada seguinte devolve `[0, 1]`.
+- [x] Não-regressão: `uv run pytest` passa inteiro (a classe ainda não tem consumidor).
 
 ---
 
@@ -166,18 +166,18 @@ class ResponseGrep:
 - ⚠️ **Precedência cookie → header**, idêntica a `TokenLocationDetector.find`. Invertida, produz regressão: valor nos dois containers → `CookieAgent` com nome de header como chave.
 
 **Critérios de aceite:**
-- [ ] Corpus com `res_0001.json` de header `{"ETag": 'W/"9b1-abc"'}`: `find('W/"9b1-abc"', 0, 5)` retorna `OriginMatch(step_index=1, origin_key="ETag", origin_container=HEADER)`.
-- [ ] Mesmo corpus, `find('W/"9b1-abc"', 0, 1)` retorna `None` (causalidade temporal).
-- [ ] `find(valor, 3, 10)` ignora respostas de índice `< 3` (janela inferior).
-- [ ] Valor presente cru em `res_0002` e `res_0004` → `step_index == 2` (menor índice).
-- [ ] Valor cru em `res_0004` e base64 em `res_0002` → `step_index == 4` (variante crua vence a ordem dos steps).
-- [ ] Valor presente **num cookie e num header** da mesma resposta → `origin_container is COOKIE` e `origin_key` é o nome do cookie.
-- [ ] Valor que casa só no body → `origin_key is None` e `origin_container is None`.
-- [ ] Valor que é **substring** do valor de um header (`same-origin` em `same-origin-allow-popups`) → casa, mas `origin_key is None`.
-- [ ] Valor que casa por variante base64 num header → `origin_key is None`.
-- [ ] **Multi-linha**: valor `"AAA\nBBB"` com resposta contendo só `BBB` → `None` (hoje o `grep` casaria).
-- [ ] `grep -rn "subprocess" har_reproducer/tracking/` não retorna nada; `har_reproducer/tracking/response_grep.py` não existe.
-- [ ] Não-regressão: `uv run pytest tests/unit` passa inteiro. **Golden diverge nesta task** (classe (a): 63 ETags passam a ter origem) — esperado, fechado na T11.
+- [x] Corpus com `res_0001.json` de header `{"ETag": 'W/"9b1-abc"'}`: `find('W/"9b1-abc"', 0, 5)` retorna `OriginMatch(step_index=1, origin_key="ETag", origin_container=HEADER)`.
+- [x] Mesmo corpus, `find('W/"9b1-abc"', 0, 1)` retorna `None` (causalidade temporal).
+- [x] `find(valor, 3, 10)` ignora respostas de índice `< 3` (janela inferior).
+- [x] Valor presente cru em `res_0002` e `res_0004` → `step_index == 2` (menor índice).
+- [x] Valor cru em `res_0004` e base64 em `res_0002` → `step_index == 4` (variante crua vence a ordem dos steps).
+- [x] Valor presente **num cookie e num header** da mesma resposta → `origin_container is COOKIE` e `origin_key` é o nome do cookie.
+- [x] Valor que casa só no body → `origin_key is None` e `origin_container is None`.
+- [x] Valor que é **substring** do valor de um header (`same-origin` em `same-origin-allow-popups`) → casa, mas `origin_key is None`.
+- [x] Valor que casa por variante base64 num header → `origin_key is None`.
+- [x] **Multi-linha**: valor `"AAA\nBBB"` com resposta contendo só `BBB` → `None` (hoje o `grep` casaria).
+- [x] `grep -rn "subprocess" har_reproducer/tracking/` não retorna nada; `har_reproducer/tracking/response_grep.py` não existe.
+- [x] Não-regressão: `uv run pytest tests/unit` passa inteiro. **Golden diverge nesta task** (classe (a): 63 ETags passam a ter origem) — esperado, fechado na T11.
 
 ---
 
@@ -234,16 +234,16 @@ e, em `tests/unit/test_engine_factory.py:40`:
 - ⚠️ O ramo de cache-hit continua **não** preenchendo `origin_location` (bug §3.2 do relatório de 11/08). Fora de escopo; não mexer de passagem.
 
 **Critérios de aceite:**
-- [ ] Candidato cujo valor está no header `ETag` de resposta anterior termina com `origin_step` correto, `origin_key == "ETag"` e `origin_container is OriginContainer.HEADER`.
-- [ ] Candidato sem origem termina `status == "NotFound"` com os três campos em `None`.
-- [ ] Candidato cujo valor casa no body termina com `origin_key is None` e `origin_step` correto.
-- [ ] **Cache de negativos**: valor sem origem consultado no step 5 e depois no step 9 faz `origin_finder.find` ser chamado com `from_step_index=0` na primeira e `from_step_index=5` na segunda (dublê que registra as chamadas).
-- [ ] **Cache de negativos não esconde origem nova**: valor sem origem no step 5; gravada uma resposta no step 6; consulta no step 9 encontra a origem.
-- [ ] **Cache de positivos preservado**: duas consultas do mesmo valor com origem fazem uma única chamada a `find`.
-- [ ] `grep -rn "_load_response" har_reproducer/` não retorna nada.
-- [ ] `EngineFactory.create(EngineMode.DRY, ...)` produz `CandidateResolver` cujo corpus aponta para `workspace.original_responses`; `EngineMode.MAIN`, para `workspace.real_responses`.
-- [ ] `TokenResolver` recebido pelo engine continua com o mesmo `responses_dir` em ambos os modos.
-- [ ] Não-regressão: `uv run pytest tests/unit` passa **inteiro** (é o ponto onde a revisão 1 deste plano errava). Golden continua divergindo pela classe (a) da T04.
+- [x] Candidato cujo valor está no header `ETag` de resposta anterior termina com `origin_step` correto, `origin_key == "ETag"` e `origin_container is OriginContainer.HEADER`.
+- [x] Candidato sem origem termina `status == "NotFound"` com os três campos em `None`.
+- [x] Candidato cujo valor casa no body termina com `origin_key is None` e `origin_step` correto.
+- [x] **Cache de negativos**: valor sem origem consultado no step 5 e depois no step 9 faz `origin_finder.find` ser chamado com `from_step_index=0` na primeira e `from_step_index=5` na segunda (dublê que registra as chamadas).
+- [x] **Cache de negativos não esconde origem nova**: valor sem origem no step 5; gravada uma resposta no step 6; consulta no step 9 encontra a origem.
+- [x] **Cache de positivos preservado**: duas consultas do mesmo valor com origem fazem uma única chamada a `find`.
+- [x] `grep -rn "_load_response" har_reproducer/` não retorna nada.
+- [x] `EngineFactory.create(EngineMode.DRY, ...)` produz `CandidateResolver` cujo corpus aponta para `workspace.original_responses`; `EngineMode.MAIN`, para `workspace.real_responses`.
+- [x] `TokenResolver` recebido pelo engine continua com o mesmo `responses_dir` em ambos os modos.
+- [x] Não-regressão: `uv run pytest tests/unit` passa **inteiro** (é o ponto onde a revisão 1 deste plano errava). Golden continua divergindo pela classe (a) da T04.
 
 ---
 
@@ -278,14 +278,14 @@ e `AgentFactory.create` passando `path=candidate.path, location=..., llm=self.ll
 - ⚠️ `HeaderAgent`, `CookieAgent` e `RegexAgent` **não mudam nenhuma linha** — todos os call sites usam argumentos nomeados, verificado.
 
 **Critérios de aceite:**
-- [ ] `BaseAgent(..., path="header:If-None-Match", origin_key="ETag").key == "ETag"`.
-- [ ] `BaseAgent(..., path="header:If-None-Match", origin_key=None).key == "If-None-Match"` (comportamento de hoje).
-- [ ] `BaseAgent(..., path=None, origin_key=None).key is None`.
-- [ ] `HeaderAgent` com `origin_key="ETag"`, `expected_value='W/"9b1-abc"'` e `response_sample` cujo header `ETag` vale `W/"9b1-abc"`: a **primeira** estratégia determinística (`_by_name`) verifica com sucesso — zero tentativas de LLM.
-- [ ] `AgentFactory.create` com `origin_container=HEADER` e `origin_location=HEADER` propaga o `origin_key`.
-- [ ] `AgentFactory.create` com `origin_container=HEADER` e `origin_location=COOKIE` **não** propaga (agente recebe `origin_key=None`).
-- [ ] `AgentFactory.create` com `origin_location=SCRIPT` **não** propaga, qualquer que seja o container.
-- [ ] Não-regressão: `uv run pytest tests/unit` passa; agente sem `origin_key` gera exatamente o mesmo código de antes.
+- [x] `BaseAgent(..., path="header:If-None-Match", origin_key="ETag").key == "ETag"`.
+- [x] `BaseAgent(..., path="header:If-None-Match", origin_key=None).key == "If-None-Match"` (comportamento de hoje).
+- [x] `BaseAgent(..., path=None, origin_key=None).key is None`.
+- [x] `HeaderAgent` com `origin_key="ETag"`, `expected_value='W/"9b1-abc"'` e `response_sample` cujo header `ETag` vale `W/"9b1-abc"`: a **primeira** estratégia determinística (`_by_name`) verifica com sucesso — zero tentativas de LLM.
+- [x] `AgentFactory.create` com `origin_container=HEADER` e `origin_location=HEADER` propaga o `origin_key`.
+- [x] `AgentFactory.create` com `origin_container=HEADER` e `origin_location=COOKIE` **não** propaga (agente recebe `origin_key=None`).
+- [x] `AgentFactory.create` com `origin_location=SCRIPT` **não** propaga, qualquer que seja o container.
+- [x] Não-regressão: `uv run pytest tests/unit` passa; agente sem `origin_key` gera exatamente o mesmo código de antes.
 
 ---
 
@@ -319,12 +319,12 @@ A spec de 04/08 (decisão 3.2, bloco ⚠️ "achado durante a implementação") 
 - ⚠️ Churn medido: dos 57 extratores persistidos, 7 são `RegexAgent`; 5 vieram de LLM (não passam por `_context_pattern`) e **2 são determinísticos**. Nos dois, o caractere seguinte está fora de `[\w\-.]`, então guloso e preguiçoso-com-lookahead capturam o mesmo grupo: **muda o texto do regex, não o valor extraído**.
 
 **Critérios de aceite:**
-- [ ] Body `abc: token123-suffix`, `expected_value="token123"`: o grupo 1 é exatamente `"token123"` (hoje o guloso leva `-suffix`).
-- [ ] Body `import x from '/src/a/B.js'`, `expected_value="/src/a/B.js"`: o grupo 1 é exatamente `/src/a/B.js` (hoje `.+?` sem âncora casa só `/`).
-- [ ] `expected_value` terminando no fim do body gera padrão com `$` no lugar do lookahead.
-- [ ] `expected_value` de um caractere continua funcionando (não-regressão da borda).
-- [ ] `expected_value` ausente do body continua devolvendo `None`; prefixo só com espaço continua devolvendo `None`.
-- [ ] Não-regressão: `uv run pytest tests/unit/test_agents_strategies.py` passa; nenhum caso que hoje verifica passa a falhar.
+- [x] Body `abc: token123-suffix`, `expected_value="token123"`: o grupo 1 é exatamente `"token123"` (hoje o guloso leva `-suffix`).
+- [x] Body `import x from '/src/a/B.js'`, `expected_value="/src/a/B.js"`: o grupo 1 é exatamente `/src/a/B.js` (hoje `.+?` sem âncora casa só `/`).
+- [x] `expected_value` terminando no fim do body gera padrão com `$` no lugar do lookahead.
+- [x] `expected_value` de um caractere continua funcionando (não-regressão da borda).
+- [x] `expected_value` ausente do body continua devolvendo `None`; prefixo só com espaço continua devolvendo `None`.
+- [x] Não-regressão: `uv run pytest tests/unit/test_agents_strategies.py` passa; nenhum caso que hoje verifica passa a falhar.
 
 ---
 
@@ -348,13 +348,13 @@ Candidato que termina `NotFound` não deixa **nenhum** rastro no `.curl.sh` (`Cu
 - ⚠️ Medido no workspace real: maior linha gerada tem **208 caracteres** e nenhum dos 22 paths contém `"; "` ou `\n`, então o `split(CATEGORY_SEPARATOR)` é seguro.
 
 **Critérios de aceite:**
-- [ ] `format_unresolved_line(["header:Accept", "url"])` retorna `# [Unresolved 2] header:Accept; url`.
-- [ ] `parse_unresolved(format_unresolved_line(["a", "b"]))` retorna `["a", "b"]` (round-trip).
-- [ ] `parse_unresolved("")` e `parse_unresolved("#!/bin/bash\ncurl -X GET x")` retornam `[]`.
-- [ ] `DEPENDENCY_PATTERN.findall(format_unresolved_line(["a"]))` é vazio.
-- [ ] `parse_unresolved(format_dependency_line("abc123", 7))` é `[]`.
-- [ ] `parse` continua achando a dependência num texto que contenha **as duas** linhas.
-- [ ] Não-regressão: `uv run pytest` passa **inteiro** — a task só acrescenta API, ninguém a chama ainda.
+- [x] `format_unresolved_line(["header:Accept", "url"])` retorna `# [Unresolved 2] header:Accept; url`.
+- [x] `parse_unresolved(format_unresolved_line(["a", "b"]))` retorna `["a", "b"]` (round-trip).
+- [x] `parse_unresolved("")` e `parse_unresolved("#!/bin/bash\ncurl -X GET x")` retornam `[]`.
+- [x] `DEPENDENCY_PATTERN.findall(format_unresolved_line(["a"]))` é vazio.
+- [x] `parse_unresolved(format_dependency_line("abc123", 7))` é `[]`.
+- [x] `parse` continua achando a dependência num texto que contenha **as duas** linhas.
+- [x] Não-regressão: `uv run pytest` passa **inteiro** — a task só acrescenta API, ninguém a chama ainda.
 
 ---
 
@@ -400,11 +400,11 @@ Com o formato da T08 pronto, o gerador registra no `.curl.sh` **o que** ficou co
 - ⚠️ **Golden diverge nesta task** (classe (c): praticamente todo `.curl.sh` ganha a linha) — esperado, fechado na T11.
 
 **Critérios de aceite:**
-- [ ] Um token resolvido (`origin_step=3`) e dois sem origem → 2 linhas: a de dependência e `# [Unresolved 2] <path1>; <path2>`, nessa ordem.
-- [ ] Nenhum token sem origem → exatamente as linhas de dependência de antes.
-- [ ] Só tokens sem origem → exatamente uma linha, e o curl continua com o bloco de comando abaixo dela.
-- [ ] Lista vazia → curl sem comentário nenhum.
-- [ ] Não-regressão: `uv run pytest tests/unit` passa; a montagem do bloco `curl` não muda. Golden diverge (classe (c)).
+- [x] Um token resolvido (`origin_step=3`) e dois sem origem → 2 linhas: a de dependência e `# [Unresolved 2] <path1>; <path2>`, nessa ordem.
+- [x] Nenhum token sem origem → exatamente as linhas de dependência de antes.
+- [x] Só tokens sem origem → exatamente uma linha, e o curl continua com o bloco de comando abaixo dela.
+- [x] Lista vazia → curl sem comentário nenhum.
+- [x] Não-regressão: `uv run pytest tests/unit` passa; a montagem do bloco `curl` não muda. Golden diverge (classe (c)).
 
 ---
 
@@ -445,14 +445,14 @@ Com o formato da T08 pronto, o gerador registra no `.curl.sh` **o que** ficou co
 - ⚠️ **Golden diverge nesta task** (classe (d): `stdout.txt`) — medido, `tests/fixtures/synthetic_flow.har` tem 2 de 10 entries com `content.text` vazio, então o WARNING dispara em **todo** golden de `run` e nos de `replay` cujo `stdout.txt` vem do `run`.
 
 **Critérios de aceite:**
-- [ ] `entries_missing_response_body` sobre 3 entries, 2 sem corpo e status 200, retorna `2`.
-- [ ] Entry com status `304` e sem corpo **não** é contada; com status `204` e `101` também não.
-- [ ] Entry com `content` sem a chave `text` e entry com `text: ""` são contadas igualmente.
-- [ ] HAR com todas as entries com corpo → `0`, e nenhum aviso impresso.
-- [ ] `run` sobre HAR com entries sem corpo imprime o aviso **uma única vez**, antes do `Final Validation Result`.
-- [ ] O retorno de `run()` é o mesmo de antes da task para o mesmo HAR (comparar com o baseline).
-- [ ] `DryEngine` imprime o mesmo aviso (herda `_reproduce`).
-- [ ] Não-regressão: `uv run pytest tests/unit` passa. Golden diverge (classe (d)).
+- [x] `entries_missing_response_body` sobre 3 entries, 2 sem corpo e status 200, retorna `2`.
+- [x] Entry com status `304` e sem corpo **não** é contada; com status `204` e `101` também não.
+- [x] Entry com `content` sem a chave `text` e entry com `text: ""` são contadas igualmente.
+- [x] HAR com todas as entries com corpo → `0`, e nenhum aviso impresso.
+- [x] `run` sobre HAR com entries sem corpo imprime o aviso **uma única vez**, antes do `Final Validation Result`.
+- [x] O retorno de `run()` é o mesmo de antes da task para o mesmo HAR (comparar com o baseline).
+- [x] `DryEngine` imprime o mesmo aviso (herda `_reproduce`).
+- [x] Não-regressão: `uv run pytest tests/unit` passa. Golden diverge (classe (d)).
 
 ---
 
@@ -478,12 +478,12 @@ A rede golden compara a árvore inteira do workspace produzido por cada comando 
 - ⚠️ Commit separado, `test:`, com o resumo das classes no corpo.
 
 **Critérios de aceite:**
-- [ ] `uv run pytest` passa inteiro sem `HAR_REPRODUCER_UPDATE_GOLDEN`.
-- [ ] Script de conferência: para cada `.curl.sh`, o conjunto de `token_id` casados por `DEPENDENCY_PATTERN` **antes ⊆ depois** — nenhuma dependência foi perdida.
-- [ ] Script de conferência: para cada `extractors/*.meta.json`, `captured_value` inalterado — nenhum extrator passou a devolver valor diferente.
-- [ ] Todo arquivo alterado no diff cai em (a), (b), (c) ou (d); a lista de arquivos por classe fica no corpo do commit.
-- [ ] Os `.curl.sh` que ganharam `# [Unresolved N]` continuam com o bloco `curl` byte-idêntico.
-- [ ] Não-regressão: `tests/test_cli_run.py`, `test_cli_replay.py`, `test_cli_optimize.py`, `test_cli_parse.py`, `test_cli_config.py` e `test_cli_errors.py` passam.
+- [x] `uv run pytest` passa inteiro sem `HAR_REPRODUCER_UPDATE_GOLDEN`.
+- [x] Script de conferência: para cada `.curl.sh`, o conjunto de `token_id` casados por `DEPENDENCY_PATTERN` **antes ⊆ depois** — nenhuma dependência foi perdida.
+- [x] Script de conferência: para cada `extractors/*.meta.json`, `captured_value` inalterado — nenhum extrator passou a devolver valor diferente.
+- [x] Todo arquivo alterado no diff cai em (a), (b), (c) ou (d); a lista de arquivos por classe fica no corpo do commit.
+- [x] Os `.curl.sh` que ganharam `# [Unresolved N]` continuam com o bloco `curl` byte-idêntico.
+- [x] Não-regressão: `tests/test_cli_run.py`, `test_cli_replay.py`, `test_cli_optimize.py`, `test_cli_parse.py`, `test_cli_config.py` e `test_cli_errors.py` passam.
 
 ---
 
