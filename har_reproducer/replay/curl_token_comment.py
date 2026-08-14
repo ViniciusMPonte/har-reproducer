@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from re import Pattern
+from re import Match, Pattern
 from typing import ClassVar, Dict, List, Optional, Tuple
 
 
@@ -30,6 +30,11 @@ class CurlTokenComment:
         re.MULTILINE,
     )
 
+    UNRESOLVED_PATTERN: ClassVar[Pattern[str]] = re.compile(
+        r"^# \[Unresolved (?P<count>\d+)\] (?P<paths>.+)$",
+        re.MULTILINE,
+    )
+
     def __init__(self, step_index_width: int) -> None:
         self.step_index_width: int = step_index_width
 
@@ -41,6 +46,16 @@ class CurlTokenComment:
             f"{origin_step:0{self.step_index_width}d}]"
         )
         return self._compose(clause, origin_status, None)
+
+    def format_unresolved_line(self, paths: List[str]) -> str:
+        clause: str = f"# [Unresolved {len(paths)}]"
+        return f"{clause} {self.CATEGORY_SEPARATOR.join(paths)}"
+
+    def parse_unresolved(self, curl_text: str) -> List[str]:
+        match: Optional[Match[str]] = self.UNRESOLVED_PATTERN.search(curl_text)
+        if match is None:
+            return []
+        return match.group("paths").split(self.CATEGORY_SEPARATOR)
 
     def with_replay_status(self, line: str, phrase: ReplayStatusPhrase) -> str:
         clause, status_text = self._split_clause_and_status(line)
