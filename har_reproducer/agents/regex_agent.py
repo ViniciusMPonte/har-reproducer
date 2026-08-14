@@ -33,7 +33,9 @@ class RegexAgent(BaseAgent):
         prefix: str = body[max(0, pos - 20):pos]
         if not prefix.strip():
             return None
-        return rf"{re.escape(prefix)}({self.value_char_class()})"
+        end: int = pos + len(self.expected_value)
+        boundary: str = rf"(?={re.escape(body[end])})" if end < len(body) else "$"
+        return rf"{re.escape(prefix)}({self.lazy_value_char_class()}){boundary}"
 
     def _make_strategy(self, pattern: str) -> Strategy:
         def strategy(last_error: Optional[str] = None) -> Optional[str]:
