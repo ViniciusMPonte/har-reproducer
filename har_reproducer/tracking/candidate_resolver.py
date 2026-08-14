@@ -2,14 +2,15 @@ import hashlib
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
 from har_reproducer.agents import AgentFactory, BaseAgent
-from har_reproducer.models import AgentType, DynamicToken, Extractor
+from har_reproducer.models import AgentType, DynamicToken, Extractor, OriginMatch
 from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorRunner
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import IdentifierSanitizer
-from har_reproducer.tracking.response_grep import ResponseGrep
+from har_reproducer.tracking.origin_finder import OriginFinder
+from har_reproducer.tracking.response_corpus import ResponseCorpus
 from har_reproducer.tracking.token_location_detector import TokenLocationDetector
 
 
@@ -20,6 +21,7 @@ class SlotStatus(str, Enum):
 
 
 class CandidateResolver:
+    STEP_INDEX_WIDTH: ClassVar[int] = 4
 
     def __init__(
             self,
@@ -30,23 +32,24 @@ class CandidateResolver:
             agent_factory: AgentFactory,
     ) -> None:
         self.responses_dir: Path = responses_dir
+        self.origin_finder: OriginFinder = OriginFinder(ResponseCorpus(responses_dir, self.STEP_INDEX_WIDTH))
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = extractor_runner
         self.metadata_store: ExtractorMetadataStore = metadata_store
         self.agent_factory: AgentFactory = agent_factory
         self._validated_values: Dict[str, str] = {}
-        self._origin_cache: Dict[str, Tuple[int, str]] = {}
+        self._origin_cache: Dict[str, OriginMatch] = {}
 
     def resolve(self, candidates: List[DynamicToken], step_index: int) -> List[DynamicToken]:
         return [self._process_candidate(candidate, step_index) for candidate in candidates]
 
     def _process_candidate(self, candidate: DynamicToken, step_index: int) -> DynamicToken:
-        origin: Optional[Tuple[int, str]] = self._find_origin(candidate.current_value, step_index)
-        if not origin:
+        origin: Optional[OriginMatch] = self._find_origin(candidate.current_value, step_index)
+        if origin is None:
             candidate.status = "NotFound"
             return candidate
 
-        candidate.origin_step = origin[0]
+        candidate.origin_step = origin.step_index
         base_token_id: str = self._derive_token_id(candidate.path, candidate.origin_step)
 
         slot_id: str
@@ -60,11 +63,11 @@ class CandidateResolver:
 
         return self._generate_new_extractor(candidate, initial_error)
 
-    def _find_origin(self, value: str, step_index: int) -> Optional[Tuple[int, str]]:
-        cached_origin: Optional[Tuple[int, str]] = self._origin_cache.get(value)
+    def _find_origin(self, value: str, step_index: int) -> Optional[OriginMatch]:
+        cached_origin: Optional[OriginMatch] = self._origin_cache.get(value)
         if cached_origin is not None:
             return cached_origin
-        origin: Optional[Tuple[int, str]] = ResponseGrep.find(self.responses_dir, value, step_index)
+        origin: Optional[OriginMatch] = self.origin_finder.find(value, 0, step_index)
         if origin is not None:
             self._origin_cache[value] = origin
         return origin
