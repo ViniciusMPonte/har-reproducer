@@ -1,4 +1,4 @@
-from har_reproducer.models.analysis import StepAnalysis
+from har_reproducer.models.analysis import OriginMatch, StepAnalysis
 from har_reproducer.models.config import LLMSettings, ProjectConfig, SkipRulesConfig
 from har_reproducer.models.criteria import (
     BodyContainsCriterion,
@@ -13,6 +13,7 @@ from har_reproducer.models.session import (
     AgentType,
     DynamicToken,
     Extractor,
+    OriginContainer,
     SessionState,
     TokenLocation,
     TokenResolutionStatus,
@@ -25,6 +26,8 @@ __all__ = [
     "Extractor",
     "HtmlElementPresentCriterion",
     "LLMSettings",
+    "OriginContainer",
+    "OriginMatch",
     "ProjectConfig",
     "ScriptExecutionResult",
     "SessionState",
