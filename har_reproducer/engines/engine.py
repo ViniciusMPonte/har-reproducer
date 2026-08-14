@@ -44,6 +44,7 @@ class Engine:
     def _reproduce(self) -> bool:
         entries: List[Dict[str, Any]] = HARParser.get_entries(self.har_path)
         first_entry: Step = HARParser.parse_entry(entries[0], 0)
+        self._warn_missing_response_bodies(entries)
 
         last_response: Optional[StepResponse] = None
         for index, entry in enumerate(entries):
@@ -52,6 +53,19 @@ class Engine:
                 last_response = response
 
         return self._validate_final(last_response)
+
+    @staticmethod
+    def _warn_missing_response_bodies(entries: List[Dict[str, Any]]) -> None:
+        missing: int = HARParser.entries_missing_response_body(entries)
+        if missing == 0:
+            return
+
+        print(
+            f"WARNING: {missing} de {len(entries)} entries do HAR não têm corpo de resposta gravado "
+            f"(excluídos os status 101/204/304, que normalmente não carregam corpo). Origens de token "
+            f"que estejam nesses corpos são indescobríveis — regrave o HAR preservando o conteúdo das "
+            f'respostas ("Preserve log" + export completo).'
+        )
 
     def _process_entry(
             self,

@@ -2,12 +2,24 @@ import base64
 import json
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional, Set
 
 from har_reproducer.models import Step, StepRequest, StepResponse
 
 
 class HARParser:
+    BODYLESS_STATUS_CODES: ClassVar[Set[int]] = {101, 204, 304}
+
+    @classmethod
+    def entries_missing_response_body(cls, entries: List[Dict[str, Any]]) -> int:
+        return sum(1 for entry in entries if cls._missing_response_body(entry))
+
+    @classmethod
+    def _missing_response_body(cls, entry: Dict[str, Any]) -> bool:
+        response: Dict[str, Any] = entry["response"]
+        if response.get("status") in cls.BODYLESS_STATUS_CODES:
+            return False
+        return not (response.get("content", {}).get("text") or "")
 
     @staticmethod
     def load_har(path: Path) -> Dict[str, Any]:

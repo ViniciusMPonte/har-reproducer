@@ -1,5 +1,8 @@
+import json
 from pathlib import Path
-from typing import List, NamedTuple
+from typing import Any, Dict, List, NamedTuple
+
+import pytest
 
 from har_reproducer.engines.dry_engine import DryEngine
 from har_reproducer.engines.engine import Engine
@@ -99,3 +102,56 @@ def test_dry_engine_persist_response_step_is_a_no_op(tmp_path: Path) -> None:
     engine._persist_response_step(0, StepResponse(status_code=200))
 
     assert not engine.workspace.response_file(0).exists()
+
+
+def _har_with_bodyless_entries(tmp_path: Path, bodyless: int, total: int) -> Path:
+    entries: List[Dict[str, Any]] = []
+    for index in range(total):
+        content: Dict[str, Any] = {} if index < bodyless else {"text": "corpo", "mimeType": "text/plain"}
+        entries.append({
+            "request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []},
+            "response": {"status": 200, "headers": [], "cookies": [], "content": content},
+        })
+    har_path: Path = tmp_path / "flow.har"
+    har_path.write_text(json.dumps({"log": {"entries": entries}}), encoding="utf-8")
+    return har_path
+
+
+class SilentEngine(DryEngine):
+
+    def _process_entry(self, index: int, entry: Dict[str, Any], first_entry: Step) -> StepResponse:
+        return StepResponse(status_code=200)
+
+
+def _silent_engine(tmp_path: Path, har_path: Path) -> SilentEngine:
+    engine: SilentEngine = _engine(tmp_path, FakeTokenResolver(), [], engine_cls=SilentEngine)
+    engine.har_path = har_path
+    return engine
+
+
+def test_reproduce_warns_once_about_entries_without_response_body(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    engine: SilentEngine = _silent_engine(tmp_path, _har_with_bodyless_entries(tmp_path, 2, 5))
+
+    engine._reproduce()
+
+    output: str = capsys.readouterr().out
+    assert output.count("WARNING:") == 1
+    assert "2 de 5 entries do HAR não têm corpo de resposta gravado" in output
+
+
+def test_reproduce_is_silent_when_every_entry_has_a_body(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    engine: SilentEngine = _silent_engine(tmp_path, _har_with_bodyless_entries(tmp_path, 0, 5))
+
+    engine._reproduce()
+
+    assert "WARNING:" not in capsys.readouterr().out
+
+
+def test_reproduce_keeps_returning_the_final_validation_result(tmp_path: Path) -> None:
+    engine: SilentEngine = _silent_engine(tmp_path, _har_with_bodyless_entries(tmp_path, 2, 5))
+
+    assert engine._reproduce() is True
