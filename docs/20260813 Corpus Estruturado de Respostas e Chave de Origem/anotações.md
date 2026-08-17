@@ -1,0 +1,1 @@
+as chaves dos cookies podem ser dinanicos também. O codigo do jeito que esta agora não consegue capturar diferenças.
