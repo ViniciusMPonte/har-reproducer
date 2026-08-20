@@ -86,6 +86,12 @@ código-fonte atual do projeto e do guia de estilo.
 
 Estrutura (adaptar seções conforme a feature, mas manter esta espinha dorsal):
 
+0. **Sumário e glossário** — abrem o documento, nessa ordem. O sumário é um parágrafo
+   curto que responde "o que muda e por quê" para quem só vai ler isso. O glossário
+   define os termos de domínio que a própria etapa inventa ou ressignifica (ex.:
+   "época", "porta de admissão", "fragmento", "âncora", "cobertura") — toda spec cria
+   vocabulário, e sem glossário o leitor deduz o significado de cada termo por
+   inferência ao longo do texto, o que torna a leitura desnecessariamente cara.
 1. **Objetivo** — o problema atual, o custo de não resolvê-lo, o que a mudança cobre.
    Deixar explícito o que fica **fora de escopo** (inclusive "feature futura, não
    implementar agora" quando aplicável).
@@ -108,6 +114,22 @@ Estrutura (adaptar seções conforme a feature, mas manter esta espinha dorsal):
    confirmação do usuário antes do plano ser escrito.
 7. **Referência** — linha final apontando para `guia_de_estilo.md`/[[guia-de-estilo]]
    como padrão de implementação obrigatório.
+
+Regras de escrita (valem para qualquer etapa):
+
+- **Autocontida também em relação aos outros documentos de `docs/`.** Referenciar
+  outra spec ou relatório por número de item ("fecha o item 5 de `correcoes.md`", "o
+  item 4 continua fora de escopo") obriga o leitor a abrir outro arquivo para
+  entender uma frase desta spec. Cite o documento pelo nome e **reescreva a
+  substância** do que está sendo referenciado, em uma frase, aqui dentro.
+- **Toda medição declara a procedência.** Número medido vem acompanhado do que foi
+  medido e sobre o quê: qual HAR ou workspace, quantas entries, qual comando, qual
+  data. Sem isso o número deixa de ser verificável assim que o HAR for regravado — e
+  HAR é regravado.
+- **Uma gravação não generaliza.** Resultado medido sobre um único HAR descreve
+  aquele fluxo. "Os 15 valores que casaram inteiro são estáticos" é fato; "valores
+  assim são sempre estáticos" é suposição. Quando a decisão depende da generalização,
+  dizer que depende e o que a sustentaria.
 
 Regra de processo: **apresentar a spec e esperar aprovação do usuário antes de
 escrever o `implementation_plan.md`.** Perguntas de esclarecimento (equivalente ao
