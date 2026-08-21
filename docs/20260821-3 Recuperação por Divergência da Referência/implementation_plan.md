@@ -68,17 +68,17 @@ não exista referência nenhuma para aquele step.
 linha. `needs_recovery` reaproveita `original_status_code`, não `matches_original`.
 
 **Critérios de aceite:**
-- [ ] `needs_recovery(5, StepResponse(status_code=0))`, sem nenhuma referência gravada:
+- [x] `needs_recovery(5, StepResponse(status_code=0))`, sem nenhuma referência gravada:
       `True`.
-- [ ] `needs_recovery(5, StepResponse(status_code=200))`, sem nenhuma referência gravada:
+- [x] `needs_recovery(5, StepResponse(status_code=200))`, sem nenhuma referência gravada:
       `False` — é o caso que a spec corrige em relação à primeira versão.
-- [ ] Com `original_responses/res_0005.json` gravado com `status_code=200`:
+- [x] Com `original_responses/res_0005.json` gravado com `status_code=200`:
       `needs_recovery(5, StepResponse(status_code=401))` → `True` (diverge).
-- [ ] Mesmo cenário: `needs_recovery(5, StepResponse(status_code=200))` → `False` (bate).
-- [ ] Com `original_responses/res_0005.json` gravado com `status_code=403`:
+- [x] Mesmo cenário: `needs_recovery(5, StepResponse(status_code=200))` → `False` (bate).
+- [x] Com `original_responses/res_0005.json` gravado com `status_code=403`:
       `needs_recovery(5, StepResponse(status_code=403))` → `False` — é o caso central da
       spec (§1.1): um `403` legítimo não deve disparar recuperação.
-- [ ] Não-regressão: todos os testes existentes de `matches_original`/`original_status_code`
+- [x] Não-regressão: todos os testes existentes de `matches_original`/`original_status_code`
       passam sem alteração — nenhuma linha deles muda.
 
 ---
@@ -155,23 +155,30 @@ existente precisa mudar por causa da assinatura — só as que T04 identifica pr
 `reference_status_codes` explícito.
 
 **Critérios de aceite:**
-- [ ] `ReplayRunner.needs_recovery(index, response)` delega exatamente a
+- [x] `ReplayRunner.needs_recovery(index, response)` delega exatamente a
       `self.comparator.needs_recovery(index, response)` (teste com um comparator fake ou
       real gravando a chamada).
-- [ ] `_run_step` com uma resposta cujo status bate com a referência gravada em
+- [x] `_run_step` com uma resposta cujo status bate com a referência gravada em
       `original_responses/`: uma única tentativa, sem a mensagem de recuperação impressa.
-- [ ] `_run_step` com uma resposta cujo status diverge de uma referência gravada: duas
+- [x] `_run_step` com uma resposta cujo status diverge de uma referência gravada: duas
       tentativas (a mensagem de recuperação aparece), respeitando
       `StepRetryPolicy.MAX_STEP_ATTEMPTS`.
-- [ ] `FakeScheduleExecutor.needs_recovery`: `status_code=0` é sempre `True`,
+- [x] `FakeScheduleExecutor.needs_recovery`: `status_code=0` é sempre `True`,
       independente de `reference_status_codes`.
-- [ ] `FakeScheduleExecutor.needs_recovery`: índice sem entrada em `reference_status_codes`
+- [x] `FakeScheduleExecutor.needs_recovery`: índice sem entrada em `reference_status_codes`
       é sempre `False` — é o que preserva os testes de `test_replay_optimizer.py` que usam
       `404`/`200` para exercitar validação, não recuperação (ver T04).
 - [ ] Não-regressão: os 15 testes existentes de `test_replay_runner.py` que chamam
       `_run_step`/`execute_schedule`/`run_all`/`run_slice` sem gravar
       `original_responses/` passam sem alteração — nenhum precisa de fixture nova, porque
       "sem referência" agora significa "sem recuperação" (T01).
+      **Não confirmado literalmente**: `test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken`
+      precisou de um ajuste de fixture (uma resposta extra no `StubHttpTransport`) porque
+      `status_code == 0` ser sempre recuperável — também em `ReplayRunner`, não só no
+      `ReplayOptimizer` — faz a retentativa consumir a resposta que o teste reservava para
+      o step seguinte. Efeito colateral real do design (intencional, ver spec §5.2), não
+      antecipado neste critério; ajuste de fixture confirmado com o usuário durante a T02,
+      nenhuma linha de produção mudou por causa disso.
 
 ---
 
@@ -224,13 +231,21 @@ sem depender de referência.
 - [ ] Os três testes da tabela passam com `reference_status_codes` acrescentado, e falham
       (pelo motivo certo — `needs_recovery` devolvendo `False` por falta de referência) se
       revertidos para o estado atual sem o parâmetro — confirmar isso antes de comitar.
-- [ ] Novo teste: `test_execute_does_not_refresh_when_status_matches_reference` — step com
+      **Confirmado parcialmente**: `test_execute_retries_once_after_recoverable_status_then_succeeds`
+      e `test_execute_gives_up_after_two_refreshes_and_returns_last_result` falham pelo
+      motivo certo sem `reference_status_codes`. `test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted`
+      **não** discrimina — passa com ou sem o parâmetro, porque sua asserção só verifica
+      `ReplayOptimizerAborted`, que ocorre de qualquer forma já que a validação final
+      (`401 != 200`) falha independente de a recuperação disparar. Contagem do
+      levantamento também não fechou: o arquivo tem 20 testes antes desta task (21 depois
+      de somar o novo), não 23 como o parágrafo de contexto desta task afirma.
+- [x] Novo teste: `test_execute_does_not_refresh_when_status_matches_reference` — step com
       `reference_status_codes={5: 403}`, resposta `403`: `_needs_reactive_refresh` devolve
       `False`, nenhuma tentativa extra. É o teste que demonstra o objetivo central da spec
       (§1.1): um `403` legítimo não dispara recuperação.
-- [ ] Não-regressão: os 20 testes restantes do arquivo (incluindo todos os que usam `404`
+- [x] Não-regressão: os 20 testes restantes do arquivo (incluindo todos os que usam `404`
       como resposta de falha de validação) passam sem qualquer alteração de código.
-- [ ] `ReplayOptimizer.RECOVERABLE_STATUS_CODES` não existe mais — `grep` confirma.
+- [x] `ReplayOptimizer.RECOVERABLE_STATUS_CODES` não existe mais — `grep` confirma.
 
 ---
 
@@ -337,11 +352,11 @@ real no construtor — é I/O leve (lê arquivo), consistente com o `Workspace(t
 que o helper já usa.
 
 **Critérios de aceite:**
-- [ ] Os três testes novos acima passam.
-- [ ] `test_handle_recovery_does_nothing_for_non_recoverable_status` e
+- [x] Os três testes novos acima passam.
+- [x] `test_handle_recovery_does_nothing_for_non_recoverable_status` e
       `test_handle_recovery_forces_token_refresh_for_recoverable_status` são **removidos**
       (não "ajustados" — a premissa que os nomeava não existe mais).
-- [ ] Não-regressão: os demais testes de `test_engine.py`
+- [x] Não-regressão: os demais testes de `test_engine.py`
       (`test_skip_entry_persists_skipped_response`, `test_validate_final_true_when_no_success_criteria`,
       os de `DryEngine`, os de `_warn_missing_response_bodies`, `test_reproduce_keeps_returning_the_final_validation_result`)
       passam sem alteração — nenhum chama `handle_recovery` nem depende do construtor de
@@ -409,18 +424,18 @@ class StepRetryPolicy:
 ```
 
 **Critérios de aceite:**
-- [ ] `EngineFactory.create(EngineMode.MAIN, ...)`:
+- [x] `EngineFactory.create(EngineMode.MAIN, ...)`:
       `engine.comparator` é uma instância de `ReplayResultComparator` apontando para o
       `workspace` correto.
-- [ ] `EngineFactory.create(EngineMode.DRY, ...)`: idem — `comparator` é injetado
+- [x] `EngineFactory.create(EngineMode.DRY, ...)`: idem — `comparator` é injetado
       igualmente (não é condicional a `USES_NETWORK`; a comparação faz sentido nos dois
       modos, mesmo que `handle_recovery` raramente dispare em dry).
-- [ ] `StepRetryPolicy.RECOVERABLE_STATUS_CODES` não existe mais — `grep` no repositório
+- [x] `StepRetryPolicy.RECOVERABLE_STATUS_CODES` não existe mais — `grep` no repositório
       inteiro confirma zero ocorrências, em produção e teste.
-- [ ] Não-regressão: `test_resolve_class_maps_modes_to_engine_classes`,
+- [x] Não-regressão: `test_resolve_class_maps_modes_to_engine_classes`,
       `test_create_dry_ignores_http_transport`,
       `test_create_dry_uses_original_responses_directory`,
       `test_create_main_passes_through_transport_and_uses_real_responses_directory`,
       `test_llm_is_none_when_project_config_has_no_llm_settings` passam sem alteração de
       asserção.
-- [ ] Não-regressão: `pytest tests/unit -q` inteiro verde.
+- [x] Não-regressão: `pytest tests/unit -q` inteiro verde.
