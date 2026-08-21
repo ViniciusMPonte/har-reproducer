@@ -1,3 +1,4 @@
+import sys
 from argparse import ArgumentParser, Namespace
 
 from dotenv import load_dotenv
@@ -15,7 +16,9 @@ def main() -> None:
     parser: ArgumentParser = cli_parser.build()
 
     args: Namespace = parser.parse_args()
-    args.func(args)
+    success: bool = args.func(args)
+    if not success:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

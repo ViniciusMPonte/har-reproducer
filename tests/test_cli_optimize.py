@@ -71,6 +71,22 @@ def test_optimize_happy_path_writes_default_steps_file(
 
 
 @pytest.mark.slow
+def test_optimize_failed_exits_with_code_1(
+        cli_invoker: CliInvoker, main_workspace: Path, tmp_path: Path,
+) -> None:
+    scenario: ReplayScenario = ReplayScenario(cli_invoker, main_workspace, tmp_path)
+
+    result: CliInvocationResult = cli_invoker.invoke([
+        "optimize", "--output", str(scenario.workspace), "--to", "9",
+        "--success-criteria", '[{"type":"status_code","expected":599}]',
+    ])
+
+    assert "Optimization FAILED: unable to find a passing subset" in result.stdout
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
+
+
+@pytest.mark.slow
 def test_optimize_respects_custom_steps_out(
         cli_invoker: CliInvoker, main_workspace: Path, tmp_path: Path,
 ) -> None:

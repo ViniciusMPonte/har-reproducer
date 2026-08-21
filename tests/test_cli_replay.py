@@ -344,6 +344,26 @@ def test_replay_dry_ref_fallback(
 
 
 @pytest.mark.slow
+def test_replay_failed_exits_with_code_1(
+        cli_invoker: CliInvoker,
+        main_workspace: Path,
+        tmp_path: Path,
+) -> None:
+    scenario: ReplayScenario = ReplayScenario(cli_invoker, main_workspace, tmp_path)
+    reference_response: Path = scenario.workspace / "real_responses" / "res_0009.json"
+    reference_response.write_text(
+        reference_response.read_text(encoding="utf-8").replace('"status_code": 200', '"status_code": 599'),
+        encoding="utf-8",
+    )
+
+    result: CliInvocationResult = scenario.run(["--mode", "all"])
+
+    assert "Reproduction FAILED: Target state not reached." in result.stdout
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
+
+
+@pytest.mark.slow
 def test_replay_missing_step(
         cli_invoker: CliInvoker,
         main_workspace: Path,
