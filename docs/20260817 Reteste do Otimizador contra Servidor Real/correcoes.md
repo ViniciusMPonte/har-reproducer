@@ -231,3 +231,106 @@ Registrado em `relatorio.md` §3.10, repetido aqui para não se perder:
   necessário é o login, que ninguém consome (item 5).
 - **`skip_rules.methods`** — o HAR não tem `OPTIONS`; só a variante por scheme (`ws://`)
   foi coberta, e essa passou (`relatorio.md` §3.9).
+
+
+---
+
+# Adendo de 20/08/2026 — o que a investigação da porta de admissão descobriu
+
+> Esta seção foi acrescentada depois de uma investigação de 20/08/2026 que projetou a
+> correção do item 5, submeteu o desenho a duas revisões adversariais de contexto limpo, e
+> mediu tudo sobre **duas** gravações: `arquivos-har/progressofit.har` (324 entries) e
+> `progressofit(antigo).har` (238 entries), com workspaces gerados contra o servidor real.
+> O resultado foi que o item 5 se divide em três etapas, e que a primeira delas não é
+> sobre o `Authorization`.
+
+## 5.1 — Correções aos números do item 5 acima
+
+Reverificado em 20/08/2026, o item 5 tem três afirmações que não valem mais:
+
+- **O prazo de 28/12/2026 é de outro HAR.** O HAR foi regravado em 17/08/2026 e o JWT
+  congelado agora tem `exp: 1802564089` — **13/02/2027**.
+- **"Todo alvo autenticado falha com 403" é falso hoje.** Medido contra o servidor no ar:
+  `replay --mode list [23, 75, 153, 224]` devolve `200` no step 224, e
+  `GET /auth/check` com o JWT congelado do `.curl.sh` devolve `200`. O fluxo **não está
+  quebrado**; ele quebra quando o token expirar. A razão da etapa é o prazo, não uma falha
+  atual — e o critério de aceite dela não pode ser "224 passa a dar 200", porque já dá.
+- **O login passou a ter corpo gravado.** No HAR de 17/08 a resposta do step 153 traz
+  `{"token":"eyJ…"}` (185 bytes). O diagnóstico de `--mode dry` do item 5 vale só para o
+  HAR anterior, onde o login é o step 154 e o corpo tem 0 bytes.
+
+## 9. Extrator literal congelado não deveria virar âncora — **em andamento**
+
+Descoberto ao medir o item 5, e é maior do que ele. Quando o projeto não aprende a
+recalcular um valor, ele cria um extrator `AgentType.LITERAL`/`LITERAL_FALLBACK` cujo
+código é `return '<literal>'`, e emite no `.curl.sh` uma linha de dependência com o sufixo
+`origin location undetermined — using literal captured value`.
+`ReplayRunner._expand_pending` lê a cláusula e ignora o sufixo, então o step de origem vira
+âncora e é executado — embora o extrator devolva o mesmo literal com ou sem ele.
+
+Medido: **89% a 96% das linhas de dependência** dos três workspaces examinados são desse
+tipo. Corrigir derruba o replay de um alvo típico de 2,38 → 1,03 requisições no HAR atual e
+de 6,48 → 1,32 no anterior; as âncoras caem de 8 → 5 e de 69 → 65, e os curls que arrastam
+âncora caem de 219/320 → 7/320 e de 232/235 → 68/235.
+
+⚠️ Isso reordena a prioridade do item 4: **a maior parte do custo que o item 4 atribui a
+"proveniência tratada como necessidade" é esta linha**, e resolver aqui não exige nenhuma
+mudança de arquitetura, nem de formato de artefato, nem regerar workspace.
+
+Etapa própria, em andamento: `docs/20260820 Extrator Literal Não Vira Âncora/`.
+
+## 10. `real_responses/` guarda corpo comprimido como mojibake
+
+Defeito de persistência descoberto ao investigar falsos positivos. Em algumas respostas, a
+época da execução grava o corpo **ainda comprimido** (`content-encoding: br`/`gzip`),
+persistido como texto com 39% a 44% de U+FFFD, enquanto a época do HAR tem o mesmo corpo
+decodificado. Medido no workspace do HAR anterior: 4 respostas legíveis numa época e
+ilegíveis na outra (steps 13, 14, 76, 159); no workspace do HAR atual, 0.
+
+Consequência: qualquer comparação entre as duas épocas lê "esta substring desapareceu" e
+conclui "o valor é dinâmico". Os steps 13, 14, 76 e 159 são exatamente as origens dos
+falsos positivos que o desenho da porta de admissão produziu naquela gravação. **É
+pré-requisito do item 11**: a porta não é confiável enquanto isso existir.
+
+## 11. Porta de admissão + casamento por fragmento (o item 5 propriamente)
+
+O que sobra do item 5 depois de 9 e 10. O desenho foi projetado e revisado; o que ficou
+decidido, com medição:
+
+- **Casamento por fragmento** é o único mecanismo que acha o `Authorization`: o request
+  manda `Bearer <jwt>` e a resposta do login traz só `<jwt>`, então o fragmento cobre 173
+  de 180 caracteres (96%).
+- **Descoberta e verificação sempre na época do HAR.** Na época da execução o fragmento
+  seria o prefixo comum aos dois JWT (**123 de 180, 68%** — os dois têm 173 caracteres e
+  divergem a partir dos dígitos do `exp`), ou seja prefixo fresco com assinatura velha, que
+  nenhum servidor aceita. E 68% passa por qualquer limiar de cobertura plausível, então o
+  critério de cobertura **não** protege desse erro — só a escolha da época protege. Foi a
+  decisão que sobreviveu intacta às duas revisões.
+- **Critérios de admissão do fragmento:** cobertura mínima (`len(frag)/len(valor)`, que é
+  também o limite de poda da busca), piso absoluto de tamanho, ubiquidade (fração das
+  respostas do corpus que contêm o texto) e vocabulário de endereços observados no próprio
+  fluxo. Os dois últimos precisam valer também para o **casamento inteiro**: sem isso, um
+  servidor com `Access-Control-Allow-Origin: *` faz o projeto montar `Origin: *` em 204
+  lugares e `Referer: */dashboard/`, com 255 linhas de dependência.
+- **A porta precisa de evidência positiva**, comparando no mesmo lugar (mesma chave de
+  header/cookie, mesma folha de JSON, corpo legível) em vez de "o texto não aparece no
+  blob" — é o que a torna imune ao item 10.
+- **Admissão por dois lados:** `mudou entre as épocas` **ou** `origem estruturada`. Sem
+  isso, a porta rebaixa a literal congelado os 84 extratores de requisição condicional da
+  gravação anterior (63 `If-None-Match` + 21 `If-Modified-Since`, 126 curls, 53,6% da
+  gravação). Medido: preservar essa classe custa +0,30 requisição por replay.
+- **A porta não se aplica em `--mode dry`**, que não tem segunda época. O sinal que a
+  desliga tem que ser explícito (corpus de execução ausente), não "o diretório está vazio".
+- **Consequências obrigatórias:** parar de semear o token com o valor da época do HAR, e
+  cair para `captured_value` quando a extração falha na época da execução — mas só quando o
+  token ainda não tem valor, para não sobrescrever valor bom na recuperação de 401/403.
+
+⚠️ Duas limitações medidas que a spec desta etapa tem que declarar: o desenho depende de o
+HAR ter corpo de resposta gravado em todo step de origem — no HAR anterior, 140 de 238
+entries não têm `content.text`, e **13 delas** têm status que normalmente carregaria corpo
+(é o número que `HARParser.entries_missing_response_body` reporta e que o aviso do `run`
+imprime). O login daquela gravação é uma dessas 13: status 200, corpo vazio. Por isso a
+etapa não entregaria nada naquele HAR, e por isso a gravação anterior **não** serve para
+validar o objetivo — só para amostrar falsos positivos.
+
+Depende de 9 e 10. Absorve os itens 2 e 8, e o núcleo do item 4.

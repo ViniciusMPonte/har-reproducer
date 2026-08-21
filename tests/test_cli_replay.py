@@ -211,6 +211,28 @@ def test_replay_smart_from_3(
 
 
 @pytest.mark.slow
+def test_replay_smart_to_6(
+        cli_invoker: CliInvoker,
+        main_workspace: Path,
+        golden_workspace_factory: GoldenWorkspaceFactory,
+        golden_dir: Path,
+        tmp_path: Path,
+) -> None:
+    scenario: ReplayScenario = ReplayScenario(cli_invoker, main_workspace, tmp_path)
+    result: CliInvocationResult = scenario.run(["--mode", "smart", "--to", "6"])
+
+    assert result.exception is None
+    assert "Replay Validation Result: ✓ SUCCESS" in result.stdout
+    assert scenario.executed_steps(result.stdout) == [6]
+    assert len(scenario.replay_run_dirs()) == 1
+    assert "could not be dynamically resolved during replay" not in result.stdout
+    TokenFailureGuard().assert_at_most_one_failure_per_step(result.stdout)
+    scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")
+
+    golden_workspace_factory.create(scenario.workspace).assert_matches(golden_dir / "replay_smart_to_6")
+
+
+@pytest.mark.slow
 def test_replay_list_asc(
         cli_invoker: CliInvoker,
         main_workspace: Path,

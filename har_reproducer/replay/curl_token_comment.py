@@ -69,6 +69,18 @@ class CurlTokenComment:
             for match in self.DEPENDENCY_PATTERN.finditer(curl_text)
         }
 
+    def parse_anchors(self, curl_text: str) -> Dict[str, int]:
+        anchors: Dict[str, int] = {}
+        for line in curl_text.splitlines():
+            match: Optional[Match[str]] = self.DEPENDENCY_PATTERN.match(line)
+            if match is None:
+                continue
+            _, status_text = self._split_clause_and_status(line)
+            origin_status, _ = self._categorize(status_text)
+            if origin_status is None:
+                anchors[match.group("token_id")] = int(match.group("origin_step"))
+        return anchors
+
     def _split_clause_and_status(self, line: str) -> Tuple[str, str]:
         closing_index: int = line.index(self.CLAUSE_CLOSING_MARKER)
         clause: str = line[:closing_index + 1]
