@@ -11,13 +11,13 @@ quem tem prazo real.
 
 | # | Correção | Severidade | Custo | Prazo | Status |
 |---|---|---|---|---|---|
-| 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — | aberto |
+| 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — | ✅ feito (21/08) |
 | 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — | **aberto — verificado 21/08, não resolvido pelo item 11** |
-| 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | aberto |
+| 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | ✅ feito (21/08) |
 | 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | núcleo ✅ pelo item 11 (só em `main`/`replay`/`optimize`); fase 2 do `optimize` (testar âncora para remoção) continua aberta |
 | 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | ~~28/12/2026~~ 13/02/2027 (JWT atual) | ✅ dividido em 9+10+11, todos feitos |
 | 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — | ✅ feito (21/08) — não é a redescoberta reativa: era só o gatilho de recuperação nos três lugares que já reexecutam extrator existente. A redescoberta reativa (criar extrator novo quando isso não basta) continua sem spec própria. |
-| 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — | aberto |
+| 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — | ✅ feito (21/08) |
 | 8 | Coincidência de baixa entropia no `origin_key` (`Origin` ← `Access-Control-Allow-Origin`) | Baixa | — | **não agir isoladamente** | ✅ resolvido pelo item 11 (a porta rejeita o token, ele nunca vira extrator) |
 | 9 | Extrator literal congelado não deveria virar âncora | **Alta** | Médio | — | ✅ feito (20/08) |
 | 10 | `real_responses/` guarda corpo comprimido como mojibake | Média | Pequeno | — | ✅ feito (21/08) |
