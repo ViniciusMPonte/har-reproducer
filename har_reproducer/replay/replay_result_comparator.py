@@ -19,6 +19,14 @@ class ReplayResultComparator:
             return False
         return original == response.status_code
 
+    def needs_recovery(self, index: int, response: StepResponse) -> bool:
+        if response.status_code == 0:
+            return True
+        reference: Optional[int] = self.original_status_code(index)
+        if reference is None:
+            return False
+        return response.status_code != reference
+
     def original_status_code(self, index: int) -> Optional[int]:
         original_text: Optional[str] = self._read_reference_text(index)
         if original_text is None:

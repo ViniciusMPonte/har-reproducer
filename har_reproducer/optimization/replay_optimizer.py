@@ -5,7 +5,6 @@ from har_reproducer.contracts import ScheduleExecutor
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse, SuccessCriterion
 from har_reproducer.reproduction import SilentExtractorMetadataStore
-from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.validation import Validator
 
 
@@ -16,7 +15,6 @@ class ReplayOptimizerAborted(Exception):
 
 
 class ReplayOptimizer:
-    RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = StepRetryPolicy.RECOVERABLE_STATUS_CODES | {0}
     MAX_REACTIVE_REFRESHES: ClassVar[int] = 2
 
     def __init__(
@@ -100,9 +98,8 @@ class ReplayOptimizer:
             )
         return results
 
-    @classmethod
-    def _needs_reactive_refresh(cls, results: List[Tuple[int, StepResponse]]) -> bool:
-        return any(response.status_code in cls.RECOVERABLE_STATUS_CODES for _, response in results)
+    def _needs_reactive_refresh(self, results: List[Tuple[int, StepResponse]]) -> bool:
+        return any(self.schedule_executor.needs_recovery(index, response) for index, response in results)
 
     def _run_phase2(
             self,

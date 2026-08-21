@@ -72,3 +72,41 @@ def test_original_status_code_returns_none_when_reference_has_no_status(tmp_path
     result: Optional[int] = comparator.original_status_code(0)
 
     assert result is None
+
+
+def test_needs_recovery_true_for_transport_failure_without_any_reference(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    assert comparator.needs_recovery(5, StepResponse(status_code=0)) is True
+
+
+def test_needs_recovery_false_without_reference_and_healthy_status(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    assert comparator.needs_recovery(5, StepResponse(status_code=200)) is False
+
+
+def test_needs_recovery_true_when_status_diverges_from_reference(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.original_response_file(5).write_text('{"status_code": 200}', encoding="utf-8")
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    assert comparator.needs_recovery(5, StepResponse(status_code=401)) is True
+
+
+def test_needs_recovery_false_when_status_matches_reference(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.original_response_file(5).write_text('{"status_code": 200}', encoding="utf-8")
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    assert comparator.needs_recovery(5, StepResponse(status_code=200)) is False
+
+
+def test_needs_recovery_false_when_status_matches_legitimate_non_200_reference(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.original_response_file(5).write_text('{"status_code": 403}', encoding="utf-8")
+    comparator: ReplayResultComparator = ReplayResultComparator(workspace)
+
+    assert comparator.needs_recovery(5, StepResponse(status_code=403)) is False

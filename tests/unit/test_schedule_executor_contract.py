@@ -40,6 +40,7 @@ def test_replay_runner_satisfies_schedule_executor_protocol(tmp_path: Path) -> N
     schedule: Set[int]
     ordered, schedule = executor.compute_smart_schedule(None, 0)
     assert (ordered, schedule) == ([0], {0})
+    assert executor.needs_recovery(0, StepResponse(status_code=200)) is False
 
 
 def test_fake_schedule_executor_satisfies_protocol() -> None:
@@ -49,3 +50,32 @@ def test_fake_schedule_executor_satisfies_protocol() -> None:
     assert executor.existing_step_indexes() == [1, 2]
     assert executor.compute_smart_schedule(None, 2) == ([1, 2], {1, 2})
     assert executor.execute_schedule([1], {1}) == [(1, StepResponse(status_code=200))]
+    assert executor.needs_recovery(1, StepResponse(status_code=200)) is False
+
+
+def test_fake_schedule_executor_needs_recovery_true_for_transport_failure() -> None:
+    fake: FakeScheduleExecutor = FakeScheduleExecutor(smart_schedule=([1], {1}), existing_indexes=[1])
+
+    assert fake.needs_recovery(1, StepResponse(status_code=0)) is True
+
+
+def test_fake_schedule_executor_needs_recovery_false_without_configured_reference() -> None:
+    fake: FakeScheduleExecutor = FakeScheduleExecutor(smart_schedule=([1], {1}), existing_indexes=[1])
+
+    assert fake.needs_recovery(1, StepResponse(status_code=404)) is False
+
+
+def test_fake_schedule_executor_needs_recovery_true_when_diverges_from_configured_reference() -> None:
+    fake: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([1], {1}), existing_indexes=[1], reference_status_codes={1: 200}
+    )
+
+    assert fake.needs_recovery(1, StepResponse(status_code=401)) is True
+
+
+def test_fake_schedule_executor_needs_recovery_false_when_matches_configured_reference() -> None:
+    fake: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([1], {1}), existing_indexes=[1], reference_status_codes={1: 200}
+    )
+
+    assert fake.needs_recovery(1, StepResponse(status_code=200)) is False

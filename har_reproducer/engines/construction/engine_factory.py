@@ -12,6 +12,7 @@ from har_reproducer.fs_io import Workspace
 from har_reproducer.llm import LLMFactory
 from har_reproducer.models import ProjectConfig
 from har_reproducer.replay.curl_token_comment import CurlTokenComment
+from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.reproduction import (
     CurlGenerator,
     ExtractorMetadataStore,
@@ -92,6 +93,7 @@ class EngineFactory:
             StepSkipEvaluator(self.project_config.skip_rules),
             StepRetryPolicy(),
             Validator(),
+            ReplayResultComparator(self.workspace),
             self.project_config.success_criteria,
             transport,
         )

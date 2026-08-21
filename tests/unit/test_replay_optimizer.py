@@ -184,6 +184,7 @@ def test_execute_retries_once_after_recoverable_status_then_succeeds() -> None:
             {},
             {5: _ok(200)},
         ],
+        reference_status_codes={5: 200},
     )
     optimizer: ReplayOptimizer = _optimizer(executor)
     optimizer.backbone = [0]
@@ -201,6 +202,7 @@ def test_execute_gives_up_after_two_refreshes_and_returns_last_result() -> None:
         smart_schedule=([0], {0}),
         existing_indexes=[0],
         default_response=_ok(401),
+        reference_status_codes={5: 200},
     )
     optimizer: ReplayOptimizer = _optimizer(executor)
     optimizer.backbone = [0]
@@ -236,11 +238,28 @@ def test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted() -
         smart_schedule=([8, 9], {8, 9}),
         existing_indexes=[8, 9],
         default_response=_ok(401),
+        reference_status_codes={9: 200},
     )
     optimizer: ReplayOptimizer = _optimizer(executor)
 
     with pytest.raises(ReplayOptimizerAborted):
         optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
+
+
+def test_execute_does_not_refresh_when_status_matches_reference() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        default_response=_ok(403),
+        reference_status_codes={5: 403},
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    results: List[Tuple[int, StepResponse]] = optimizer._execute([5], {5})
+
+    assert [response.status_code for _, response in results] == [403]
+    assert len(executor.calls) == 1
 
 
 def test_optimize_end_to_end_success_writes_steps_file(tmp_path: Path) -> None:

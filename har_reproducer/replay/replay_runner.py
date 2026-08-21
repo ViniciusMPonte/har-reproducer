@@ -110,9 +110,12 @@ class ReplayRunner:
             return self.http_transport.send_request(curl_resolved, index)
 
         def recover(response: StepResponse) -> bool:
-            if response.status_code not in StepRetryPolicy.RECOVERABLE_STATUS_CODES:
+            if not self.comparator.needs_recovery(index, response):
                 return False
-            print(f"Detected {response.status_code}. Attempting deterministic recovery (token refresh)...")
+            print(
+                f"Detected {response.status_code} (reference expects a different status). "
+                f"Attempting deterministic recovery (token refresh)..."
+            )
             return True
 
         response: StepResponse = self.retry_policy.execute(index, attempt, recover)
@@ -197,6 +200,9 @@ class ReplayRunner:
                 f"ReplayRunner: step(s) {missing} não existem no workspace (nenhum curl file em disco) — "
                 f"provavelmente foram pulados por skip_rules ou estão fora do intervalo de steps existentes."
             )
+
+    def needs_recovery(self, index: int, response: StepResponse) -> bool:
+        return self.comparator.needs_recovery(index, response)
 
     def existing_step_indexes(self) -> List[int]:
         indexes: List[int] = []
