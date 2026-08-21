@@ -6,7 +6,7 @@ import pytest
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import StepResponse
-from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
+from har_reproducer.replay.curl_token_comment import CurlTokenComment, OriginStatusPhrase, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
@@ -111,6 +111,64 @@ def test_compute_smart_schedule_still_expands_after_dependency_annotated_as_stat
     ordered, schedule = runner.compute_smart_schedule(None, 5)
 
     assert schedule == {2, 5}
+
+
+def test_compute_smart_schedule_does_not_anchor_on_dependency_with_origin_status_undetermined(
+        tmp_path: Path
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.curl_file(5).write_text(
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2, OriginStatusPhrase.UNDETERMINED)
+        + "\ncurl -X GET https://y",
+        encoding="utf-8",
+    )
+    runner: ReplayRunner = _runner(workspace)
+
+    ordered: List[int]
+    schedule: Set[int]
+    ordered, schedule = runner.compute_smart_schedule(None, 5)
+
+    assert schedule == {5}
+
+
+def test_compute_smart_schedule_does_not_anchor_on_dependency_with_origin_status_extraction_exhausted(
+        tmp_path: Path
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.curl_file(5).write_text(
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2, OriginStatusPhrase.EXTRACTION_EXHAUSTED)
+        + "\ncurl -X GET https://y",
+        encoding="utf-8",
+    )
+    runner: ReplayRunner = _runner(workspace)
+
+    ordered: List[int]
+    schedule: Set[int]
+    ordered, schedule = runner.compute_smart_schedule(None, 5)
+
+    assert schedule == {5}
+
+
+def test_compute_smart_schedule_expands_transitively_but_stops_at_a_frozen_literal(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(2).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.curl_file(5).write_text(
+        _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2, OriginStatusPhrase.UNDETERMINED)
+        + "\ncurl -X GET https://y",
+        encoding="utf-8",
+    )
+    workspace.curl_file(9).write_text(
+        _CURL_TOKEN_COMMENT.format_dependency_line("def", 5) + "\ncurl -X GET https://z", encoding="utf-8"
+    )
+    runner: ReplayRunner = _runner(workspace)
+
+    ordered: List[int]
+    schedule: Set[int]
+    ordered, schedule = runner.compute_smart_schedule(None, 9)
+
+    assert schedule == {5, 9}
 
 
 def test_existing_step_indexes_returns_sorted_indexes_from_workspace(tmp_path: Path) -> None:

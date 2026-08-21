@@ -176,7 +176,7 @@ class ReplayRunner:
             self, current: int, floor: int, existing_set: Set[int], schedule: Set[int], pending: Set[int]
     ) -> None:
         curl_text: str = self.workspace.curl_file(current).read_text(encoding="utf-8")
-        dependencies: Dict[str, int] = self.curl_token_comment.parse(curl_text)
+        dependencies: Dict[str, int] = self.curl_token_comment.parse_anchors(curl_text)
         for origin_step in dependencies.values():
             if origin_step >= floor and origin_step not in schedule and origin_step in existing_set:
                 schedule.add(origin_step)

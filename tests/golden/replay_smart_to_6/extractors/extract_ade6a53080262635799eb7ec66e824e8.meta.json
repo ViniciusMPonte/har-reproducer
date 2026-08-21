@@ -1,0 +1,12 @@
+{
+  "token_id": "ade6a53080262635799eb7ec66e824e8",
+  "code": "\nimport json\n\ndef extract_t_ade6a53080262635799eb7ec66e824e8(response: dict) -> str:\n    body_text = response.get('body', '')\n    data = json.loads(body_text) if isinstance(body_text, str) else body_text\n    try:\n        value = data['id']\n    except (KeyError, IndexError, TypeError) as e:\n        raise Exception(f\"Token not found in JSON body: {e}\")\n    if value is None:\n        raise Exception(\"Token not found in JSON body\")\n    return str(value)\n",
+  "verified": true,
+  "agent_type": "JSONPathAgent",
+  "origin_step": 3,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_ade6a53080262635799eb7ec66e824e8.py",
+  "valid_count": 0,
+  "last_value": null,
+  "ever_changed": false,
+  "captured_value": "4242"
+}

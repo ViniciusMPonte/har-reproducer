@@ -196,3 +196,74 @@ def test_parse_unresolved_returns_the_first_occurrence_only() -> None:
     ])
 
     assert comment.parse_unresolved(curl_text) == ["primeiro"]
+
+
+def test_parse_anchors_includes_dependency_without_status() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = comment.format_dependency_line("abc", 2) + "\ncurl -X GET https://x"
+
+    assert comment.parse_anchors(text) == {"abc": 2}
+
+
+def test_parse_anchors_excludes_dependency_with_origin_status_undetermined() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = (
+        comment.format_dependency_line("abc", 2, OriginStatusPhrase.UNDETERMINED)
+        + "\ncurl -X GET https://x"
+    )
+
+    assert comment.parse_anchors(text) == {}
+
+
+def test_parse_anchors_excludes_dependency_with_origin_status_extraction_exhausted() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = (
+        comment.format_dependency_line("abc", 2, OriginStatusPhrase.EXTRACTION_EXHAUSTED)
+        + "\ncurl -X GET https://x"
+    )
+
+    assert comment.parse_anchors(text) == {}
+
+
+def test_parse_anchors_includes_dependency_with_only_replay_status() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    line: str = comment.format_dependency_line("abc", 2)
+    annotated: str = comment.with_replay_status(line, ReplayStatusPhrase.PROBABLY_STATIC)
+
+    assert comment.parse_anchors(annotated + "\ncurl -X GET https://x") == {"abc": 2}
+
+
+def test_parse_anchors_excludes_dependency_with_both_origin_and_replay_status() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    line: str = comment.format_dependency_line("abc", 2, OriginStatusPhrase.UNDETERMINED)
+    annotated: str = comment.with_replay_status(line, ReplayStatusPhrase.PROBABLY_STATIC)
+
+    assert comment.parse_anchors(annotated + "\ncurl -X GET https://x") == {}
+
+
+def test_parse_anchors_mixes_frozen_and_recalculable_dependencies_regardless_of_order() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = "\n".join([
+        comment.format_dependency_line("frozen", 1, OriginStatusPhrase.UNDETERMINED),
+        comment.format_dependency_line("recalculable", 3),
+        "curl -X GET https://x",
+    ])
+
+    assert comment.parse_anchors(text) == {"recalculable": 3}
+
+
+def test_parse_anchors_returns_empty_dict_without_any_dependency_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    assert comment.parse_anchors("curl -X GET https://x") == {}
+
+
+def test_parse_still_returns_every_dependency_regardless_of_status() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = "\n".join([
+        comment.format_dependency_line("frozen", 1, OriginStatusPhrase.UNDETERMINED),
+        comment.format_dependency_line("recalculable", 3),
+        "curl -X GET https://x",
+    ])
+
+    assert comment.parse(text) == {"frozen": 1, "recalculable": 3}
