@@ -1,9 +1,5 @@
-Step 0 completed with status 200
-Step 3 completed with status 200
 Step 9 completed with status 200
 Replay step results:
-  Step 0: ✓ matched (200 vs original 200)
-  Step 3: ✓ matched (200 vs original 200)
   Step 9: ✓ matched (200 vs original 200)
 
 Replay Validation Result: ✓ SUCCESS (step 9 status code vs. original)

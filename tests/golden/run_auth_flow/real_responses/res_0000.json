@@ -1,0 +1,15 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Server": "<SERVER>",
+    "Date": "<DATE>",
+    "Content-Type": "application/json",
+    "Content-Length": "56"
+  },
+  "cookies": {},
+  "body": "{\"token\": \"live-token-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}",
+  "body_mime": "application/json",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

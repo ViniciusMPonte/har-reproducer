@@ -2,7 +2,8 @@
   "status_code": 200,
   "headers": {
     "Content-Type": "text/html",
-    "Set-Cookie": "SESSIONID=abc123sess; Path=/"
+    "Set-Cookie": "SESSIONID=abc123sess; Path=/",
+    "X-Api-Header": "build-42"
   },
   "cookies": {
     "SESSIONID": "abc123sess"
