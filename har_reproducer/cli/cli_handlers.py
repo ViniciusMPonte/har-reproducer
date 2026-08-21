@@ -38,7 +38,7 @@ class CliHandlers:
         self._engine_factory: Type[EngineFactory] = engine_factory
         self._har_parser: Type[HARParser] = har_parser
 
-    def handle_run(self, args: Namespace) -> None:
+    def handle_run(self, args: Namespace) -> bool:
         har_path: Path = Path(args.har)
         output_dir: Path = self._resolve_output_dir(args, har_path)
         if args.reset_output_dir:
@@ -54,6 +54,7 @@ class CliHandlers:
         mode: EngineMode = EngineMode(args.mode)
         result: bool = self._run(engine_factory, mode, har_path, workspace, project_config, sleeper)
         self._print_result(result)
+        return result
 
     def _run(
             self,
@@ -100,15 +101,16 @@ class CliHandlers:
         else:
             print("\nReproduction FAILED: Target state not reached.")
 
-    def handle_parse(self, args: Namespace) -> None:
+    def handle_parse(self, args: Namespace) -> bool:
         har_path: Path = Path(args.har)
         output_dir: Path = self._resolve_output_dir(args, har_path)
         if args.reset_output_dir:
             self._reset_output_dir(output_dir)
         count: int = self._har_parser.split_har(har_path, output_dir)
         print(f"Parsed HAR into {count} steps.")
+        return True
 
-    def handle_replay(self, args: Namespace) -> None:
+    def handle_replay(self, args: Namespace) -> bool:
         output_dir: Path = Path(args.output)
         self._validate_replay_mode_flags(args)
         workspace: Workspace = self._prepare_replay_workspace(output_dir)
@@ -128,8 +130,9 @@ class CliHandlers:
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
         self._print_result(result)
+        return result
 
-    def handle_optimize(self, args: Namespace) -> None:
+    def handle_optimize(self, args: Namespace) -> bool:
         output_dir: Path = Path(args.output)
         workspace: Workspace = self._prepare_replay_workspace(output_dir)
 
@@ -162,6 +165,7 @@ class CliHandlers:
             )
         )
         self._print_optimize_result(result, output_path or workspace.optimized_steps_file(run_id))
+        return result is not None
 
     @staticmethod
     def _resolve_optimize_success_criteria(args: Namespace, project_config: ProjectConfig) -> List[SuccessCriterion]:
