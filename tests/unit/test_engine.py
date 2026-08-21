@@ -8,6 +8,7 @@ from har_reproducer.engines.dry_engine import DryEngine
 from har_reproducer.engines.engine import Engine
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import SkipRulesConfig, Step, StepRequest, StepResponse, SuccessCriterion
+from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 from har_reproducer.session.session_store import SessionStore
@@ -42,29 +43,47 @@ def _engine(
         skip_evaluator=StepSkipEvaluator(SkipRulesConfig()),
         retry_policy=StepRetryPolicy(),
         validator=Validator(),
+        comparator=ReplayResultComparator(Workspace(tmp_path)),
         success_criteria=success_criteria,
         http_transport=None,
     )
 
 
-def test_handle_recovery_does_nothing_for_non_recoverable_status(tmp_path: Path) -> None:
+def _write_original_response(tmp_path: Path, index: int, status_code: int) -> None:
+    Workspace(tmp_path).original_response_file(index).write_text(
+        StepResponse(status_code=status_code).model_dump_json(), encoding="utf-8"
+    )
+
+
+def test_handle_recovery_does_nothing_when_status_matches_reference(tmp_path: Path) -> None:
+    _write_original_response(tmp_path, 5, status_code=403)
     token_resolver: FakeTokenResolver = FakeTokenResolver()
     engine: Engine = _engine(tmp_path, token_resolver, [])
 
-    handled: bool = engine.handle_recovery(StepResponse(status_code=500))
+    handled: bool = engine.handle_recovery(5, StepResponse(status_code=403))
 
     assert handled is False
     assert token_resolver.calls == []
 
 
-def test_handle_recovery_forces_token_refresh_for_recoverable_status(tmp_path: Path) -> None:
+def test_handle_recovery_forces_token_refresh_when_status_diverges_from_reference(tmp_path: Path) -> None:
+    _write_original_response(tmp_path, 5, status_code=200)
     token_resolver: FakeTokenResolver = FakeTokenResolver()
     engine: Engine = _engine(tmp_path, token_resolver, [])
 
-    handled: bool = engine.handle_recovery(StepResponse(status_code=401))
+    handled: bool = engine.handle_recovery(5, StepResponse(status_code=401))
 
     assert handled is True
     assert token_resolver.calls == [RecordedResolveAllCall(True)]
+
+
+def test_handle_recovery_forces_token_refresh_for_transport_failure_without_any_reference(tmp_path: Path) -> None:
+    token_resolver: FakeTokenResolver = FakeTokenResolver()
+    engine: Engine = _engine(tmp_path, token_resolver, [])
+
+    handled: bool = engine.handle_recovery(5, StepResponse(status_code=0))
+
+    assert handled is True
 
 
 def test_skip_entry_persists_skipped_response(tmp_path: Path) -> None:

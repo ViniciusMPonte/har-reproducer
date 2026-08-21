@@ -4,6 +4,7 @@ from typing import Any, ClassVar, Dict, List, Optional
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.models import Step, StepRequest, StepResponse, SuccessCriterion
+from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.reproduction import StepRetryPolicy, StepSkipEvaluator
 from har_reproducer.session import SessionStore
 from har_reproducer.templates import ExtractorTemplate
@@ -24,6 +25,7 @@ class Engine:
             skip_evaluator: StepSkipEvaluator,
             retry_policy: StepRetryPolicy,
             validator: Validator,
+            comparator: ReplayResultComparator,
             success_criteria: List[SuccessCriterion],
             http_transport: Optional[HttpTransport],
     ) -> None:
@@ -35,6 +37,7 @@ class Engine:
         self.skip_evaluator: StepSkipEvaluator = skip_evaluator
         self.retry_policy: StepRetryPolicy = retry_policy
         self.validator: Validator = validator
+        self.comparator: ReplayResultComparator = comparator
         self.success_criteria: List[SuccessCriterion] = success_criteria
         self.http_transport: Optional[HttpTransport] = http_transport
 
@@ -126,19 +129,21 @@ class Engine:
         print(f"\nFinal Validation Result: {'✓ SUCCESS' if is_success else '✗ FAILURE'}")
         return is_success
 
-    def handle_recovery(self, response: StepResponse) -> bool:
-        if response.status_code not in self.retry_policy.RECOVERABLE_STATUS_CODES:
+    def handle_recovery(self, step_index: int, response: StepResponse) -> bool:
+        if not self.comparator.needs_recovery(step_index, response):
             return False
 
         print(
-            f"Detected {response.status_code}. "
+            f"Detected {response.status_code} (reference expects a different status). "
             f"Attempting deterministic recovery (token refresh)..."
         )
         self.token_resolver.resolve_all(force=True)
         return True
 
     def execute_step(self, step: Step) -> StepResponse:
-        return self.retry_policy.execute(step.index, lambda: self._attempt_step(step), self.handle_recovery)
+        return self.retry_policy.execute(
+            step.index, lambda: self._attempt_step(step), lambda response: self.handle_recovery(step.index, response)
+        )
 
     def _attempt_step(self, step: Step) -> StepResponse:
         assert self.http_transport is not None
