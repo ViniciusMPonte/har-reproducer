@@ -243,7 +243,10 @@ def test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken(tmp_pat
         workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
         workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
     runner: ReplayRunner = _runner(
-        workspace, http_transport=StubHttpTransport([StepResponse(status_code=0), StepResponse(status_code=200)])
+        workspace,
+        http_transport=StubHttpTransport(
+            [StepResponse(status_code=0), StepResponse(status_code=0), StepResponse(status_code=200)]
+        ),
     )
 
     is_match: bool = runner._run_schedule([1, 2], {1, 2})
@@ -342,6 +345,49 @@ def test_run_step_persists_stub_transport_response(tmp_path: Path) -> None:
     assert response.status_code == 200
     persisted: str = workspace.replay_response_file("run-1", 0).read_text(encoding="utf-8")
     assert '"status_code":200' in persisted.replace(" ", "")
+
+
+def test_needs_recovery_delegates_to_comparator(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.original_response_file(5).write_text('{"status_code": 200}', encoding="utf-8")
+    runner: ReplayRunner = _runner(workspace)
+
+    assert runner.needs_recovery(5, StepResponse(status_code=401)) is True
+    assert runner.needs_recovery(5, StepResponse(status_code=200)) is False
+
+
+def test_run_step_single_attempt_when_status_matches_reference(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.original_response_file(0).write_text('{"status_code": 401}', encoding="utf-8")
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=401))
+    runner: ReplayRunner = _runner(workspace, http_transport=transport)
+
+    response: StepResponse = runner._run_step(0, schedule={0})
+
+    assert response.status_code == 401
+    assert len(transport.calls) == 1
+    assert "Attempting deterministic recovery" not in capsys.readouterr().out
+
+
+def test_run_step_retries_after_recovery_when_status_diverges_from_reference(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    workspace.original_response_file(0).write_text('{"status_code": 200}', encoding="utf-8")
+    transport: StubHttpTransport = StubHttpTransport(
+        [StepResponse(status_code=403), StepResponse(status_code=200)]
+    )
+    runner: ReplayRunner = _runner(workspace, http_transport=transport)
+
+    response: StepResponse = runner._run_step(0, schedule={0})
+
+    assert response.status_code == 200
+    assert len(transport.calls) == 2
+    assert "Attempting deterministic recovery" in capsys.readouterr().out
 
 
 def test_execute_schedule_raises_on_empty_schedule(tmp_path: Path) -> None:
