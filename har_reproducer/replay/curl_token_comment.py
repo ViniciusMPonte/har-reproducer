@@ -51,6 +51,11 @@ class CurlTokenComment:
         clause: str = f"# [Unresolved {len(paths)}]"
         return f"{clause} {self.CATEGORY_SEPARATOR.join(paths)}"
 
+    def format_static_line(self, entries: List[Tuple[str, int]]) -> str:
+        clause: str = f"# [Static {len(entries)}]"
+        rendered: List[str] = [f"{path}←{step:0{self.step_index_width}d}" for path, step in entries]
+        return f"{clause} {self.CATEGORY_SEPARATOR.join(rendered)}"
+
     def parse_unresolved(self, curl_text: str) -> List[str]:
         match: Optional[Match[str]] = self.UNRESOLVED_PATTERN.search(curl_text)
         if match is None:

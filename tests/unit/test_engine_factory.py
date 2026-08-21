@@ -37,7 +37,8 @@ def test_create_dry_uses_original_responses_directory(tmp_path: Path) -> None:
     engine: Engine = factory.create(EngineMode.DRY, Path("flow.har"))
 
     assert engine.token_resolver.responses_dir == workspace.original_responses
-    assert engine.tracker.candidate_resolver.response_corpus.responses_dir == workspace.original_responses
+    assert engine.tracker.candidate_resolver.discovery_corpus.responses_dir == workspace.original_responses
+    assert engine.tracker.candidate_resolver.execution_corpus is None
 
 
 def test_create_main_passes_through_transport_and_uses_real_responses_directory(tmp_path: Path) -> None:
@@ -49,7 +50,8 @@ def test_create_main_passes_through_transport_and_uses_real_responses_directory(
 
     assert engine.http_transport is transport
     assert engine.token_resolver.responses_dir == workspace.real_responses
-    assert engine.tracker.candidate_resolver.response_corpus.responses_dir == workspace.real_responses
+    assert engine.tracker.candidate_resolver.discovery_corpus.responses_dir == workspace.original_responses
+    assert engine.tracker.candidate_resolver.execution_corpus.responses_dir == workspace.real_responses
 
 
 def test_llm_is_none_when_project_config_has_no_llm_settings(tmp_path: Path) -> None:

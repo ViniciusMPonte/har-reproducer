@@ -160,7 +160,7 @@ def test_replay_smart_noflag(
 
     assert result.exception is None
     assert "Replay Validation Result: ✓ SUCCESS" in result.stdout
-    assert scenario.executed_steps(result.stdout) == [0, 3, 9]
+    assert scenario.executed_steps(result.stdout) == [9]
     assert len(scenario.replay_run_dirs()) == 1
     TokenFailureGuard().assert_at_most_one_failure_per_step(result.stdout)
     scenario.workspace.joinpath("stdout.txt").write_text(result.stdout, encoding="utf-8")

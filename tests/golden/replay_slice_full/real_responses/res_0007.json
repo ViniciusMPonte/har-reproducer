@@ -4,11 +4,11 @@
     "Server": "<SERVER>",
     "Date": "<DATE>",
     "Content-Type": "text/html",
-    "Set-Cookie": "PREFS=xyz789; Path=/",
+    "Set-Cookie": "PREFS=xyz999; Path=/",
     "Content-Length": "31"
   },
   "cookies": {
-    "PREFS": "xyz789"
+    "PREFS": "xyz999"
   },
   "body": "<html><body>prefs</body></html>",
   "body_mime": "text/html",

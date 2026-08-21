@@ -1,0 +1,12 @@
+{
+  "token_id": "d6005770b2f716bfe1c9cde542280f68",
+  "code": "\ndef extract_t_d6005770b2f716bfe1c9cde542280f68(response: dict) -> str:\n    headers = response.get('headers', {})\n    target = 'X-Api-Header'\n    value = headers.get(target)\n    if value is None:\n        lowered = {str(k).lower(): v for k, v in headers.items()}\n        value = lowered.get(target.lower())\n    if not value:\n        raise Exception(\"Token not found in headers\")\n    return value\n",
+  "verified": true,
+  "agent_type": "HeaderAgent",
+  "origin_step": 0,
+  "temp_file_path": "<WORKSPACE>/temp_extractors/temp_extractor_t_d6005770b2f716bfe1c9cde542280f68.py",
+  "valid_count": 0,
+  "last_value": null,
+  "ever_changed": false,
+  "captured_value": "build-42"
+}

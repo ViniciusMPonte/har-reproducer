@@ -30,7 +30,10 @@ class TokenResolver:
             value: Optional[str] = self.extractor_runner.run(extractor, self.responses_dir)
         except Exception as e:
             print(f"Failed to refresh token '{token_id}': {e}")
-            return
+            value = None
 
         if value:
             self.session_store.set_token(token_id, value)
+        elif extractor.captured_value is not None:
+            print(f"Token '{token_id}' could not be extracted; using captured value instead.")
+            self.session_store.set_token(token_id, extractor.captured_value)
