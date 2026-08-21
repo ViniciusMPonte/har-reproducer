@@ -14,6 +14,7 @@ from har_reproducer.models import (
 )
 from har_reproducer.session import SessionStore
 from har_reproducer.tracking.candidate_resolver import CandidateResolver, SlotStatus
+from har_reproducer.tracking.flow_vocabulary import FlowVocabulary
 from har_reproducer.tracking.response_corpus import ResponseCorpus
 from tests.support.fake_extractor_runner import FakeExtractorRunner
 from tests.support.fake_metadata_store import FakeMetadataStore
@@ -70,7 +71,8 @@ def _resolver_with_executor(
     agent_factory: AgentFactory = AgentFactory(workspace, script_executor, FakeSleeper(), None)
     corpus: ResponseCorpus = ResponseCorpus(tmp_path, CandidateResolverFixture.STEP_INDEX_WIDTH)
     return CandidateResolver(
-        corpus, RecordingOriginFinder(corpus), SessionStore(), extractor_runner, metadata_store, agent_factory
+        corpus, RecordingOriginFinder(corpus, FlowVocabulary()), SessionStore(), extractor_runner, metadata_store,
+        agent_factory,
     )
 
 
