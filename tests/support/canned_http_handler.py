@@ -8,26 +8,33 @@ class CannedHttpHandler(BaseHTTPRequestHandler):
 
     protocol_version: ClassVar[str] = "HTTP/1.1"
 
+    ITEM_PATH_PREFIX: ClassVar[str] = "/item/"
+
+    ITEM_RESPONSE: ClassVar[CannedResponse] = CannedResponse(
+        200, [("Content-Type", "application/json")], '{"id": 9999}',
+    )
+
     CANNED_RESPONSES: ClassVar[Dict[Tuple[str, str], CannedResponse]] = {
         ("GET", "/login"): CannedResponse(
             200,
-            [("Content-Type", "text/html"), ("Set-Cookie", "SESSIONID=abc123sess; Path=/")],
-            '<html><body><div id="marker">tok_CSS_1</div><script>var nonce = "scr_NONCE_2";</script></body></html>',
+            [
+                ("Content-Type", "text/html"),
+                ("Set-Cookie", "SESSIONID=abc123live; Path=/"),
+                ("X-Api-Header", "build-99"),
+            ],
+            '<html><body><div id="marker">tok_CSS_9</div><script>var nonce = "scr_NONCE_9";</script></body></html>',
         ),
         ("OPTIONS", "/api/do"): CannedResponse(204, [], ""),
         ("POST", "/api/do"): CannedResponse(
-            200, [("Content-Type", "application/json")], '{"id": 4242, "ok": true}',
+            200, [("Content-Type", "application/json")], '{"id": 9999, "ok": true}',
         ),
-        ("GET", "/item/4242"): CannedResponse(
-            200, [("Content-Type", "text/html")], "<html><body><h1>item 4242</h1></body></html>",
-        ),
-        ("GET", "/plain"): CannedResponse(200, [("Content-Type", "text/plain")], "PLAINVAL777"),
+        ("GET", "/plain"): CannedResponse(200, [("Content-Type", "text/plain")], "PLAINVAL999"),
         ("GET", "/use-plain"): CannedResponse(
             200, [("Content-Type", "text/html")], "<html><body>ok</body></html>",
         ),
         ("GET", "/prefs"): CannedResponse(
             200,
-            [("Content-Type", "text/html"), ("Set-Cookie", "PREFS=xyz789; Path=/")],
+            [("Content-Type", "text/html"), ("Set-Cookie", "PREFS=xyz999; Path=/")],
             "<html><body>prefs</body></html>",
         ),
         ("GET", "/use-prefs"): CannedResponse(
@@ -51,11 +58,16 @@ class CannedHttpHandler(BaseHTTPRequestHandler):
         return
 
     def _serve(self) -> None:
-        canned: Optional[CannedResponse] = self.CANNED_RESPONSES.get((self.command, self.path))
+        canned: Optional[CannedResponse] = self._resolve(self.command, self.path)
         if canned is None:
             self._serve_not_found()
             return
         self._serve_canned(canned)
+
+    def _resolve(self, method: str, path: str) -> Optional[CannedResponse]:
+        if method == "GET" and path.startswith(self.ITEM_PATH_PREFIX):
+            return self.ITEM_RESPONSE
+        return self.CANNED_RESPONSES.get((method, path))
 
     def _serve_not_found(self) -> None:
         self.send_response(404)
