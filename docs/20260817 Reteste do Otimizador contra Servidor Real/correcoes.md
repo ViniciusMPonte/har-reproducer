@@ -16,7 +16,7 @@ quem tem prazo real.
 | 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | aberto |
 | 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | núcleo ✅ pelo item 11 (só em `main`/`replay`/`optimize`); fase 2 do `optimize` (testar âncora para remoção) continua aberta |
 | 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | ~~28/12/2026~~ 13/02/2027 (JWT atual) | ✅ dividido em 9+10+11, todos feitos |
-| 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — | aberto — é a redescoberta reativa, próxima candidata natural |
+| 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — | ✅ feito (21/08) — não é a redescoberta reativa: era só o gatilho de recuperação nos três lugares que já reexecutam extrator existente. A redescoberta reativa (criar extrator novo quando isso não basta) continua sem spec própria. |
 | 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — | aberto |
 | 8 | Coincidência de baixa entropia no `origin_key` (`Origin` ← `Access-Control-Allow-Origin`) | Baixa | — | **não agir isoladamente** | ✅ resolvido pelo item 11 (a porta rejeita o token, ele nunca vira extrator) |
 | 9 | Extrator literal congelado não deveria virar âncora | **Alta** | Médio | — | ✅ feito (20/08) |
@@ -166,7 +166,23 @@ necessidade é o vocabulário que esta usa.
 
 ---
 
-## 6. Recuperabilidade: divergência da referência em vez de lista fixa de status
+## 6. Recuperabilidade: divergência da referência em vez de lista fixa de status — ✅ feito, 21/08/2026
+
+Implementado em `docs/20260821-3 Recuperação por Divergência da Referência/` (spec + 5
+tasks, mergeado em `master`). Os três lugares (`Engine.handle_recovery`,
+`ReplayRunner._run_step`, `ReplayOptimizer._needs_reactive_refresh`) decidem recuperação
+via `ReplayResultComparator.needs_recovery` — método novo, não uma inversão do
+`matches_original` já existente (a primeira tentativa de reaproveitar `matches_original`
+diretamente foi desenhada, verificada contra os testes reais, e descartada antes da spec
+ser aprovada: "sem referência" tinha que significar "não sei", não "diverge", senão
+qualquer step sem `original_responses/` gravado dispararia recuperação por engano).
+
+⚠️ **Isto não é a redescoberta reativa.** Esta correção só troca o **gatilho** de quando
+reexecutar extratores que já existem (`token_resolver.resolve_all(force=True)` em `run`,
+o mesmo mecanismo de sempre em `replay`/`optimize`). Criar um extrator **novo** quando o
+refresh não resolve — porque a porta do item 11 marcou o candidato como `"Static"` e
+nenhum extrator jamais existiu — continua sem spec própria, é maior, e foi deliberadamente
+separado desta etapa.
 
 **Evidência:** relatório §3.6.
 
