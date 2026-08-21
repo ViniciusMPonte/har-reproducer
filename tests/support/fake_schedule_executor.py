@@ -17,11 +17,13 @@ class FakeScheduleExecutor:
             existing_indexes: List[int],
             responses_by_call: Optional[List[Dict[int, StepResponse]]] = None,
             default_response: StepResponse = StepResponse(status_code=200),
+            reference_status_codes: Optional[Dict[int, int]] = None,
     ) -> None:
         self.smart_schedule: Tuple[List[int], Set[int]] = smart_schedule
         self.existing_indexes: List[int] = existing_indexes
         self.responses_by_call: List[Dict[int, StepResponse]] = responses_by_call or []
         self.default_response: StepResponse = default_response
+        self.reference_status_codes: Dict[int, int] = reference_status_codes or {}
         self.calls: List[RecordedExecuteScheduleCall] = []
 
     def execute_schedule(
@@ -41,3 +43,10 @@ class FakeScheduleExecutor:
 
     def existing_step_indexes(self) -> List[int]:
         return self.existing_indexes
+
+    def needs_recovery(self, index: int, response: StepResponse) -> bool:
+        if response.status_code == 0:
+            return True
+        if index not in self.reference_status_codes:
+            return False
+        return response.status_code != self.reference_status_codes[index]
