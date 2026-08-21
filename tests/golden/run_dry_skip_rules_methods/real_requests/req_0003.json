@@ -4,7 +4,8 @@
   "headers": {
     "Accept": "text/html",
     "Content-Type": "application/json",
-    "X-Csrf": "tok_CSS_1"
+    "X-Csrf": "tok_CSS_1",
+    "X-Api-Header": "build-42"
   },
   "cookies": {
     "SESSIONID": "abc123sess"

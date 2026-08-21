@@ -3,12 +3,12 @@
   "headers": {
     "Server": "<SERVER>",
     "Date": "<DATE>",
-    "Content-Type": "text/html",
-    "Content-Length": "44"
+    "Content-Type": "application/json",
+    "Content-Length": "12"
   },
   "cookies": {},
-  "body": "<html><body><h1>item 4242</h1></body></html>",
-  "body_mime": "text/html",
+  "body": "{\"id\": 9999}",
+  "body_mime": "application/json",
   "redirect_url": null,
   "skipped": false,
   "skip_reason": null

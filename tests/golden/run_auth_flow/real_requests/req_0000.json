@@ -1,0 +1,10 @@
+{
+  "url": "http://127.0.0.1:<PORT>/login",
+  "method": "POST",
+  "headers": {
+    "Accept": "application/json"
+  },
+  "cookies": {},
+  "body": null,
+  "is_skippable": false
+}

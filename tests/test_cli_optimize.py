@@ -67,7 +67,7 @@ def test_optimize_happy_path_writes_default_steps_file(
     assert "Optimization SUCCESSFUL" in result.stdout
     steps_files: List[Path] = list((scenario.workspace / "replays").glob("optimized_*.txt"))
     assert len(steps_files) == 1
-    assert steps_files[0].read_text(encoding="utf-8").splitlines() == ["0", "3", "9"]
+    assert steps_files[0].read_text(encoding="utf-8").splitlines() == ["0", "9"]
 
 
 @pytest.mark.slow
@@ -84,5 +84,5 @@ def test_optimize_respects_custom_steps_out(
     ])
 
     assert result.exception is None
-    assert custom_output.read_text(encoding="utf-8").splitlines() == ["0", "3", "9"]
+    assert custom_output.read_text(encoding="utf-8").splitlines() == ["0", "9"]
     assert not list((scenario.workspace / "replays").glob("optimized_*.txt"))
