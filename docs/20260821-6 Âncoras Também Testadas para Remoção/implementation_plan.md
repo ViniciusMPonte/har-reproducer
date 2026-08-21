@@ -116,30 +116,30 @@ completo (a situação de hoje) já é sabido válido pela própria fase 2.
 
 **Critérios de aceite (TDD — escrever os testes abaixo, confirmar que falham pelo motivo
 certo contra o código atual, só então implementar):**
-- [ ] `optimizer._reduce_anchors([0, 153, 233], 0, 233, [], SUCCESS_CRITERIA)` com um
+- [x] `optimizer._reduce_anchors([0, 153, 233], 0, 233, [], SUCCESS_CRITERIA)` com um
   `FakeScheduleExecutor` cujo `default_response`/`responses_by_call` faz o step `233`
   responder `200` devolve `[]` (a âncora `153` foi removida) e registra exatamente 1
   chamada a `execute_schedule`, com `ordered_indexes == [0, 233]` — este é o cenário
   medido na spec (§1.1), reproduzido como teste.
-- [ ] O mesmo cenário, mas com o step `233` respondendo `404` na única chamada, devolve
+- [x] O mesmo cenário, mas com o step `233` respondendo `404` na única chamada, devolve
   `[153]` (a âncora não pôde ser removida) — não-remoção quando o alvo de fato depende
   dela.
-- [ ] `optimizer._reduce_anchors([0, 9], 0, 9, [], SUCCESS_CRITERIA)` (nenhuma âncora
+- [x] `optimizer._reduce_anchors([0, 9], 0, 9, [], SUCCESS_CRITERIA)` (nenhuma âncora
   interior, só os dois limites) devolve `[]` sem nenhuma chamada a `execute_schedule` —
   caso de borda §5.1 da spec.
-- [ ] Teste de ponta a ponta via `optimizer.optimize(...)`, com
+- [x] Teste de ponta a ponta via `optimizer.optimize(...)`, com
   `smart_schedule=([0, 153, 233], {0, 153, 233})`, `existing_indexes=[0, 153, 233]`,
   `default_response=_ok(200)`: `result == [0, 233]` (não `[0, 153, 233]`) — confirma que
   a integração entre `_run_phase2` e `_reduce_anchors` produz o resultado que a spec
   promete.
-- [ ] Não-regressão: `test_optimize_end_to_end_success_writes_steps_file`,
+- [x] Não-regressão: `test_optimize_end_to_end_success_writes_steps_file`,
   `test_optimize_confirmation_failure_writes_no_file_and_returns_none`,
   `test_optimize_final_list_has_no_duplicate_when_to_index_equals_from_index` e
   `test_optimize_range_abort_writes_no_file_and_returns_none` continuam passando **sem
   alterar `responses_by_call`** — nenhum desses cenários tem âncora interior
   (`smart_schedule` de cada um só tem `from_index`/`to_index`), então `_reduce_anchors`
   não deveria adicionar nenhuma chamada extra a `execute_schedule` em nenhum deles.
-- [ ] Não-regressão: `test_run_phase2_*` (todos os que chamam `_run_phase2` diretamente,
+- [x] Não-regressão: `test_run_phase2_*` (todos os que chamam `_run_phase2` diretamente,
   não `optimize`) continuam passando sem alteração — `_reduce_anchors` não é chamado por
   `_run_phase2`.
 
@@ -182,7 +182,7 @@ dispensáveis juntas podem sobreviver ambas.
 ```
 
 **Critérios de aceite:**
-- [ ] O parágrafo `⚠️` do `optimize` no README não contém mais a frase "as âncoras em si
+- [x] O parágrafo `⚠️` do `optimize` no README não contém mais a frase "as âncoras em si
   nunca são testadas para remoção".
-- [ ] O parágrafo passa a declarar a limitação da busca gulosa (âncoras interdependentes).
-- [ ] Nenhum outro trecho do README é alterado.
+- [x] O parágrafo passa a declarar a limitação da busca gulosa (âncoras interdependentes).
+- [x] Nenhum outro trecho do README é alterado.
