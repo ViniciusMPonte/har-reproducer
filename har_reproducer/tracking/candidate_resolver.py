@@ -22,19 +22,21 @@ class CandidateResolver:
 
     def __init__(
             self,
-            response_corpus: ResponseCorpus,
+            discovery_corpus: ResponseCorpus,
             origin_finder: OriginFinder,
             session_store: SessionStore,
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
             agent_factory: AgentFactory,
+            execution_corpus: Optional[ResponseCorpus],
     ) -> None:
-        self.response_corpus: ResponseCorpus = response_corpus
+        self.discovery_corpus: ResponseCorpus = discovery_corpus
         self.origin_finder: OriginFinder = origin_finder
         self.session_store: SessionStore = session_store
         self.extractor_runner: ExtractorRunner = extractor_runner
         self.metadata_store: ExtractorMetadataStore = metadata_store
         self.agent_factory: AgentFactory = agent_factory
+        self.execution_corpus: Optional[ResponseCorpus] = execution_corpus
         self._validated_values: Dict[str, str] = {}
         self._origin_cache: Dict[str, OriginMatch] = {}
         self._origin_misses: Dict[str, int] = {}
@@ -51,6 +53,12 @@ class CandidateResolver:
         candidate.origin_step = origin.step_index
         candidate.origin_key = origin.origin_key
         candidate.origin_container = origin.origin_container
+        candidate.origin_fragment = origin.fragment
+
+        if self._admission_gate_rejects(candidate):
+            candidate.status = "Static"
+            return candidate
+
         base_token_id: str = self._derive_token_id(candidate.path, candidate.origin_step)
 
         slot_id: str
@@ -63,6 +71,15 @@ class CandidateResolver:
             return candidate
 
         return self._generate_new_extractor(candidate, initial_error)
+
+    def _admission_gate_rejects(self, candidate: DynamicToken) -> bool:
+        if self.execution_corpus is None:
+            return False
+
+        execution_text: Optional[str] = self.execution_corpus.searchable_text(candidate.origin_step)
+        if not execution_text:
+            return True
+        return candidate.extracted_value in execution_text
 
     def _find_origin(self, value: str, step_index: int) -> Optional[OriginMatch]:
         cached_origin: Optional[OriginMatch] = self._origin_cache.get(value)
@@ -105,18 +122,18 @@ class CandidateResolver:
         cached_value: Optional[str] = self._validated_values.get(slot_id)
         if cached_value is None:
             return None
-        if cached_value == candidate.current_value:
+        if cached_value == candidate.extracted_value:
             return SlotStatus.MATCH, None
-        return SlotStatus.MISMATCH, self._mismatch_error(cached_value, candidate.current_value)
+        return SlotStatus.MISMATCH, self._mismatch_error(cached_value, candidate.extracted_value)
 
     def _check_persisted_slot(self, slot_id: str, candidate: DynamicToken) -> Tuple[SlotStatus, Optional[str]]:
         persisted: Optional[Extractor] = self.metadata_store.load(slot_id)
         if persisted is None:
             return SlotStatus.FREE, None
 
-        result: Optional[str] = self.extractor_runner.run_existing(slot_id, self.response_corpus.responses_dir)
-        if result != candidate.current_value:
-            return SlotStatus.MISMATCH, self._mismatch_error(result, candidate.current_value)
+        result: Optional[str] = self.extractor_runner.run_existing(slot_id, self.discovery_corpus.responses_dir)
+        if result != candidate.extracted_value:
+            return SlotStatus.MISMATCH, self._mismatch_error(result, candidate.extracted_value)
 
         self._accept_persisted_slot(slot_id, persisted, result)
         return SlotStatus.MATCH, None
@@ -126,17 +143,16 @@ class CandidateResolver:
             persisted.captured_value = result
             self.metadata_store.save(persisted)
         self.session_store.state.registry[slot_id] = persisted
-        self.session_store.set_token(slot_id, result)
         self._validated_values[slot_id] = result
 
     def _generate_new_extractor(self, candidate: DynamicToken, initial_error: Optional[str]) -> DynamicToken:
         candidate.status = "UnderReview"
 
-        response_sample: Optional[Dict[str, Any]] = self.response_corpus.response(candidate.origin_step)
+        response_sample: Optional[Dict[str, Any]] = self.discovery_corpus.response(candidate.origin_step)
         if response_sample is None:
             return candidate
 
-        candidate.origin_location = TokenLocationDetector.find(candidate.current_value, response_sample)
+        candidate.origin_location = TokenLocationDetector.find(candidate.extracted_value, response_sample)
         self._register_extractor(candidate, response_sample, initial_error)
         return candidate
 
@@ -162,7 +178,7 @@ class CandidateResolver:
     ) -> None:
         new_extractor: Optional[Extractor] = self._generate_extractor(candidate, response_sample, initial_error)
         if new_extractor is not None:
-            new_extractor.captured_value = candidate.current_value
+            new_extractor.captured_value = candidate.extracted_value
             self.session_store.state.registry[candidate.token_id] = new_extractor
             self.metadata_store.save(new_extractor)
             candidate.status = "Resolved"
@@ -193,7 +209,7 @@ class CandidateResolver:
         safe_token_id: str = IdentifierSanitizer.sanitize(candidate.token_id)
         return Extractor(
             token_id=candidate.token_id,
-            code=f"def extract_{safe_token_id}(response):\n    return {candidate.current_value!r}\n",
+            code=f"def extract_{safe_token_id}(response):\n    return {candidate.extracted_value!r}\n",
             verified=True,
             agent_type=agent_type,
             origin_step=candidate.origin_step,
