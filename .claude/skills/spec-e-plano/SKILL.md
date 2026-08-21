@@ -191,6 +191,12 @@ Regras ao preencher:
   garantia explícita de não-regressão quando a task toca código existente.
 - Cada task referencia a seção da spec que a originou quando ajuda a rastrear o
   "porquê" (ex.: "spec seção 3.3").
+- Quando uma task altera uma fixture ou componente de teste compartilhado por vários
+  cenários (um servidor `canned`, um `.har` de fixture, um fixture de sessão), a lista de
+  "árvores afetadas"/o comando de regeneração de golden tem que citar todo consumidor real
+  daquela fixture — `grep` por quem a usa/por `assert_matches`, não só os exemplos que vêm
+  à mente ao escrever a task. Descobrir o resto do raio de impacto só na implementação é
+  caro (já aconteceu: um plano previu regenerar 2 árvores e a mudança de fixture afetava 19).
 
 Regra de processo: **apresentar o plano inteiro (todas as tasks) e esperar aprovação
 do usuário antes de começar a implementação (Passo 3).** É uma aprovação separada da
