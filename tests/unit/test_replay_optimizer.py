@@ -245,6 +245,8 @@ def test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted() -
     with pytest.raises(ReplayOptimizerAborted):
         optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
 
+    assert len(executor.calls) == 5
+
 
 def test_execute_does_not_refresh_when_status_matches_reference() -> None:
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
