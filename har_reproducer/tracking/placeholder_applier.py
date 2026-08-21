@@ -15,10 +15,10 @@ class PlaceholderApplier:
 
     @staticmethod
     def _ordered_by_value_length(tokens: List[DynamicToken]) -> List[DynamicToken]:
-        return sorted(tokens, key=lambda token: len(token.current_value), reverse=True)
+        return sorted(tokens, key=lambda token: len(token.extracted_value), reverse=True)
 
     def _apply_token(self, request: StepRequest, token: DynamicToken) -> None:
-        if not token.current_value:
+        if not token.extracted_value:
             return
 
         extractor: Optional[Extractor] = self._verified_extractor(token.token_id)
@@ -26,10 +26,10 @@ class PlaceholderApplier:
             return
 
         placeholder: str = self._placeholder_for(token.token_id)
-        self._replace_in_url(request, token.current_value, placeholder)
-        self._replace_in_headers(request, token.current_value, placeholder)
-        self._replace_in_cookies(request, token.current_value, placeholder)
-        self._replace_in_body(request, token.current_value, placeholder)
+        self._replace_in_url(request, token.extracted_value, placeholder)
+        self._replace_in_headers(request, token.extracted_value, placeholder)
+        self._replace_in_cookies(request, token.extracted_value, placeholder)
+        self._replace_in_body(request, token.extracted_value, placeholder)
 
     def _verified_extractor(self, token_id: str) -> Optional[Extractor]:
         extractor: Optional[Extractor] = self.session_store.state.registry.get(token_id)

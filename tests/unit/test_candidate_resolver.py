@@ -67,12 +67,38 @@ def _resolver_with_executor(
         metadata_store: FakeMetadataStore,
         script_executor: FakeScriptExecutor,
 ) -> CandidateResolver:
+    return _resolver_with_execution_corpus(tmp_path, None, extractor_runner, metadata_store, script_executor)
+
+
+def _resolver_verifying_with_execution(
+        tmp_path: Path, execution_responses_dir: Path, extracted_value: str, verifications: int,
+) -> CandidateResolver:
+    results: List[ScriptExecutionResult] = [
+        ScriptExecutionResult(timed_out=False, return_code=0, stdout=extracted_value, stderr="")
+        for _ in range(verifications)
+    ]
+    return _resolver_with_execution_corpus(
+        tmp_path, execution_responses_dir, FakeExtractorRunner(), FakeMetadataStore(), FakeScriptExecutor(list(results))
+    )
+
+
+def _resolver_with_execution_corpus(
+        tmp_path: Path,
+        execution_responses_dir: Optional[Path],
+        extractor_runner: FakeExtractorRunner,
+        metadata_store: FakeMetadataStore,
+        script_executor: FakeScriptExecutor,
+) -> CandidateResolver:
     workspace: Workspace = Workspace(tmp_path)
     agent_factory: AgentFactory = AgentFactory(workspace, script_executor, FakeSleeper(), None)
-    corpus: ResponseCorpus = ResponseCorpus(tmp_path, CandidateResolverFixture.STEP_INDEX_WIDTH)
+    discovery_corpus: ResponseCorpus = ResponseCorpus(tmp_path, CandidateResolverFixture.STEP_INDEX_WIDTH)
+    execution_corpus: Optional[ResponseCorpus] = (
+        ResponseCorpus(execution_responses_dir, CandidateResolverFixture.STEP_INDEX_WIDTH)
+        if execution_responses_dir is not None else None
+    )
     return CandidateResolver(
-        corpus, RecordingOriginFinder(corpus, FlowVocabulary()), SessionStore(), extractor_runner, metadata_store,
-        agent_factory,
+        discovery_corpus, RecordingOriginFinder(discovery_corpus, FlowVocabulary()), SessionStore(),
+        extractor_runner, metadata_store, agent_factory, execution_corpus,
     )
 
 
@@ -118,7 +144,7 @@ def test_check_persisted_slot_matches_and_accepts_when_rerun_output_equals_candi
 
     assert status == SlotStatus.MATCH
     assert error is None
-    assert resolver.session_store.state.tokens["t1"] == "v1"
+    assert "t1" not in resolver.session_store.state.tokens
 
 
 def test_check_persisted_slot_mismatches_when_run_existing_returns_none(tmp_path: Path) -> None:
@@ -312,3 +338,61 @@ def test_check_persisted_slot_runs_existing_extractor_over_the_corpus_directory(
     resolver._check_persisted_slot("t1", _candidate("v1"))
 
     assert extractor_runner.run_existing_calls[0].response_override_dir == tmp_path
+
+
+def test_process_candidate_admits_fragment_origin_when_execution_response_differs(tmp_path: Path) -> None:
+    _write_response(tmp_path, 1, {"body": '{"token":"abc123def"}'})
+    execution_dir: Path = tmp_path / "execution"
+    _write_response(execution_dir, 1, {"body": '{"token":"zzz999zzz"}'})
+    resolver: CandidateResolver = _resolver_verifying_with_execution(tmp_path, execution_dir, "abc123def", 1)
+
+    resolved: List[DynamicToken] = resolver.resolve([_candidate("Bearer abc123def")], 5)
+
+    assert resolved[0].status == "Resolved"
+    assert resolved[0].origin_fragment == "abc123def"
+    registered: Optional[Extractor] = resolver.session_store.state.registry.get(resolved[0].token_id)
+    assert registered is not None
+    assert registered.captured_value == "abc123def"
+
+
+def test_process_candidate_dispenses_fragment_origin_when_execution_response_is_unchanged(tmp_path: Path) -> None:
+    _write_response(tmp_path, 1, {"body": '{"token":"abc123def"}'})
+    execution_dir: Path = tmp_path / "execution"
+    _write_response(execution_dir, 1, {"body": '{"token":"abc123def"}'})
+    script_executor: FakeScriptExecutor = FakeScriptExecutor([])
+    extractor_runner: FakeExtractorRunner = FakeExtractorRunner()
+    resolver: CandidateResolver = _resolver_with_execution_corpus(
+        tmp_path, execution_dir, extractor_runner, FakeMetadataStore(), script_executor,
+    )
+
+    resolved: List[DynamicToken] = resolver.resolve([_candidate("Bearer abc123def")], 5)
+
+    assert resolved[0].status == "Static"
+    assert resolved[0].origin_step == 1
+    assert resolved[0].origin_fragment == "abc123def"
+    assert resolver.session_store.state.registry == {}
+    assert len(script_executor.calls) == 0
+    assert len(extractor_runner.run_calls) == 0
+
+
+def test_process_candidate_treats_missing_execution_response_as_static(tmp_path: Path) -> None:
+    _write_response(tmp_path, 1, {"headers": {"ETag": "valorvalor"}})
+    execution_dir: Path = tmp_path / "execution"
+    execution_dir.mkdir()
+    resolver: CandidateResolver = _resolver_with_execution_corpus(
+        tmp_path, execution_dir, FakeExtractorRunner(), FakeMetadataStore(), FakeScriptExecutor([]),
+    )
+
+    resolved: List[DynamicToken] = resolver.resolve([_candidate("valorvalor")], 5)
+
+    assert resolved[0].status == "Static"
+    assert resolved[0].origin_step == 1
+
+
+def test_process_candidate_without_execution_corpus_skips_the_admission_gate(tmp_path: Path) -> None:
+    _write_response(tmp_path, 1, {"headers": {"X-Token": "segredo"}})
+    resolver: CandidateResolver = _resolver_verifying(tmp_path, "segredo", 1)
+
+    resolved: List[DynamicToken] = resolver.resolve([_candidate("segredo")], 5)
+
+    assert resolved[0].status == "Resolved"
