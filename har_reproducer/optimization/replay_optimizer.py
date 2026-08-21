@@ -48,7 +48,8 @@ class ReplayOptimizer:
             print(f"ReplayOptimizer: aborted — {aborted.reason}")
             return None
 
-        final_list: List[int] = sorted({from_index, *anchors, *kept})
+        reduced_anchors: List[int] = self._reduce_anchors(anchors, from_index, to_index, kept, success_criteria)
+        final_list: List[int] = sorted({from_index, to_index, *reduced_anchors, *kept})
         if not self._confirm(final_list, to_index, success_criteria):
             print("ReplayOptimizer: aborted — final confirmation failed after all ranges passed individually.")
             return None
@@ -58,6 +59,23 @@ class ReplayOptimizer:
             print(f"[AVISO] {destination} já existe e será sobrescrito.")
         destination.write_text("\n".join(str(index) for index in final_list) + "\n", encoding="utf-8")
         return final_list
+
+    def _reduce_anchors(
+            self,
+            anchors: List[int],
+            from_index: int,
+            to_index: int,
+            kept: List[int],
+            success_criteria: List[SuccessCriterion],
+    ) -> List[int]:
+        removable: List[int] = [anchor for anchor in anchors if anchor not in (from_index, to_index)]
+        working: List[int] = list(removable)
+        for anchor in reversed(removable):
+            trial: List[int] = [a for a in working if a != anchor]
+            trial_final_list: List[int] = sorted({from_index, to_index, *trial, *kept})
+            if self._confirm(trial_final_list, to_index, success_criteria):
+                working = trial
+        return working
 
     def _confirm(self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion]) -> bool:
         results: List[Tuple[int, StepResponse]] = self._execute(final_list, set(final_list))
@@ -182,6 +200,6 @@ class ReplayOptimizer:
         estimate: int = self._estimate_worst_case_requests(from_index, anchors)
         print(
             f"ReplayOptimizer: worst-case estimate ≈ {estimate} requests (does NOT include reactive session "
-            f"refreshes — unpredictable and disproportionately expensive, since each refresh re-runs the entire "
-            f"backbone; calibrate --max-requests with headroom above this estimate when the backbone is large)."
+            f"refreshes or the anchor-removal pass — both unpredictable before phase 2 runs; calibrate "
+            f"--max-requests with headroom above this estimate when the backbone is large)."
         )
