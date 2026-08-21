@@ -80,14 +80,14 @@ class DynamicToken(BaseModel):
 `model_dump_json()`, e isso é intencional: só `origin_fragment` precisa ser serializado.
 
 **Critérios de aceite:**
-- [ ] `OriginMatch(step_index=1).fragment is None` (default).
-- [ ] `OriginMatch(step_index=1, fragment="abc").fragment == "abc"`.
-- [ ] `DynamicToken(..., status="Static")` é aceito pelo validador do Pydantic (hoje
+- [x] `OriginMatch(step_index=1).fragment is None` (default).
+- [x] `OriginMatch(step_index=1, fragment="abc").fragment == "abc"`.
+- [x] `DynamicToken(..., status="Static")` é aceito pelo validador do Pydantic (hoje
       rejeitaria com `ValidationError`).
-- [ ] Um `DynamicToken` sem `origin_fragment` tem `extracted_value == current_value`.
-- [ ] Um `DynamicToken` com `origin_fragment="frag"` tem `extracted_value == "frag"`,
+- [x] Um `DynamicToken` sem `origin_fragment` tem `extracted_value == current_value`.
+- [x] Um `DynamicToken` com `origin_fragment="frag"` tem `extracted_value == "frag"`,
       mesmo que `current_value` seja diferente.
-- [ ] Não-regressão: todo `DynamicToken(...)` construído sem os campos novos nos testes
+- [x] Não-regressão: todo `DynamicToken(...)` construído sem os campos novos nos testes
       existentes (`grep -rl "DynamicToken(" tests/`) continua válido — os campos novos têm
       default.
 
@@ -127,16 +127,16 @@ compara texto cru.
 isso, mas vale um teste explícito.
 
 **Critérios de aceite:**
-- [ ] `longest_common("Bearer abc123def", "xxx abc123def yyy")` devolve `("abc123def", 7)`
+- [x] `longest_common("Bearer abc123def", "xxx abc123def yyy")` devolve `("abc123def", 7)`
       (fragmento é o próprio candidato sem o prefixo `"Bearer "`).
-- [ ] `longest_common("http://127.0.0.1:8080", "http:// nada aqui")` devolve `None` — o
+- [x] `longest_common("http://127.0.0.1:8080", "http:// nada aqui")` devolve `None` — o
       maior pedaço comum (`"http://"`, 7 de 21 chars, 33%) não atinge a cobertura mínima.
-- [ ] `longest_common("abcdefgh", "xyzabcdxyz")` (cobertura exata no limite, 4 de 8 = 50%)
+- [x] `longest_common("abcdefgh", "xyzabcdxyz")` (cobertura exata no limite, 4 de 8 = 50%)
       devolve um fragmento de 4 caracteres, não `None`.
-- [ ] `longest_common(value, text)` nunca devolve `(value, 0)` — o valor inteiro não é um
+- [x] `longest_common(value, text)` nunca devolve `(value, 0)` — o valor inteiro não é um
       resultado válido deste método.
-- [ ] Valor de 1 caractere devolve `None` (nada abaixo do mínimo de granularidade).
-- [ ] Dois pedaços de mesmo tamanho máximo, em deslocamentos diferentes do valor: devolve o
+- [x] Valor de 1 caractere devolve `None` (nada abaixo do mínimo de granularidade).
+- [x] Dois pedaços de mesmo tamanho máximo, em deslocamentos diferentes do valor: devolve o
       de menor deslocamento.
 
 ---
@@ -180,13 +180,13 @@ contenção não muda a saída nos dois workspaces e carrega falso negativo
 (`'api'`/`'fonts'` vetáveis por serem substring de hostname).
 
 **Critérios de aceite:**
-- [ ] Depois de `observe("http://127.0.0.1:8080/x", 5)`, `rejects("http://127.0.0.1:8080", 10)`
+- [x] Depois de `observe("http://127.0.0.1:8080/x", 5)`, `rejects("http://127.0.0.1:8080", 10)`
       é `True` e `rejects("http://127.0.0.1:8080", 3)` é `False` (endereço só apareceu
       **depois** do step de origem do candidato).
-- [ ] `rejects` de um texto que nunca foi observado como endereço é `False`.
-- [ ] `rejects("api", ...)` é `False` mesmo depois de observar `"https://api.example.com"`
+- [x] `rejects` de um texto que nunca foi observado como endereço é `False`.
+- [x] `rejects("api", ...)` é `False` mesmo depois de observar `"https://api.example.com"`
       — sem contenção, só igualdade exata.
-- [ ] Duas observações do mesmo endereço, em steps diferentes: `_first_seen` guarda o
+- [x] Duas observações do mesmo endereço, em steps diferentes: `_first_seen` guarda o
       **menor** dos dois índices.
 
 ---
@@ -261,28 +261,28 @@ janela negativa avançada, perdendo steps anteriores.
 decisão medida e descartada a generalização).
 
 **Critérios de aceite:**
-- [ ] `find("Bearer eyJ...", 0, 224)` sobre um corpus onde só `eyJ...` (sem `"Bearer "`)
+- [x] `find("Bearer eyJ...", 0, 224)` sobre um corpus onde só `eyJ...` (sem `"Bearer "`)
       aparece na resposta do step 153: devolve `OriginMatch(step_index=153, fragment="eyJ...")`.
-- [ ] `find("u=0", 0, 76)` sobre um corpus onde `"u=0"` aparece inteiro no step 76: devolve
+- [x] `find("u=0", 0, 76)` sobre um corpus onde `"u=0"` aparece inteiro no step 76: devolve
       `None` — 3 caracteres, abaixo do piso, mesmo sendo casamento inteiro.
-- [ ] `find("http://127.0.0.1:8080", ...)` sobre um corpus onde só `"http://"` (7 de 21
+- [x] `find("http://127.0.0.1:8080", ...)` sobre um corpus onde só `"http://"` (7 de 21
       chars, 33%) aparece antes do step de origem verdadeiro: devolve `None` (fragmento sem
       cobertura), permitindo que uma chamada posterior, com o step de origem verdadeiro na
       janela, ache o valor **inteiro**.
-- [ ] Um fragmento cujo texto é igual a um endereço observado num step **anterior** ao de
+- [x] Um fragmento cujo texto é igual a um endereço observado num step **anterior** ao de
       origem do fragmento: rejeitado, `find` devolve `None`.
-- [ ] O mesmo fragmento, mas o endereço só foi observado num step **posterior** ao de
+- [x] O mesmo fragmento, mas o endereço só foi observado num step **posterior** ao de
       origem do fragmento: aceito.
-- [ ] `TokenTracker.analyze_step` chama `flow_vocabulary.observe` com a URL e o índice do
+- [x] `TokenTracker.analyze_step` chama `flow_vocabulary.observe` com a URL e o índice do
       `step` recebido, antes de chamar `candidate_resolver.resolve`.
-- [ ] Não-regressão: os 15 testes de `tests/unit/test_origin_finder.py` (verificados
+- [x] Não-regressão: os 15 testes de `tests/unit/test_origin_finder.py` (verificados
       individualmente — nenhum usa valor abaixo de `MIN_LENGTH=4` num contexto onde o
       fragmento se aplicaria) passam sem alteração de asserção, só atualizando `_finder(...)`
       para passar um `FlowVocabulary()` vazio.
-- [ ] Não-regressão: os 5 testes de `tests/unit/test_token_tracker.py` que constroem
+- [x] Não-regressão: os 5 testes de `tests/unit/test_token_tracker.py` que constroem
       `TokenTracker(...)` passam um `FlowVocabulary()` real (não fake — é componente puro,
       sem I/O) como quinto argumento.
-- [ ] `RecordingOriginFinder.__init__` (`tests/support/recording_origin_finder.py`) aceita e
+- [x] `RecordingOriginFinder.__init__` (`tests/support/recording_origin_finder.py`) aceita e
       repassa `flow_vocabulary` ao `super().__init__`.
 
 ---
@@ -351,36 +351,36 @@ esse é o veredito "indeterminado" quando o corpus existe mas a resposta especí
 `None` é o sinal de "estamos em `--mode dry`", vindo de T06.
 
 **Critérios de aceite:**
-- [ ] Candidato cuja origem casa por fragmento, com `execution_corpus` cuja resposta no
+- [x] Candidato cuja origem casa por fragmento, com `execution_corpus` cuja resposta no
       step de origem **não** contém o fragmento: `status == "Resolved"`, e o extrator
       gerado usa `extracted_value` (fragmento), não `current_value`.
-- [ ] Mesmo cenário, mas a resposta de execução **contém** o fragmento idêntico:
+- [x] Mesmo cenário, mas a resposta de execução **contém** o fragmento idêntico:
       `status == "Static"`, `token_id`/registry não populados, nenhuma chamada ao
       `agent_factory`/`extractor_runner`.
-- [ ] Resposta de execução ausente no step de origem: `status == "Static"` (indeterminado,
+- [x] Resposta de execução ausente no step de origem: `status == "Static"` (indeterminado,
       mesmo tratamento que estático — não gera extrator).
-- [ ] `execution_corpus=None`: candidato segue direto para geração de extrator, **sem**
+- [x] `execution_corpus=None`: candidato segue direto para geração de extrator, **sem**
       checar época de execução nenhuma — comportamento idêntico ao de hoje.
-- [ ] `_accept_persisted_slot`: `session_store.state.tokens` **não** é populado depois de
+- [x] `_accept_persisted_slot`: `session_store.state.tokens` **não** é populado depois de
       aceitar um slot persistido (novo teste — hoje nenhum teste verifica isso, mas o
       comportamento muda).
-- [ ] Não-regressão: os testes de `_check_cached_slot`/`_check_persisted_slot`/`_find_slot`
+- [x] Não-regressão: os testes de `_check_cached_slot`/`_check_persisted_slot`/`_find_slot`
       que chamam esses métodos **diretamente** (não via `resolve()`) continuam passando sem
       alteração — não passam pela porta.
-- [ ] Não-regressão: `test_process_candidate_records_origin_key_and_container_from_header`,
+- [x] Não-regressão: `test_process_candidate_records_origin_key_and_container_from_header`,
       `test_process_candidate_without_origin_leaves_the_three_fields_none`,
       `test_process_candidate_matching_in_body_has_no_origin_key`,
       `test_negative_cache_narrows_the_search_window_on_the_next_lookup`,
       `test_negative_cache_does_not_hide_an_origin_written_later`,
       `test_positive_cache_keeps_a_single_find_call` — todos usam `_resolver(...)`, que
       passa `execution_corpus=None`; continuam passando sem alteração de asserção.
-- [ ] Não-regressão: `test_accept_persisted_slot_backfills_captured_value_when_none` e
+- [x] Não-regressão: `test_accept_persisted_slot_backfills_captured_value_when_none` e
       `test_accept_persisted_slot_keeps_existing_captured_value` continuam passando sem
       alteração — nenhum dos dois verifica `session_store.state.tokens`.
-- [ ] Não-regressão: `test_generate_new_extractor_reads_the_response_from_the_corpus`
+- [x] Não-regressão: `test_generate_new_extractor_reads_the_response_from_the_corpus`
       continua passando sem alteração — `execution_corpus=None` nos testes existentes
       significa que a porta nunca intercepta esse fluxo.
-- [ ] `_resolver`/`_resolver_verifying`/`_resolver_with_executor` (helpers de teste) passam
+- [x] `_resolver`/`_resolver_verifying`/`_resolver_with_executor` (helpers de teste) passam
       `execution_corpus=None` explicitamente ao construtor, documentando que os testes
       existentes exercitam o equivalente a `--mode dry`.
 
@@ -446,21 +446,21 @@ e para `TokenTracker(..., flow_vocabulary)`, e `execution_corpus` para
 `CandidateResolver(discovery_corpus, ..., execution_corpus=execution_corpus)`.
 
 **Critérios de aceite:**
-- [ ] `create(EngineMode.MAIN, ...)`: `engine.tracker.candidate_resolver.discovery_corpus.responses_dir
+- [x] `create(EngineMode.MAIN, ...)`: `engine.tracker.candidate_resolver.discovery_corpus.responses_dir
       == workspace.original_responses` (**mudou** — hoje é `real_responses`).
-- [ ] `create(EngineMode.MAIN, ...)`: `engine.tracker.candidate_resolver.execution_corpus.responses_dir
+- [x] `create(EngineMode.MAIN, ...)`: `engine.tracker.candidate_resolver.execution_corpus.responses_dir
       == workspace.real_responses`.
-- [ ] `create(EngineMode.DRY, ...)`: `engine.tracker.candidate_resolver.discovery_corpus.responses_dir
+- [x] `create(EngineMode.DRY, ...)`: `engine.tracker.candidate_resolver.discovery_corpus.responses_dir
       == workspace.original_responses` (sem mudança de valor, só de nome do atributo).
-- [ ] `create(EngineMode.DRY, ...)`: `engine.tracker.candidate_resolver.execution_corpus is None`.
-- [ ] `engine.token_resolver.responses_dir` continua `real_responses` em `MAIN` e
+- [x] `create(EngineMode.DRY, ...)`: `engine.tracker.candidate_resolver.execution_corpus is None`.
+- [x] `engine.token_resolver.responses_dir` continua `real_responses` em `MAIN` e
       `original_responses` em `DRY` — **sem mudança**, é o que
       `test_create_dry_uses_original_responses_directory` e
       `test_create_main_passes_through_transport_and_uses_real_responses_directory` já
       verificam (essas duas asserções sobre `token_resolver` não mudam; só a de
       `candidate_resolver.response_corpus` → `discovery_corpus` muda de nome e, no caso de
       `MAIN`, de valor esperado).
-- [ ] Não-regressão: `test_resolve_class_maps_modes_to_engine_classes`,
+- [x] Não-regressão: `test_resolve_class_maps_modes_to_engine_classes`,
       `test_create_dry_ignores_http_transport`,
       `test_llm_is_none_when_project_config_has_no_llm_settings` passam sem alteração.
 
@@ -517,16 +517,16 @@ recuperação de 401/403 (`resolve_all(force=True)`, que relê a mesma resposta 
 mantém o token que já resolveu).
 
 **Critérios de aceite:**
-- [ ] Extrator cujo script devolve string vazia, com `captured_value` setado: token acaba
+- [x] Extrator cujo script devolve string vazia, com `captured_value` setado: token acaba
       com o valor de `captured_value`.
-- [ ] Mesmo cenário, sem `captured_value` (`None`): token continua sem valor (comportamento
+- [x] Mesmo cenário, sem `captured_value` (`None`): token continua sem valor (comportamento
       de hoje).
-- [ ] Extrator cujo script lança exceção, com `captured_value` setado: cai no fallback,
+- [x] Extrator cujo script lança exceção, com `captured_value` setado: cai no fallback,
       mesmo resultado do caso acima.
-- [ ] Arquivo de resposta do step de origem ausente: **não** tenta fallback (retorna antes
+- [x] Arquivo de resposta do step de origem ausente: **não** tenta fallback (retorna antes
       de qualquer coisa, como hoje) — token continua sem valor mesmo com `captured_value`
       setado.
-- [ ] Não-regressão: `resolve_all` continua pulando token já presente em `state.tokens`.
+- [x] Não-regressão: `resolve_all` continua pulando token já presente em `state.tokens`.
 
 ---
 
@@ -553,14 +553,14 @@ def format_static_line(self, entries: List[Tuple[str, int]]) -> str:
 ```
 
 **Critérios de aceite:**
-- [ ] `format_static_line([("header:Content-Type", 23)])` devolve
+- [x] `format_static_line([("header:Content-Type", 23)])` devolve
       `"# [Static 1] header:Content-Type←0023"`.
-- [ ] `format_static_line([("header:X", 1), ("header:Y", 2)])` devolve uma linha com as
+- [x] `format_static_line([("header:X", 1), ("header:Y", 2)])` devolve uma linha com as
       duas entradas separadas por `"; "`.
-- [ ] `CurlTokenComment.DEPENDENCY_PATTERN.match(...)` não casa com nenhuma linha produzida
+- [x] `CurlTokenComment.DEPENDENCY_PATTERN.match(...)` não casa com nenhuma linha produzida
       por `format_static_line` (teste explícito — é a garantia de não-colisão).
-- [ ] `CurlTokenComment.UNRESOLVED_PATTERN.search(...)` idem, não casa.
-- [ ] `parse_anchors` de um texto que só tem linhas `[Static N]` devolve `{}`.
+- [x] `CurlTokenComment.UNRESOLVED_PATTERN.search(...)` idem, não casa.
+- [x] `parse_anchors` de um texto que só tem linhas `[Static N]` devolve `{}`.
 
 ---
 
@@ -617,15 +617,15 @@ de injetar `SessionStore` no `CurlGenerator` (que exigiria mudar a assinatura de
 origem), mas o guard evita `None` vazando para `format_static_line`.
 
 **Critérios de aceite:**
-- [ ] Token com `status == "Resolved"` e `origin_step` setado: gera linha `[Token ...]`,
+- [x] Token com `status == "Resolved"` e `origin_step` setado: gera linha `[Token ...]`,
       como hoje.
-- [ ] Token com `status == "Static"`: **não** gera linha `[Token ...]`; gera entrada em
+- [x] Token com `status == "Static"`: **não** gera linha `[Token ...]`; gera entrada em
       `[Static N]`.
-- [ ] Dois tokens `"Static"` e um `"Resolved"` no mesmo curl: uma linha `[Token ...]`, uma
+- [x] Dois tokens `"Static"` e um `"Resolved"` no mesmo curl: uma linha `[Token ...]`, uma
       linha `[Static 2]`.
-- [ ] Token com `origin_step is None` (`"NotFound"`/`"Unresolved"`): continua em
+- [x] Token com `origin_step is None` (`"NotFound"`/`"Unresolved"`): continua em
       `[Unresolved N]`, sem mudança.
-- [ ] Não-regressão: nenhum teste existente de `test_curl_generator.py` constrói um
+- [x] Não-regressão: nenhum teste existente de `test_curl_generator.py` constrói um
       `DynamicToken` com `status == "Static"` hoje, então todos continuam gerando só linhas
       `[Token ...]`/`[Unresolved]`, sem alteração de saída esperada.
 
@@ -663,13 +663,13 @@ que é semanticamente errado. A cobertura do `HeaderAgent` fica garantida por um
 header-de-request/header-de-resposta **novo**, não pela divergência deste.
 
 **Critérios de aceite:**
-- [ ] `GET /item/4242` e `GET /item/9999` contra o `CannedHttpHandler` devolvem a mesma
+- [x] `GET /item/4242` e `GET /item/9999` contra o `CannedHttpHandler` devolvem a mesma
       resposta (roteamento por prefixo).
-- [ ] As demais rotas de `CANNED_RESPONSES` continuam servidas por lookup exato, sem
+- [x] As demais rotas de `CANNED_RESPONSES` continuam servidas por lookup exato, sem
       regressão (`GET /login`, `POST /api/do`, etc.).
-- [ ] Os 5 valores dinâmicos citados divergem entre `synthetic_flow.har` e o que o canned
+- [x] Os 5 valores dinâmicos citados divergem entre `synthetic_flow.har` e o que o canned
       devolve, verificável comparando os dois diretamente.
-- [ ] Um novo par header-de-request/header-de-resposta cobre o `HeaderAgent` sem depender
+- [x] Um novo par header-de-request/header-de-resposta cobre o `HeaderAgent` sem depender
       de `Content-Type`/`application/json`.
 
 ---
@@ -695,11 +695,11 @@ depois de T01–T09.
   com qualquer outro valor (inclusive `TOKEN_HAR`).
 
 **Critérios de aceite:**
-- [ ] Servidor canned, chamado com o `TOKEN_HAR`: `GET /protected` devolve `403`.
-- [ ] Servidor canned, chamado com o `TOKEN_VIVO`: `GET /protected` devolve `200`.
-- [ ] `run --mode main` sobre `auth_flow.har` produz um `.curl.sh` para `/protected` com
+- [x] Servidor canned, chamado com o `TOKEN_HAR`: `GET /protected` devolve `403`.
+- [x] Servidor canned, chamado com o `TOKEN_VIVO`: `GET /protected` devolve `200`.
+- [x] `run --mode main` sobre `auth_flow.har` produz um `.curl.sh` para `/protected` com
       `Authorization: {{extractor:...}}`, não o literal.
-- [ ] O `replay` desse workspace sobre o `/protected` devolve `200` (valida a ponta a
+- [x] O `replay` desse workspace sobre o `/protected` devolve `200` (valida a ponta a
       ponta: descoberta → extração → substituição → request de verdade).
 
 ---
@@ -723,11 +723,11 @@ cenário, **o que mudou e por quê**, para a regeneração não se confundir com
   extratores mudam de valor capturado, sem mudar de tipo de agente.
 
 **Critérios de aceite:**
-- [ ] `HAR_REPRODUCER_UPDATE_GOLDEN=1 pytest --runslow -q -k "run_main or run_dry"` grava
+- [x] `HAR_REPRODUCER_UPDATE_GOLDEN=1 pytest --runslow -q -k "run_main or run_dry"` grava
       as árvores novas.
-- [ ] Cada árvore regravada é revisada à mão antes do commit — nenhum `.curl.sh` deveria
+- [x] Cada árvore regravada é revisada à mão antes do commit — nenhum `.curl.sh` deveria
       conter `{{extractor:...}}` cru (falha de extração sem fallback) nem literal onde a
       spec esperava dinâmico.
-- [ ] `auth_flow.har` (T11) tem cenário golden próprio, não é só regeneração — é o teste
+- [x] `auth_flow.har` (T11) tem cenário golden próprio, não é só regeneração — é o teste
       vermelho→verde da etapa.
-- [ ] `pytest --runslow -q` inteiro verde depois da regeneração.
+- [x] `pytest --runslow -q` inteiro verde depois da regeneração.
