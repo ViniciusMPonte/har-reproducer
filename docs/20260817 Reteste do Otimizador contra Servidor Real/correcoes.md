@@ -12,7 +12,7 @@ quem tem prazo real.
 | # | Correção | Severidade | Custo | Prazo | Status |
 |---|---|---|---|---|---|
 | 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — | ✅ feito (21/08) |
-| 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — | **aberto — verificado 21/08, não resolvido pelo item 11** |
+| 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — | ✅ feito (21/08) — `CurlGenerator` passou a ler `Extractor.agent_type` do registry em vez de `DynamicToken.origin_location` |
 | 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | ✅ feito (21/08) |
 | 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | núcleo ✅ pelo item 11 (só em `main`/`replay`/`optimize`); fase 2 do `optimize` (testar âncora para remoção) continua aberta |
 | 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | ~~28/12/2026~~ 13/02/2027 (JWT atual) | ✅ dividido em 9+10+11, todos feitos |
