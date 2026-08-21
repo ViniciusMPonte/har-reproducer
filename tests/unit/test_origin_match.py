@@ -49,3 +49,53 @@ def test_dynamic_token_accepts_origin_key_and_container() -> None:
 
     assert token.origin_key == "ETag"
     assert token.origin_container is OriginContainer.HEADER
+
+
+def test_origin_match_defaults_fragment_to_none() -> None:
+    match: OriginMatch = OriginMatch(step_index=1)
+
+    assert match.fragment is None
+
+
+def test_origin_match_preserves_fragment() -> None:
+    match: OriginMatch = OriginMatch(step_index=1, fragment="abc")
+
+    assert match.fragment == "abc"
+
+
+def test_dynamic_token_accepts_static_status() -> None:
+    token: DynamicToken = DynamicToken(
+        token_id="abc123",
+        path="header:Authorization",
+        current_value="Bearer eyJ...",
+        destination_location=TokenLocation.HEADER,
+        status="Static",
+    )
+
+    assert token.status == "Static"
+
+
+def test_dynamic_token_without_origin_fragment_extracts_current_value() -> None:
+    token: DynamicToken = DynamicToken(
+        token_id="abc123",
+        path="header:Authorization",
+        current_value="Bearer eyJ...",
+        destination_location=TokenLocation.HEADER,
+        status="Resolved",
+    )
+
+    assert token.extracted_value == token.current_value
+
+
+def test_dynamic_token_with_origin_fragment_extracts_the_fragment() -> None:
+    token: DynamicToken = DynamicToken(
+        token_id="abc123",
+        path="header:Authorization",
+        current_value="Bearer eyJ...",
+        destination_location=TokenLocation.HEADER,
+        origin_fragment="eyJ...",
+        status="Resolved",
+    )
+
+    assert token.extracted_value == "eyJ..."
+    assert token.extracted_value != token.current_value

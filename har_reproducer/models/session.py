@@ -57,8 +57,13 @@ class DynamicToken(BaseModel):
     origin_step: Optional[int] = None
     origin_key: Optional[str] = None
     origin_container: Optional[OriginContainer] = None
-    status: Literal["UnderReview", "NotFound", "Unresolved", "Resolved"]
+    status: Literal["UnderReview", "NotFound", "Unresolved", "Resolved", "Static"]
     extraction_exhausted: bool = False
+    origin_fragment: Optional[str] = None
+
+    @property
+    def extracted_value(self) -> str:
+        return self.origin_fragment or self.current_value
 
 
 class SessionState(BaseModel):
