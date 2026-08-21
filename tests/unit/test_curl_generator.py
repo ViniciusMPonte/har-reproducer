@@ -1,61 +1,80 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
-from har_reproducer.models import DynamicToken, StepRequest, TokenLocation
+from har_reproducer.models import AgentType, DynamicToken, Extractor, StepRequest, TokenLocation
 from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.reproduction.curl_generator import CurlGenerator
+from har_reproducer.session import SessionStore
 
 
-def _token(
-        origin_step: Optional[int], origin_location: Optional[TokenLocation], extraction_exhausted: bool = False
-) -> DynamicToken:
+def _extractor(token_id: str, agent_type: AgentType) -> Extractor:
+    return Extractor(token_id=token_id, code="value", agent_type=agent_type)
+
+
+def _session_store(registry: Dict[str, Extractor]) -> SessionStore:
+    session_store: SessionStore = SessionStore()
+    session_store.state.registry.update(registry)
+    return session_store
+
+
+def _generator(session_store: SessionStore) -> CurlGenerator:
+    return CurlGenerator(CurlTokenComment(step_index_width=4), session_store)
+
+
+def _token(origin_step: Optional[int]) -> DynamicToken:
     return DynamicToken(
         token_id="abc",
         path="header:X",
         current_value="v",
         destination_location=TokenLocation.HEADER,
         origin_step=origin_step,
-        origin_location=origin_location,
-        extraction_exhausted=extraction_exhausted,
         status="NotFound" if origin_step is None else "Resolved",
     )
 
 
-def _generator() -> CurlGenerator:
-    return CurlGenerator(CurlTokenComment(step_index_width=4))
-
-
 def test_generate_without_commentable_tokens_reports_them_as_unresolved() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
-    lines: List[str] = generator.generate(request, [_token(None, None)]).splitlines()
+    lines: List[str] = generator.generate(request, [_token(None)]).splitlines()
 
     assert lines[0] == "# [Unresolved 1] header:X"
     assert lines[1].startswith("curl -X GET")
 
 
 def test_generate_adds_undetermined_location_comment() -> None:
-    generator: CurlGenerator = _generator()
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.LITERAL)})
+    generator: CurlGenerator = _generator(session_store)
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
-    output: str = generator.generate(request, [_token(2, None)])
+    output: str = generator.generate(request, [_token(2)])
 
     assert "# [Token abc comes from response of step 0002]" in output
     assert "origin location undetermined" in output
 
 
 def test_generate_adds_extraction_exhausted_comment() -> None:
-    generator: CurlGenerator = _generator()
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.LITERAL_FALLBACK)})
+    generator: CurlGenerator = _generator(session_store)
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
-    output: str = generator.generate(request, [_token(2, TokenLocation.COOKIE, extraction_exhausted=True)])
+    output: str = generator.generate(request, [_token(2)])
 
     assert "# [Token abc comes from response of step 0002]" in output
     assert "extraction exhausted" in output
 
 
+def test_generate_omits_dependency_phrase_for_a_deterministic_cache_hit_extractor() -> None:
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.HEADER)})
+    generator: CurlGenerator = _generator(session_store)
+    request: StepRequest = StepRequest(url="https://x", method="GET")
+
+    output: str = generator.generate(request, [_token(2)])
+
+    assert output.splitlines()[0] == "# [Token abc comes from response of step 0002]"
+
+
 def test_generate_omits_cookie_flag_when_no_cookies() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [])
@@ -64,7 +83,7 @@ def test_generate_omits_cookie_flag_when_no_cookies() -> None:
 
 
 def test_generate_includes_body_flag_with_payload() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="POST", body="payload")
 
     output: str = generator.generate(request, [])
@@ -80,13 +99,13 @@ def _token_with_path(origin_step: Optional[int], path: str) -> DynamicToken:
         current_value="v",
         destination_location=TokenLocation.HEADER,
         origin_step=origin_step,
-        origin_location=TokenLocation.HEADER,
         status="NotFound" if origin_step is None else "Resolved",
     )
 
 
 def test_generate_appends_unresolved_line_after_the_dependency_lines() -> None:
-    generator: CurlGenerator = _generator()
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.HEADER)})
+    generator: CurlGenerator = _generator(session_store)
     request: StepRequest = StepRequest(url="https://x", method="GET")
     tokens: List[DynamicToken] = [
         _token_with_path(3, "header:X-Csrf"),
@@ -102,7 +121,8 @@ def test_generate_appends_unresolved_line_after_the_dependency_lines() -> None:
 
 
 def test_generate_without_unresolved_tokens_keeps_only_dependency_lines() -> None:
-    generator: CurlGenerator = _generator()
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.HEADER)})
+    generator: CurlGenerator = _generator(session_store)
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [_token_with_path(3, "header:X-Csrf")])
@@ -112,7 +132,7 @@ def test_generate_without_unresolved_tokens_keeps_only_dependency_lines() -> Non
 
 
 def test_generate_with_only_unresolved_tokens_emits_a_single_comment_line() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
     tokens: List[DynamicToken] = [_token_with_path(None, "header:Accept"), _token_with_path(None, "url")]
 
@@ -123,7 +143,7 @@ def test_generate_with_only_unresolved_tokens_emits_a_single_comment_line() -> N
 
 
 def test_generate_with_empty_token_list_has_no_comment() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [])
@@ -139,13 +159,12 @@ def _static_token(origin_step: int, path: str) -> DynamicToken:
         current_value="v",
         destination_location=TokenLocation.HEADER,
         origin_step=origin_step,
-        origin_location=TokenLocation.HEADER,
         status="Static",
     )
 
 
 def test_generate_omits_dependency_line_for_a_static_token_and_emits_static_line() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
 
     output: str = generator.generate(request, [_static_token(23, "header:Content-Type")])
@@ -155,7 +174,8 @@ def test_generate_omits_dependency_line_for_a_static_token_and_emits_static_line
 
 
 def test_generate_mixes_resolved_and_static_tokens_in_separate_lines() -> None:
-    generator: CurlGenerator = _generator()
+    session_store: SessionStore = _session_store({"abc": _extractor("abc", AgentType.HEADER)})
+    generator: CurlGenerator = _generator(session_store)
     request: StepRequest = StepRequest(url="https://x", method="GET")
     tokens: List[DynamicToken] = [
         _static_token(1, "header:X"),
@@ -171,7 +191,7 @@ def test_generate_mixes_resolved_and_static_tokens_in_separate_lines() -> None:
 
 
 def test_generate_keeps_unresolved_tokens_separate_from_static_tokens() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
     tokens: List[DynamicToken] = [
         _static_token(1, "header:X"),
@@ -185,7 +205,7 @@ def test_generate_keeps_unresolved_tokens_separate_from_static_tokens() -> None:
 
 
 def test_unresolved_line_keeps_the_order_of_the_received_tokens() -> None:
-    generator: CurlGenerator = _generator()
+    generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="GET")
     tokens: List[DynamicToken] = [
         _token_with_path(None, "url"),
