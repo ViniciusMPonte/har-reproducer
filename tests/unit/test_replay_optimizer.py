@@ -367,6 +367,63 @@ def test_optimize_does_not_warn_when_steps_out_does_not_exist_yet(
     assert "[AVISO]" not in capsys.readouterr().out
 
 
+def test_reduce_anchors_removes_interior_anchor_when_target_alone_still_passes() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 153, 233], 0, 233, [], SUCCESS_CRITERIA)
+
+    assert reduced == []
+    assert len(executor.calls) == 1
+    assert executor.calls[0].ordered_indexes == [0, 233]
+
+
+def test_reduce_anchors_keeps_interior_anchor_when_target_alone_fails() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(404),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 153, 233], 0, 233, [], SUCCESS_CRITERIA)
+
+    assert reduced == [153]
+    assert len(executor.calls) == 1
+
+
+def test_reduce_anchors_with_no_interior_anchor_makes_no_extra_call() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 9], {0, 9}),
+        existing_indexes=[0, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 9], 0, 9, [], SUCCESS_CRITERIA)
+
+    assert reduced == []
+    assert len(executor.calls) == 0
+
+
+def test_optimize_end_to_end_reduces_interior_anchor_not_needed_by_target(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 0, 233, SUCCESS_CRITERIA)
+
+    assert result == [0, 233]
+
+
 def test_optimize_writes_to_custom_output_path_when_given(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
