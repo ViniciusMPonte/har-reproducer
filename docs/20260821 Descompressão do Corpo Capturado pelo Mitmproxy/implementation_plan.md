@@ -115,16 +115,16 @@ motivo certo contra o código atual.
     devolvendo `{"text": "", "mimeType": ...}`.
 
 **Critérios de aceite:**
-- [ ] `test_build_content_decompresses_gzip_body_before_deciding_text_or_base64` falha
+- [x] `test_build_content_decompresses_gzip_body_before_deciding_text_or_base64` falha
       contra o código atual (`git stash` da T02, ou rodar antes de implementá-la) com uma
       mensagem que mostra `encoding: "base64"` no resultado obtido.
-- [ ] Os seis testes acima existem e todos falham ou passam **pelo motivo certo** contra o
+- [x] Os seis testes acima existem e todos falham ou passam **pelo motivo certo** contra o
       código atual: os que dependem de descompressão (gzip, brotli) falham; os que não
       dependem (sem encoding, binário sem encoding, corpo vazio) já passam, porque
       `get_content(strict=False)` sem `Content-Encoding` e `raw_content` são idênticos —
       registrar explicitamente no PR/commit quais passam já no vermelho, para não confundir
       com teste mal escrito.
-- [ ] Nenhuma modificação em `har_reproducer/`.
+- [x] Nenhuma modificação em `har_reproducer/`.
 
 ---
 
@@ -183,15 +183,15 @@ def _build_content(response: Response) -> Dict[str, Any]:
   HAR exportado de navegador já usa (corpo descomprimido ao lado do header original).
 
 **Critérios de aceite:**
-- [ ] Todos os testes de `tests/unit/test_mitm_addon.py` (T01) passam.
-- [ ] `_build_content` de um corpo gzip válido devolve `{"text": <original decodificado>,
+- [x] Todos os testes de `tests/unit/test_mitm_addon.py` (T01) passam.
+- [x] `_build_content` de um corpo gzip válido devolve `{"text": <original decodificado>,
       "mimeType": ...}` — sem `encoding: "base64"`.
-- [ ] `_build_content` de um corpo brotli válido: mesmo resultado.
-- [ ] Não-regressão: `_build_content` de um corpo sem `content-encoding` continua
+- [x] `_build_content` de um corpo brotli válido: mesmo resultado.
+- [x] Não-regressão: `_build_content` de um corpo sem `content-encoding` continua
       byte-idêntico ao comportamento anterior à mudança, testado/comparado antes e depois.
-- [ ] Não-regressão: `_build_content` de um corpo binário genuíno sem `content-encoding`
+- [x] Não-regressão: `_build_content` de um corpo binário genuíno sem `content-encoding`
       continua caindo em `encoding: "base64"`.
-- [ ] Não-regressão: `pytest tests/unit -q` verde.
-- [ ] Não-regressão: `pytest --runslow -q` verde, os 27 cenários golden byte-idênticos —
+- [x] Não-regressão: `pytest tests/unit -q` verde.
+- [x] Não-regressão: `pytest --runslow -q` verde, os 27 cenários golden byte-idênticos —
       esperado, já que `CannedHttpHandler` nunca serve resposta comprimida (nenhum deles
       exercita este caminho, o que é consistente com a spec §2, "MitmAddon").
