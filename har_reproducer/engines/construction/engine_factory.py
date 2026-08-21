@@ -119,8 +119,8 @@ class EngineFactory:
         )
         curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH)
         return TokenTracker(
-            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store), CurlGenerator(curl_token_comment),
-            flow_vocabulary,
+            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store),
+            CurlGenerator(curl_token_comment, session_store), flow_vocabulary,
         )
 
     @staticmethod

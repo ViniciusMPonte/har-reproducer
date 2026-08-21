@@ -1,14 +1,16 @@
 import shlex
 from typing import List, Optional, Tuple, Union
 
-from har_reproducer.models import DynamicToken, StepRequest
+from har_reproducer.models import AgentType, DynamicToken, Extractor, StepRequest
 from har_reproducer.replay.curl_token_comment import CurlTokenComment, OriginStatusPhrase
+from har_reproducer.session import SessionStore
 
 
 class CurlGenerator:
 
-    def __init__(self, curl_token_comment: CurlTokenComment) -> None:
+    def __init__(self, curl_token_comment: CurlTokenComment, session_store: SessionStore) -> None:
         self.curl_token_comment: CurlTokenComment = curl_token_comment
+        self.session_store: SessionStore = session_store
 
     def generate(self, request: StepRequest, tokens: List[DynamicToken]) -> str:
         comment_lines: List[str] = self._token_comments(tokens)
@@ -78,11 +80,12 @@ class CurlGenerator:
             lines.append(self.curl_token_comment.format_unresolved_line(unresolved))
         return lines
 
-    @staticmethod
-    def _origin_status(token: DynamicToken) -> Optional[OriginStatusPhrase]:
-        if token.origin_location is None:
+    def _origin_status(self, token: DynamicToken) -> Optional[OriginStatusPhrase]:
+        extractor: Optional[Extractor] = self.session_store.state.registry.get(token.token_id)
+        assert extractor is not None
+        if extractor.agent_type == AgentType.LITERAL:
             return OriginStatusPhrase.UNDETERMINED
-        if token.extraction_exhausted:
+        if extractor.agent_type == AgentType.LITERAL_FALLBACK:
             return OriginStatusPhrase.EXTRACTION_EXHAUSTED
         return None
 
