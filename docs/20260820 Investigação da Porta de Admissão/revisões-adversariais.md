@@ -306,3 +306,119 @@ Registrado porque tem valor igual ao que caiu:
   generaliza, a correção de um número herdado, o registro de que a tabela de filtros não
   distingue entre alternativas — foi apontada pela revisão como acima da média e deve ser
   preservada. É o que permitiu que os erros fossem achados.
+
+---
+
+## 5. Segunda rodada — as três lacunas da §1.3/1.4, resolvidas com número
+
+A primeira rodada (§1–4) derrubou o desenho original mas deixou três lacunas abertas:
+casamento inteiro sem defesa, requisição condicional sem admissão, e `FlowVocabulary` sem
+formulação que não vetasse subdomínio dinâmico. Uma segunda rodada, com os dois revisores
+recebendo o desenho corrigido (fragmento + cobertura 50% + piso 4 + vocabulário + porta +
+cache provisório) e os mesmos dois workspaces, resolveu as três com medição. Reportado aqui
+porque só existia na conversa, nunca commitado.
+
+⚠️ Depois desta rodada, o item 9 (extrator literal não vira âncora) foi implementado e
+mergeado. A regra abaixo rotulada **R4** é exatamente esse item, já em produção — citada
+aqui porque ela é 89–97% do ganho que a segunda rodada mede, e porque as outras três regras
+só fazem sentido combinadas com ela.
+
+### 5.1 — Casamento inteiro: quatro regras, nenhuma isolada
+
+| regra | o que faz | efeito medido |
+|---|---|---|
+| **R1** | piso absoluto de tamanho aplicado ao **texto casado**, inteiro e fragmento | mata `'u=0'` (3 chars); 0 casamentos legítimos destruídos em qualquer piso ≤ 17 nas duas gravações; piso ≥ 18 começa a destruir a classe de `ETag` (comprimento 18–21); teto duro 17 |
+| **R2** | a porta exige **evidência posicional**: mesma chave de header/cookie, mesma folha de JSON, ou corpo legível — não "o texto não aparece no blob" | mata os 2 falsos positivos com origem no step 14 (o `google-fonts.css`) |
+| **R3** | o veto de `FlowVocabulary` aplicado ao **texto casado**, inteiro e fragmento (hoje só se aplicava a fragmento) | é o único filtro que segura o contraexemplo `Access-Control-Allow-Origin: *` (5.4) |
+| **R4** | nenhuma linha de dependência quando o extrator resultante é literal (`origin_location=None` ou `LITERAL_FALLBACK`) | **é o item 9, já implementado.** 89–97% do ganho medido em toda esta investigação |
+
+Com as quatro juntas, medido nas duas gravações: `atual` 1 extrator/13 linhas/1 âncora,
+inclusive sob `Access-Control-Allow-Origin: *`; `anterior` 0 extratores/0 linhas/0 âncoras,
+inclusive sob o mesmo ataque.
+
+⚠️ **Descoberta feita nesta rodada, importante para reler M11/M12 com o item 10 já
+corrigido:** os falsos positivos do workspace anterior tinham origem nos steps **14 e 76**
+— e os dois são exatamente dois dos quatro casos de corpo comprimido persistido como
+mojibake que motivaram o item 10 (M12). Ou seja, **parte dos falsos positivos da primeira
+rodada podem ter sido efeito do defeito do item 10**, não só de o casamento inteiro não ter
+defesa. Precisa remedir com o workspace regenerado depois da correção do item 10 antes de
+decidir se R1/R2/R3 ainda são necessárias, ou se ficam menos urgentes.
+
+### 5.2 — Requisição condicional: admissão por dois lados, não porta única
+
+Números com o desenho corrigido, gravação anterior: 126 ocorrências de `If-None-Match` (63
+valores) + 126 de `If-Modified-Since` (21 valores) = 84 extratores, 252 ocorrências, 126
+curls (53,6% da gravação), 65 âncoras distintas — a porta rebaixa **todos** a literal.
+
+Contra o servidor: `ETag` congelado do HAR devolve **304 em 126/126** requisições (zero
+divergência hoje); `ETag` adulterado (simulando deploy) devolve **200 em 126/126**. Ou
+seja, o custo de admitir esses extratores como literal é **zero hoje**, e só aparece no
+primeiro deploy.
+
+Decomposição do custo: das 865 linhas do workspace anterior, 772 (89,2%) já são de
+extrator literal — **isso é só o item 9 (R4)**, que sozinho leva 865→93 linhas e 6,48→1,32
+requisições por replay. Ou seja, o "custo" de 6,48 requisições que a spec original atribuía
+à ausência de porta já não existe depois do item 9; o que resta depois de R4 é **+0,30
+requisição por replay**, não 5+.
+
+**Proposta, medida:** admissão por dois lados — `mudou entre as épocas` **OU**
+`origem estruturada` (o texto casado é o valor exato de um header, de um cookie, ou uma
+folha completa de JSON), sob R1+R3+R4. Resultado: gravação anterior recupera **100%** dos
+84 extratores condicionais (`extr=84 dep=252 anc=64`); gravação atual ganha só 3 slots de
+lixo estrutural (`Cache-Control`/`Pragma`/`Connection`, valores `'no-cache'`/`'keep-alive'`)
+além do JWT (`extr=4 dep=16 anc=3`).
+
+O lixo é separável por **ubiquidade aplicada ao lado estruturado**: `'keep-alive'` está em
+97% das respostas, `'no-cache'` em 5,6%, `ETag`/`Last-Modified` em 1,3% cada — um limiar
+abaixo de 50% mata o `keep-alive` sem tocar no resto; um limiar mais agressivo (≤5%) mata
+também o `no-cache`, ao custo de 9 dos 21 valores de `Last-Modified` (as faixas de
+ubiquidade se sobrepõem: 5,1%–16,9%). Ou seja, a ubiquidade que foi cortada do lado do
+fragmento (§2.6) volta a fazer trabalho real do lado estruturado — é outro eixo, não o
+mesmo critério reaproveitado sem pensar.
+
+**Resposta à pergunta "entregar a porta sem redescoberta reativa deixa a ferramenta melhor
+ou pior?"**: com R4 (item 9) já valendo, a resposta deixou de ser um trade-off — ela é
+melhor hoje **e** só marginalmente mais cara depois de um deploy (+0,30 req/replay), desde
+que a admissão seja de dois lados. Sem o lado estruturado, ela seria melhor hoje e ativamente
+pior no deploy (126/235 curls divergindo). A escolha entre os dois é a decisão real desta
+lacuna, não "ter porta ou não ter".
+
+### 5.3 — `FlowVocabulary`: veto condicionado à ordem de aparição, não posição absoluta
+
+Todas as rejeições nas duas gravações são `fragmento == endereço` **exato**, nunca
+contenção frouxa — quatro formulações testadas (`in`, `==`, "endereço do próprio request",
+"esquema+autoridade") dão exatamente a mesma saída. A direção frouxa `fragmento ⊆ endereço`
+que a spec original adotava não compra nada e carrega toda a classe de falso negativo da
+objeção (`'api'`, `'fonts'`, `'example'` ficam vetáveis conforme o vocabulário cresce).
+
+E pelo mesmo critério que tirou a ubiquidade do lado do fragmento ("não rejeita nada em
+nenhuma das duas gravações" não é bem o caso aqui — ela rejeita, mas a saída final não
+muda com ou sem ela, porque a porta já rejeitaria os mesmos fragmentos por outro motivo) —
+só que ela é **indispensável do outro lado**: é o único filtro que segura o
+`Access-Control-Allow-Origin: *` (5.4/5.1, R3).
+
+**Formulação recomendada:** veto sobre o **texto casado** (inteiro e fragmento), por
+**igualdade** com um endereço observado, **condicionado a esse endereço já ter aparecido
+num request anterior ao step de origem**. Medido: saída idêntica ao veto absoluto nos casos
+que already funcionavam, e **admite 3 fragmentos que o veto absoluto vetava por engano**
+(`'http://localhost:8090'`, origem no step 34/36 — um bundle JS que informa a URL da API
+**antes** de qualquer request usá-la). É exatamente o caso legítimo que a objeção original
+descrevia (subdomínio de tenant/sessão cujo próprio descobrimento é a evidência), resolvido
+sem custo.
+
+### 5.4 — O contraexemplo que motivou R3, por extenso
+
+Servidor configurado com `Access-Control-Allow-Origin: *`, patchando só a época da
+execução, desenho corrigido sem R1/R2/R3 (só cobertura + piso de fragmento + porta + cache
+provisório):
+
+```
+gravação atual, normal      : 1 extrator,  13 linhas, 1 âncora
+gravação atual, com ACAO: * : 5 extratores, 255 linhas, 2 âncoras
+        204x header:Origin  <-75 inteiro   len=21
+         30x header:Referer <-75 fragmento len=21
+```
+
+`Origin: *` em 204 lugares, `Referer: */dashboard/`. Nenhuma das defesas que só valem para
+fragmento (cobertura, piso do fragmento) o alcança, porque o casamento aqui é **inteiro**.
+Com R1+R2+R3+R4: `1 extrator/13 linhas/1 âncora`, mesmo sob o ataque.
