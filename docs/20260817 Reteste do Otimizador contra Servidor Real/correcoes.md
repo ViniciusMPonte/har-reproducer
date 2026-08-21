@@ -9,16 +9,19 @@ custo baixo (itens 1–3), depois as duas mudanças estruturais que decidem se o
 `optimize` é confiável de verdade (4–5), depois o resto. Dentro do mesmo nível, ganha
 quem tem prazo real.
 
-| # | Correção | Severidade | Custo | Prazo |
-|---|---|---|---|---|
-| 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — |
-| 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — |
-| 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — |
-| 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — |
-| 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | **28/12/2026** |
-| 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — |
-| 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — |
-| 8 | Coincidência de baixa entropia no `origin_key` (`Origin` ← `Access-Control-Allow-Origin`) | Baixa | — | **não agir isoladamente** |
+| # | Correção | Severidade | Custo | Prazo | Status |
+|---|---|---|---|---|---|
+| 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — | aberto |
+| 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — | **aberto — verificado 21/08, não resolvido pelo item 11** |
+| 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | aberto |
+| 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | núcleo ✅ pelo item 11 (só em `main`/`replay`/`optimize`); fase 2 do `optimize` (testar âncora para remoção) continua aberta |
+| 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | ~~28/12/2026~~ 13/02/2027 (JWT atual) | ✅ dividido em 9+10+11, todos feitos |
+| 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — | aberto — é a redescoberta reativa, próxima candidata natural |
+| 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — | aberto |
+| 8 | Coincidência de baixa entropia no `origin_key` (`Origin` ← `Access-Control-Allow-Origin`) | Baixa | — | **não agir isoladamente** | ✅ resolvido pelo item 11 (a porta rejeita o token, ele nunca vira extrator) |
+| 9 | Extrator literal congelado não deveria virar âncora | **Alta** | Médio | — | ✅ feito (20/08) |
+| 10 | `real_responses/` guarda corpo comprimido como mojibake | Média | Pequeno | — | ✅ feito (21/08) |
+| 11 | Porta de admissão + casamento por fragmento (o item 5 propriamente) | **Alta** | Grande | — | ✅ feito (21/08) |
 
 ---
 
@@ -292,45 +295,61 @@ conclui "o valor é dinâmico". Os steps 13, 14, 76 e 159 são exatamente as ori
 falsos positivos que o desenho da porta de admissão produziu naquela gravação. **É
 pré-requisito do item 11**: a porta não é confiável enquanto isso existir.
 
-## 11. Porta de admissão + casamento por fragmento (o item 5 propriamente)
+## 11. Porta de admissão + casamento por fragmento (o item 5 propriamente) — ✅ feito, 21/08/2026
 
-O que sobra do item 5 depois de 9 e 10. O desenho foi projetado e revisado; o que ficou
-decidido, com medição:
+O que sobrava do item 5 depois de 9 e 10. Implementado em
+`docs/20260821-2 Porta de Admissão por Mudança entre Épocas/` (spec + 12 tasks, mergeado em
+`master`). ⚠️ Duas decisões do meio da investigação — que este item descrevia numa versão
+anterior deste documento — foram desenhadas, medidas e **descartadas antes da versão
+final**: "evidência posicional" (generalizar a busca de container por igualdade para
+contenção) e "admissão por dois lados" para requisição condicional. As duas reabriam uma
+classe de coincidência sem limiar limpo que as separasse; o registro de por que caíram está
+em `docs/20260820 Investigação da Porta de Admissão/medições.md`. O que foi de fato
+implementado:
 
 - **Casamento por fragmento** é o único mecanismo que acha o `Authorization`: o request
   manda `Bearer <jwt>` e a resposta do login traz só `<jwt>`, então o fragmento cobre 173
-  de 180 caracteres (96%).
+  de 180 caracteres (96%). Confirmado com fixture dedicada (`tests/fixtures/auth_flow.har`,
+  cenário golden `run_auth_flow`): o `.curl.sh` gerado tem
+  `Authorization: Bearer {{extractor:...}}`, não mais o literal.
 - **Descoberta e verificação sempre na época do HAR.** Na época da execução o fragmento
-  seria o prefixo comum aos dois JWT (**123 de 180, 68%** — os dois têm 173 caracteres e
-  divergem a partir dos dígitos do `exp`), ou seja prefixo fresco com assinatura velha, que
-  nenhum servidor aceita. E 68% passa por qualquer limiar de cobertura plausível, então o
-  critério de cobertura **não** protege desse erro — só a escolha da época protege. Foi a
-  decisão que sobreviveu intacta às duas revisões.
-- **Critérios de admissão do fragmento:** cobertura mínima (`len(frag)/len(valor)`, que é
-  também o limite de poda da busca), piso absoluto de tamanho, ubiquidade (fração das
-  respostas do corpus que contêm o texto) e vocabulário de endereços observados no próprio
-  fluxo. Os dois últimos precisam valer também para o **casamento inteiro**: sem isso, um
-  servidor com `Access-Control-Allow-Origin: *` faz o projeto montar `Origin: *` em 204
-  lugares e `Referer: */dashboard/`, com 255 linhas de dependência.
-- **A porta precisa de evidência positiva**, comparando no mesmo lugar (mesma chave de
-  header/cookie, mesma folha de JSON, corpo legível) em vez de "o texto não aparece no
-  blob" — é o que a torna imune ao item 10.
-- **Admissão por dois lados:** `mudou entre as épocas` **ou** `origem estruturada`. Sem
-  isso, a porta rebaixa a literal congelado os 84 extratores de requisição condicional da
-  gravação anterior (63 `If-None-Match` + 21 `If-Modified-Since`, 126 curls, 53,6% da
-  gravação). Medido: preservar essa classe custa +0,30 requisição por replay.
-- **A porta não se aplica em `--mode dry`**, que não tem segunda época. O sinal que a
-  desliga tem que ser explícito (corpus de execução ausente), não "o diretório está vazio".
-- **Consequências obrigatórias:** parar de semear o token com o valor da época do HAR, e
-  cair para `captured_value` quando a extração falha na época da execução — mas só quando o
-  token ainda não tem valor, para não sobrescrever valor bom na recuperação de 401/403.
+  seria o prefixo comum aos dois JWT (123 de 180, 68%) — prefixo fresco com assinatura
+  velha, que nenhum servidor aceita. Decisão que sobreviveu intacta a toda a investigação.
+- **Critérios de admissão do fragmento, na versão final:** cobertura mínima (50%, que é
+  também o limite de poda da busca) e piso absoluto (4 caracteres) — **aplicados também ao
+  casamento inteiro**, e vocabulário de endereços do próprio fluxo, condicionado à ordem de
+  aparição (para não vetar subdomínio dinâmico por engano). A ubiquidade do lado do
+  fragmento foi medida e cortada — não rejeita nada nas duas gravações disponíveis.
+- **A porta compara pelo blob de sempre** (o texto casado aparece na resposta de execução?)
+  — a generalização para container por igualdade/contenção foi medida como desnecessária
+  (o piso já mata o único falso positivo conhecido) e arriscada (reabre coincidência).
+- **Requisição condicional (`If-None-Match`/`If-Modified-Since`) fica sem tratamento
+  especial** — decisão explícita, não lacuna: rebaixa a literal como qualquer valor
+  estático. É uma regressão medida (84 extratores da gravação anterior, que funcionam hoje
+  via `HeaderAgent`) e aceita, porque nenhum discriminador testado (ubiquidade do valor,
+  reuso do valor entre candidatos) separou de forma limpa "header de protocolo constante"
+  de "validador genuíno" nesta escala de amostra. Custo aceito: +0,30 requisição por
+  replay no primeiro deploy. Fica para a redescoberta reativa (item 6 do topo desta lista).
+- **A porta não se aplica em `--mode dry`** — `execution_corpus: Optional[ResponseCorpus]`
+  chega como `None` nesse modo, sinal explícito, não "o diretório está vazio".
+- **Consequências obrigatórias, implementadas:** `_accept_persisted_slot` parou de semear
+  o token; `TokenResolver` cai para `captured_value` quando a extração falha, só quando o
+  token ainda não tem valor (nunca sobrescreve na recuperação de 401/403).
+- **Candidato dispensado pela porta não vira âncora**: novo status `"Static"` em
+  `DynamicToken`, categoria `[Static N]` no `.curl.sh`, que não casa com o padrão que
+  `compute_smart_schedule` usa para expandir o schedule.
 
-⚠️ Duas limitações medidas que a spec desta etapa tem que declarar: o desenho depende de o
-HAR ter corpo de resposta gravado em todo step de origem — no HAR anterior, 140 de 238
-entries não têm `content.text`, e **13 delas** têm status que normalmente carregaria corpo
-(é o número que `HARParser.entries_missing_response_body` reporta e que o aviso do `run`
-imprime). O login daquela gravação é uma dessas 13: status 200, corpo vazio. Por isso a
-etapa não entregaria nada naquele HAR, e por isso a gravação anterior **não** serve para
-validar o objetivo — só para amostrar falsos positivos.
+⚠️ **A limitação do HAR sem corpo de login continua valendo, sem solução — é dado, não
+código**: no HAR anterior, o login não tem corpo de resposta gravado, então aquela
+gravação nunca poderia validar este objetivo, com ou sem porta. Não é algo a corrigir.
 
-Depende de 9 e 10. Absorve os itens 2 e 8, e o núcleo do item 4.
+Dependeu de 9 e 10. **Absorve o item 8** (o token do `Origin`, coincidência com
+`Access-Control-Allow-Origin`, agora corretamente rejeitado pela porta — casamento inteiro,
+idêntico entre as épocas, `status="Static"`, nunca virou extrator) **e o núcleo do item 4**
+em `--mode main`/`replay`/`optimize` (toda aresta que sobrevive à porta é, por construção,
+necessidade — o valor mudou; ⚠️ não vale em `--mode dry`, onde a porta não se aplica e
+proveniência ainda pode virar aresta sem checagem). **Não absorve o item 2** — verificado
+no código atual: `_accept_persisted_slot` (cache hit de slot) continua sem popular
+`candidate.origin_location`, então um extrator determinístico reaproveitado entre steps
+ainda pode aparecer com a frase `origin location undetermined` na linha de dependência.
+Item 2 continua em aberto, sem relação com esta etapa.
