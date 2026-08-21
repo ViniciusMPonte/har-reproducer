@@ -258,6 +258,45 @@ def test_parse_anchors_returns_empty_dict_without_any_dependency_line() -> None:
     assert comment.parse_anchors("curl -X GET https://x") == {}
 
 
+def test_format_static_line_with_a_single_entry() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    line: str = comment.format_static_line([("header:Content-Type", 23)])
+
+    assert line == "# [Static 1] header:Content-Type←0023"
+
+
+def test_format_static_line_joins_multiple_entries_with_the_category_separator() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    line: str = comment.format_static_line([("header:X", 1), ("header:Y", 2)])
+
+    assert line == "# [Static 2] header:X←0001; header:Y←0002"
+
+
+def test_dependency_pattern_does_not_match_the_static_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    line: str = comment.format_static_line([("header:X", 1)])
+
+    assert CurlTokenComment.DEPENDENCY_PATTERN.findall(line) == []
+
+
+def test_unresolved_pattern_does_not_match_the_static_line() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+
+    line: str = comment.format_static_line([("header:X", 1)])
+
+    assert CurlTokenComment.UNRESOLVED_PATTERN.search(line) is None
+
+
+def test_parse_anchors_returns_empty_dict_for_text_with_only_static_lines() -> None:
+    comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
+    text: str = comment.format_static_line([("header:X", 1)]) + "\ncurl -X GET https://x"
+
+    assert comment.parse_anchors(text) == {}
+
+
 def test_parse_still_returns_every_dependency_regardless_of_status() -> None:
     comment: CurlTokenComment = CurlTokenComment(step_index_width=4)
     text: str = "\n".join([
