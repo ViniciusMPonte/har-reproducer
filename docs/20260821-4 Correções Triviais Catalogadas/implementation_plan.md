@@ -43,9 +43,9 @@ teoricamente possível do fluxo inteiro.
 corretamente "faixa a faixa entre âncoras" — não reescrever.
 
 **Critérios de aceite:**
-- [ ] O parágrafo `⚠️` do `optimize` no README passa a citar explicitamente "dentro de
+- [x] O parágrafo `⚠️` do `optimize` no README passa a citar explicitamente "dentro de
   cada faixa entre âncoras consecutivas" em vez de "nenhum passo isolado".
-- [ ] Nenhum outro trecho do README é alterado.
+- [x] Nenhum outro trecho do README é alterado.
 
 ---
 
@@ -162,29 +162,29 @@ falhou sem exceção".
 
 **Critérios de aceite (TDD — escrever/migrar os testes abaixo antes de tocar no código
 de produção; confirmar que falham pelo motivo certo antes de implementar):**
-- [ ] `tests/test_cli_config.py`: os 4 testes `test_criteria_status_code_failure`,
+- [x] `tests/test_cli_config.py`: os 4 testes `test_criteria_status_code_failure`,
   `test_criteria_body_contains_failure`, `test_criteria_url_match_failure`,
   `test_criteria_html_element_present_failure` trocam `assert result.exception is None`
   por `assert isinstance(result.exception, SystemExit)` e
   `assert result.exception.code == 1` — o resto de cada teste (asserções de stdout,
   golden) não muda.
-- [ ] Novo teste em `tests/test_cli_replay.py`, reaproveitando o padrão de
+- [x] Novo teste em `tests/test_cli_replay.py`, reaproveitando o padrão de
   `dry_workspace_network`/`ReplayScenario` já usados no arquivo: roda `replay` com um
   `--config` cujo `success_criteria` não bate com a resposta real (ex.:
   `{"success_criteria": [{"type": "status_code", "expected": 599}]}`), e afirma
   `"Reproduction FAILED: Target state not reached." in result.stdout`,
   `isinstance(result.exception, SystemExit)` e `result.exception.code == 1`.
-- [ ] Novo teste em `tests/test_cli_optimize.py`, reaproveitando `main_workspace`/
+- [x] Novo teste em `tests/test_cli_optimize.py`, reaproveitando `main_workspace`/
   `ReplayScenario`: roda `optimize --to 9 --success-criteria
   '[{"type":"status_code","expected":599}]'` (nunca satisfeito pelo servidor real,
   força `ReplayOptimizerAborted` em `_resolve_range` já na primeira faixa) e afirma
   `"Optimization FAILED: unable to find a passing subset" in result.stdout`,
   `isinstance(result.exception, SystemExit)` e `result.exception.code == 1`.
-- [ ] Não-regressão: todo teste de sucesso existente que afirma `result.exception is
+- [x] Não-regressão: todo teste de sucesso existente que afirma `result.exception is
   None` (`test_cli_run.py`, `test_cli_replay.py`, `test_cli_optimize.py`, os
   `*_success` de `test_cli_config.py`) continua passando sem alteração — `main()` não
   chama `sys.exit` nenhuma vez no caminho de sucesso.
-- [ ] Não-regressão: `test_optimize_requires_success_criteria`,
+- [x] Não-regressão: `test_optimize_requires_success_criteria`,
   `test_optimize_rejects_missing_from_index`,
   `test_optimize_success_criteria_flag_overrides_empty_config` e
   `test_replay_missing_step` continuam afirmando `isinstance(result.exception,
@@ -229,15 +229,15 @@ return final_list
 mudança é só imprimir o aviso antes de escrever quando o arquivo já existe.
 
 **Critérios de aceite (TDD):**
-- [ ] Teste unitário (`tests/unit/test_replay_optimizer.py`, seguindo o padrão de stub
+- [x] Teste unitário (`tests/unit/test_replay_optimizer.py`, seguindo o padrão de stub
   já usado nesse arquivo): chamando `optimize` com `output_path` apontando para um
   arquivo já existente, o stdout contém
   `f"[AVISO] {output_path} já existe e será sobrescrito."` e o arquivo é sobrescrito
   com o novo conteúdo (não faz merge nem preserva o antigo).
-- [ ] Teste unitário: chamando `optimize` com `output_path` apontando para um caminho
+- [x] Teste unitário: chamando `optimize` com `output_path` apontando para um caminho
   que **não** existe ainda, nenhum `[AVISO]` é impresso, e o arquivo é criado
   normalmente.
-- [ ] Não-regressão: `test_optimize_happy_path_writes_default_steps_file` e
+- [x] Não-regressão: `test_optimize_happy_path_writes_default_steps_file` e
   `test_optimize_respects_custom_steps_out` (`tests/test_cli_optimize.py`) continuam
   passando sem alteração — nenhum dos dois roda `optimize` duas vezes sobre o mesmo
   destino, então nenhum `[AVISO]` deveria aparecer no stdout deles.
