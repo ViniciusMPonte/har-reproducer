@@ -45,7 +45,7 @@ class AgentFactory:
         return agent_cls(
             token_id=candidate.token_id,
             response_sample=response_sample,
-            expected_value=candidate.current_value,
+            expected_value=candidate.extracted_value,
             workspace=self.workspace,
             script_executor=self.script_executor,
             sleeper=self.sleeper,

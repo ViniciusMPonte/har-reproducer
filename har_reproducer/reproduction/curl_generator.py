@@ -1,5 +1,5 @@
 import shlex
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 from har_reproducer.models import DynamicToken, StepRequest
 from har_reproducer.replay.curl_token_comment import CurlTokenComment, OriginStatusPhrase
@@ -63,8 +63,16 @@ class CurlGenerator:
             self.curl_token_comment.format_dependency_line(
                 token.token_id, token.origin_step, self._origin_status(token)
             )
-            for token in tokens if token.origin_step is not None
+            for token in tokens if token.status == "Resolved"
         ]
+
+        static: List[Tuple[str, int]] = [
+            (token.path, token.origin_step) for token in tokens
+            if token.status == "Static" and token.origin_step is not None
+        ]
+        if static:
+            lines.append(self.curl_token_comment.format_static_line(static))
+
         unresolved: List[str] = [token.path for token in tokens if token.origin_step is None]
         if unresolved:
             lines.append(self.curl_token_comment.format_unresolved_line(unresolved))

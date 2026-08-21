@@ -4,13 +4,14 @@
     "Server": "<SERVER>",
     "Date": "<DATE>",
     "Content-Type": "text/html",
-    "Set-Cookie": "SESSIONID=abc123sess; Path=/",
+    "Set-Cookie": "SESSIONID=abc123live; Path=/",
+    "X-Api-Header": "build-99",
     "Content-Length": "101"
   },
   "cookies": {
-    "SESSIONID": "abc123sess"
+    "SESSIONID": "abc123live"
   },
-  "body": "<html><body><div id=\"marker\">tok_CSS_1</div><script>var nonce = \"scr_NONCE_2\";</script></body></html>",
+  "body": "<html><body><div id=\"marker\">tok_CSS_9</div><script>var nonce = \"scr_NONCE_9\";</script></body></html>",
   "body_mime": "text/html",
   "redirect_url": null,
   "skipped": false,

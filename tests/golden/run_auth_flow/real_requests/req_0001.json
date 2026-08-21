@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:<PORT>/protected",
+  "method": "GET",
+  "headers": {
+    "Accept": "application/json",
+    "Authorization": "Bearer har-token-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "cookies": {},
+  "body": null,
+  "is_skippable": false
+}

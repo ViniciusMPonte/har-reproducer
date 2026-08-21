@@ -1,0 +1,12 @@
+{
+  "status_code": 200,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "cookies": {},
+  "body": "{\"ok\": true}",
+  "body_mime": "application/json",
+  "redirect_url": null,
+  "skipped": false,
+  "skip_reason": null
+}

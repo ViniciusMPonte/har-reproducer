@@ -25,6 +25,7 @@ from har_reproducer.session import SessionStore
 from har_reproducer.tracking import (
     BaselineDiff,
     CandidateResolver,
+    FlowVocabulary,
     OriginFinder,
     PlaceholderApplier,
     ResponseCorpus,
@@ -67,20 +68,27 @@ class EngineFactory:
         if engine_cls.USES_NETWORK:
             assert transport is not None
 
-        tracking_responses_dir: Path = (
-            self.workspace.real_responses if engine_cls.USES_NETWORK else self.workspace.original_responses
+        execution_responses_dir: Optional[Path] = (
+            self.workspace.real_responses if engine_cls.USES_NETWORK else None
         )
+        token_resolver_responses_dir: Path = execution_responses_dir or self.workspace.original_responses
         session_store: SessionStore = SessionStore()
         extractor_runner: ExtractorRunner = ExtractorRunner(self.workspace, self.script_executor)
         metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(self.workspace)
-        response_corpus: ResponseCorpus = ResponseCorpus(tracking_responses_dir, Workspace.STEP_INDEX_WIDTH)
+        discovery_corpus: ResponseCorpus = ResponseCorpus(self.workspace.original_responses, Workspace.STEP_INDEX_WIDTH)
+        execution_corpus: Optional[ResponseCorpus] = (
+            ResponseCorpus(execution_responses_dir, Workspace.STEP_INDEX_WIDTH)
+            if execution_responses_dir is not None else None
+        )
 
         return engine_cls(
             har_path,
             self.workspace,
             session_store,
-            self._build_tracker(response_corpus, session_store, extractor_runner, metadata_store),
-            TokenResolver(tracking_responses_dir, session_store, extractor_runner),
+            self._build_tracker(
+                discovery_corpus, execution_corpus, session_store, extractor_runner, metadata_store
+            ),
+            TokenResolver(token_resolver_responses_dir, session_store, extractor_runner),
             StepSkipEvaluator(self.project_config.skip_rules),
             StepRetryPolicy(),
             Validator(),
@@ -90,23 +98,27 @@ class EngineFactory:
 
     def _build_tracker(
             self,
-            response_corpus: ResponseCorpus,
+            discovery_corpus: ResponseCorpus,
+            execution_corpus: Optional[ResponseCorpus],
             session_store: SessionStore,
             extractor_runner: ExtractorRunner,
             metadata_store: ExtractorMetadataStore,
     ) -> TokenTracker:
         agent_factory: AgentFactory = AgentFactory(self.workspace, self.script_executor, self.sleeper, self.llm)
+        flow_vocabulary: FlowVocabulary = FlowVocabulary()
         candidate_resolver: CandidateResolver = CandidateResolver(
-            response_corpus,
-            OriginFinder(response_corpus),
+            discovery_corpus,
+            OriginFinder(discovery_corpus, flow_vocabulary),
             session_store,
             extractor_runner,
             metadata_store,
             agent_factory,
+            execution_corpus,
         )
         curl_token_comment: CurlTokenComment = CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH)
         return TokenTracker(
-            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store), CurlGenerator(curl_token_comment)
+            BaselineDiff(), candidate_resolver, PlaceholderApplier(session_store), CurlGenerator(curl_token_comment),
+            flow_vocabulary,
         )
 
     @staticmethod

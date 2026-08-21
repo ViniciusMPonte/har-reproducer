@@ -63,6 +63,16 @@ def test_create_propagates_candidate_fields_to_agent(tmp_path: Path) -> None:
     assert agent.path == candidate.path
 
 
+def test_create_uses_the_fragment_as_expected_value_when_origin_matched_by_fragment(tmp_path: Path) -> None:
+    candidate: DynamicToken = _candidate(TokenLocation.HEADER, token_id="abc")
+    candidate.origin_fragment = "eyJxyz"
+
+    agent: BaseAgent = _factory(tmp_path).create(candidate, {})
+
+    assert agent.expected_value == "eyJxyz"
+    assert agent.expected_value != candidate.current_value
+
+
 def _candidate_with_origin(
         origin_location: Optional[TokenLocation],
         origin_container: Optional[OriginContainer],
