@@ -89,15 +89,16 @@ class MitmAddon:
     @staticmethod
     def _build_content(response: Response) -> Dict[str, Any]:
         mime_type: str = response.headers.get("content-type", "")
+        content: Optional[bytes] = response.get_content(strict=False)
 
-        if not response.raw_content:
+        if not content:
             return {"text": "", "mimeType": mime_type}
 
         try:
-            text: str = response.raw_content.decode("utf-8")
+            text: str = content.decode("utf-8")
             return {"text": text, "mimeType": mime_type}
         except UnicodeDecodeError:
-            encoded_text: str = base64.b64encode(response.raw_content).decode("ascii")
+            encoded_text: str = base64.b64encode(content).decode("ascii")
             return {"text": encoded_text, "mimeType": mime_type, "encoding": "base64"}
 
     def _write_envelope(self, envelope: Dict[str, Any]) -> None:
