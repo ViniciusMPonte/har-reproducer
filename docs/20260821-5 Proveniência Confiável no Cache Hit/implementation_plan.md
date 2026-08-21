@@ -70,22 +70,22 @@ Esta task só troca o que `CurlGenerator` lê para decidir o comentário.
 
 **Critérios de aceite (TDD — escrever os testes abaixo, confirmar que falham pelo motivo
 certo contra o código atual, só então implementar):**
-- [ ] Todo teste de `tests/unit/test_curl_generator.py` que hoje monta um `DynamicToken`
+- [x] Todo teste de `tests/unit/test_curl_generator.py` que hoje monta um `DynamicToken`
   com `origin_location`/`extraction_exhausted` passa a montar também um `SessionStore`
   com o `Extractor` correspondente em `session_store.state.registry[token_id]`
   (`agent_type=AgentType.LITERAL` no lugar de `origin_location=None`,
   `agent_type=AgentType.LITERAL_FALLBACK` no lugar de `extraction_exhausted=True`,
   qualquer outro `AgentType` no lugar de um `origin_location` não-`None` sem
   `extraction_exhausted`), e passa esse `SessionStore` para `CurlGenerator(...)`.
-- [ ] Teste novo: um token com `status == "Resolved"` cujo `Extractor` no registry tem
+- [x] Teste novo: um token com `status == "Resolved"` cujo `Extractor` no registry tem
   `agent_type=AgentType.HEADER` produz uma linha `# [Token ... comes from response of
   step NNNN]` **sem** nenhuma frase de proveniência anexada (nem "undetermined" nem
   "extraction exhausted") — este é o cenário de cache hit sobre extrator determinístico
   que a spec descreve como o bug (§1.1), e que nenhum teste cobre hoje.
-- [ ] Teste novo: um token `"Resolved"` cujo `Extractor` tem `agent_type=LITERAL_FALLBACK`
+- [x] Teste novo: um token `"Resolved"` cujo `Extractor` tem `agent_type=LITERAL_FALLBACK`
   continua produzindo "extraction exhausted" — não-regressão do caso que já existia,
   agora vindo do registry em vez de `extraction_exhausted=True` no candidato.
-- [ ] Não-regressão: `test_generate_without_commentable_tokens_reports_them_as_unresolved`,
+- [x] Não-regressão: `test_generate_without_commentable_tokens_reports_them_as_unresolved`,
   `test_generate_appends_unresolved_line_after_the_dependency_lines` e os demais testes
   que não giram em torno da frase de proveniência continuam passando com a nova
   assinatura de `CurlGenerator`.
@@ -123,10 +123,10 @@ return TokenTracker(
 ```
 
 **Critérios de aceite:**
-- [ ] `uv run python -c "import har_reproducer.engines.construction.engine_factory"` (ou
+- [x] `uv run python -c "import har_reproducer.engines.construction.engine_factory"` (ou
   equivalente compile-check) não levanta `TypeError` de assinatura.
-- [ ] `uv run pytest tests/unit -q` continua 100% verde (nenhum teste unitário de
+- [x] `uv run pytest tests/unit -q` continua 100% verde (nenhum teste unitário de
   `EngineFactory` monta `CurlGenerator` diretamente — a task não deveria quebrar nada ali).
-- [ ] Não-regressão: `uv run pytest --runslow -q` (suíte completa, inclusive golden trees)
+- [x] Não-regressão: `uv run pytest --runslow -q` (suíte completa, inclusive golden trees)
   passa sem nenhuma árvore precisando de regeneração — confirmado na spec (§2/§5.3) que
   nenhum fixture atual exercita o cache hit sobre extrator determinístico.
