@@ -9,6 +9,7 @@ class OriginMatch(BaseModel):
     step_index: int
     origin_key: Optional[str] = None
     origin_container: Optional[OriginContainer] = None
+    fragment: Optional[str] = None
 
 
 class StepAnalysis(BaseModel):
