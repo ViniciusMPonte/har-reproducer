@@ -422,3 +422,77 @@ gravação atual, com ACAO: * : 5 extratores, 255 linhas, 2 âncoras
 `Origin: *` em 204 lugares, `Referer: */dashboard/`. Nenhuma das defesas que só valem para
 fragmento (cobertura, piso do fragmento) o alcança, porque o casamento aqui é **inteiro**.
 Com R1+R2+R3+R4: `1 extrator/13 linhas/1 âncora`, mesmo sob o ataque.
+
+---
+
+## 6. Terceira rodada — medição fresca depois dos itens 9 e 10 aplicados
+
+Feita em 21/08/2026, depois do merge dos itens 9 e 10. Os dois workspaces da investigação
+foram **regravados** com o código atual (`run --mode main` contra o servidor real,
+preservados como `arquivos-har/ws_atual_pos_correcoes` e `arquivos-har/ws_anterior_pos_correcoes`,
+fora do repositório por serem dados derivados — mesma política dos originais).
+
+### 6.1 — O item 10 eliminou a classe de inversão de legibilidade, mas sobrou 1 falso positivo
+
+M12 refeito sobre `ws_anterior_pos_correcoes`:
+
+```
+ilegíveis (>5% U+FFFD): época do HAR 11/98 | época da execução 15/102
+legíveis numa época e ILEGÍVEIS na outra: 0        (era 4, antes do item 10)
+```
+
+A descoberta completa + porta sobre esse workspace, com os critérios já corrigidos
+(cobertura 50% + piso 4 + vocabulário + ubiquidade 0,20):
+
+```
+1256 -> 46 fragmentos admitidos, todos "estático" (rejeitados corretamente)
+1 extrator sobrevive: header:priority <- step 76, valor 'u=0'
+```
+
+Investigado: a resposta do step 76 (`cdnjs.cloudflare.com`) tem `102025` caracteres nas
+duas épocas (tamanho idêntico, sem mojibake), mas o header `priority: u=0,i=?0` está
+presente na época do HAR e **ausente** na época da execução — variação do lado da CDN
+(Cloudflare), não do projeto. Confirmado que o request enviou `priority: u=0` nas duas
+épocas (é replay fiel do header de request); é a resposta que varia.
+
+**Isso é o "terceiro caso" que a spec original já previa** (header extraído que não existe
+na época da execução, §3.4 da spec descartada) — só que agora com exemplo real, atual, e
+isolado do defeito do item 10 (que foi corrigido e não é mais a explicação).
+
+### 6.2 — A política de cache complexa é desnecessária sob os critérios corrigidos
+
+Comparação fresca das três políticas (`descoberta.py --cache {definitivo,misses,provisorio}`)
+nos dois workspaces regravados:
+
+| política | HAR atual: extratores / ocorrências | HAR antigo: extratores / ocorrências |
+|---|---|---|
+| cache simples (igual a `CandidateResolver._find_origin` hoje, sem mudança) | 1 / **13** | 1 / 1 |
+| nunca cachear fragmento (variante "segura" da §3.5 antiga) | 1 / **1** ← reproduz o bug original | 1 / 1 |
+| cache provisório + repasse do passe barato (a recomendação da investigação) | 1 / **13** | 1 / 1 |
+
+**Cache simples e cache provisório empatam.** Verificado que `header:Origin` (266
+ocorrências no HAR atual) continua casando o valor **inteiro** em 204 ocorrências mesmo com
+o cache mais simples: o fragmento `'http://'` (7 chars, cobertura 33% de
+`'http://127.0.0.1:8080'`) é rejeitado pela cobertura mínima **antes** de qualquer
+oportunidade de cache — o caso que motivava a maquinaria complexa não sobrevive à cobertura
+de 50%, então a maquinaria nunca é exercitada.
+
+**Conclusão: `CandidateResolver._find_origin`/`_origin_cache` não precisam de nenhuma
+mudança.** A política de cache que a spec descartada (e a primeira rodada de revisão)
+tratavam como decisão central da etapa (§3.5) sai do escopo — zero código novo ali. O que
+muda é só o que `OriginFinder.find` devolve (agora podendo ser um fragmento), e o cache
+existente já lida com isso corretamente por construção.
+
+### 6.3 — R2 (evidência posicional) precisa generalizar `_origin_key`, não reimplementar
+
+O caso do §6.1 mostrou que a evidência às vezes é uma **substring** de um header
+(`'u=0'` dentro de `'u=0,i=?0'`), não o valor exato — e `OriginFinder._exact_key`
+(`origin_finder.py:60-64`) só compara por **igualdade exata**, então nunca populava
+`origin_key`/`origin_container` para esse caso (ele ficava `None`, tratado como
+substring-de-corpo).
+
+A formulação de R2 é a generalização natural: localizar em qual container (header, cookie,
+corpo, `redirect_url`) o texto casado apareceu na época do HAR **por contenção** (não por
+igualdade), e comparar especificamente esse container contra a época da execução —
+container ausente lá → indeterminado; presente e diferente → mudou; presente e igual →
+estático. É extensão de `_exact_key`, generalizando `==` para `in`, não um mecanismo novo.
