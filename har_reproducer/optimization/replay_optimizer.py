@@ -54,6 +54,8 @@ class ReplayOptimizer:
             return None
 
         destination: Path = output_path if output_path is not None else workspace.optimized_steps_file(run_id)
+        if destination.exists():
+            print(f"[AVISO] {destination} já existe e será sobrescrito.")
         destination.write_text("\n".join(str(index) for index in final_list) + "\n", encoding="utf-8")
         return final_list
 

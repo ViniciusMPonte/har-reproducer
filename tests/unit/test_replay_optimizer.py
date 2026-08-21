@@ -328,6 +328,45 @@ def test_optimize_range_abort_writes_no_file_and_returns_none(tmp_path: Path) ->
     assert not workspace.optimized_steps_file("run-1").exists()
 
 
+def test_optimize_warns_before_overwriting_existing_steps_out(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    custom_output: Path = tmp_path / "custom.txt"
+    custom_output.write_text("stale content\n", encoding="utf-8")
+
+    result: Optional[List[int]] = optimizer.optimize(
+        workspace, "run-1", 6, 9, SUCCESS_CRITERIA, output_path=custom_output
+    )
+
+    assert result == [6, 9]
+    assert f"[AVISO] {custom_output} já existe e será sobrescrito." in capsys.readouterr().out
+    assert custom_output.read_text(encoding="utf-8").splitlines() == ["6", "9"]
+
+
+def test_optimize_does_not_warn_when_steps_out_does_not_exist_yet(
+        tmp_path: Path, capsys: pytest.CaptureFixture[str],
+) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    custom_output: Path = tmp_path / "custom.txt"
+
+    optimizer.optimize(workspace, "run-1", 6, 9, SUCCESS_CRITERIA, output_path=custom_output)
+
+    assert "[AVISO]" not in capsys.readouterr().out
+
+
 def test_optimize_writes_to_custom_output_path_when_given(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
