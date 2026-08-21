@@ -84,21 +84,21 @@ nenhum comportamento observável muda.
   futura que **não** signifique isso quebraria esta leitura em silêncio.
 
 **Critérios de aceite:**
-- [ ] `parse_anchors` de um texto com `# [Token abc comes from response of step 0002]` (sem
+- [x] `parse_anchors` de um texto com `# [Token abc comes from response of step 0002]` (sem
       sufixo) devolve `{"abc": 2}`.
-- [ ] `parse_anchors` de uma linha com `OriginStatusPhrase.UNDETERMINED` no sufixo devolve
+- [x] `parse_anchors` de uma linha com `OriginStatusPhrase.UNDETERMINED` no sufixo devolve
       `{}`.
-- [ ] `parse_anchors` de uma linha com `OriginStatusPhrase.EXTRACTION_EXHAUSTED` no sufixo
+- [x] `parse_anchors` de uma linha com `OriginStatusPhrase.EXTRACTION_EXHAUSTED` no sufixo
       devolve `{}`.
-- [ ] `parse_anchors` de uma linha com **só** `ReplayStatusPhrase.PROBABLY_STATIC` no sufixo
+- [x] `parse_anchors` de uma linha com **só** `ReplayStatusPhrase.PROBABLY_STATIC` no sufixo
       devolve a dependência (é extrator recalculável que o replay observou estável).
-- [ ] `parse_anchors` de uma linha com as duas frases
+- [x] `parse_anchors` de uma linha com as duas frases
       (`origin location undetermined …; probably static`, construída com
       `format_dependency_line` + `with_replay_status`) devolve `{}`.
-- [ ] `parse_anchors` de um texto com várias linhas, mistas, devolve exatamente as
+- [x] `parse_anchors` de um texto com várias linhas, mistas, devolve exatamente as
       recalculáveis — inclusive quando a linha de literal vem antes da recalculável.
-- [ ] `parse_anchors` de um curl sem nenhuma linha de dependência devolve `{}`.
-- [ ] Garantia de não-regressão: `parse` continua devolvendo **todas** as dependências nos
+- [x] `parse_anchors` de um curl sem nenhuma linha de dependência devolve `{}`.
+- [x] Garantia de não-regressão: `parse` continua devolvendo **todas** as dependências nos
       mesmos textos acima, e os testes existentes de `tests/unit/test_curl_token_comment.py`
       passam sem alteração.
 
@@ -148,18 +148,18 @@ def _expand_pending(
 - ⚠️ `--mode all`, `--mode slice` e `--mode list` não passam por aqui e não mudam.
 
 **Critérios de aceite:**
-- [ ] Com `curl_file(2)` sem dependências e `curl_file(5)` contendo
+- [x] Com `curl_file(2)` sem dependências e `curl_file(5)` contendo
       `format_dependency_line("abc", 2, OriginStatusPhrase.UNDETERMINED)`,
       `compute_smart_schedule(None, 5)` devolve schedule `{5}` — hoje devolve `{2, 5}`.
-- [ ] Idem com `OriginStatusPhrase.EXTRACTION_EXHAUSTED`: schedule `{5}`.
-- [ ] Cadeia transitiva atravessando um literal: `curl_file(9)` depende de `5` por linha
+- [x] Idem com `OriginStatusPhrase.EXTRACTION_EXHAUSTED`: schedule `{5}`.
+- [x] Cadeia transitiva atravessando um literal: `curl_file(9)` depende de `5` por linha
       recalculável e `curl_file(5)` depende de `2` por linha de literal →
       `compute_smart_schedule(None, 9)` devolve `{5, 9}` (entra o 5, não entra o 2).
-- [ ] Não-regressão: `test_compute_smart_schedule_expands_through_dependency_chain` continua
+- [x] Não-regressão: `test_compute_smart_schedule_expands_through_dependency_chain` continua
       passando (linha sem sufixo ancora).
-- [ ] Não-regressão: `test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static`
+- [x] Não-regressão: `test_compute_smart_schedule_still_expands_after_dependency_annotated_as_static`
       continua passando — dependência anotada só com `probably static` **continua** ancorando.
-- [ ] Não-regressão: `pytest tests/unit -q` verde, e os 27 cenários golden passam
+- [x] Não-regressão: `pytest tests/unit -q` verde, e os 27 cenários golden passam
       byte-idênticos (`pytest --runslow -q`), conforme medido na spec §5.1.
 
 ---
@@ -210,11 +210,11 @@ depois no caminho ponta a ponta.
   gravar o golden.
 
 **Critérios de aceite:**
-- [ ] `test_replay_smart_to_6` passa com a T02 aplicada e falha sem ela (verificável com
+- [x] `test_replay_smart_to_6` passa com a T02 aplicada e falha sem ela (verificável com
       `git stash` da T02, ou conferindo que a asserção é `== [6]`).
-- [ ] `scenario.executed_steps(result.stdout) == [6]`.
-- [ ] `tests/golden/replay_smart_to_6/stdout.txt` mostra exatamente um `Step 6 completed`, e
+- [x] `scenario.executed_steps(result.stdout) == [6]`.
+- [x] `tests/golden/replay_smart_to_6/stdout.txt` mostra exatamente um `Step 6 completed`, e
       nenhum `Step 5 completed`.
-- [ ] O stdout do cenário **não** contém `could not be dynamically resolved during replay`.
-- [ ] Não-regressão: `pytest --runslow -q` verde, com os 27 cenários golden anteriores
+- [x] O stdout do cenário **não** contém `could not be dynamically resolved during replay`.
+- [x] Não-regressão: `pytest --runslow -q` verde, com os 27 cenários golden anteriores
       byte-idênticos (nenhum deles usa o alvo 6).
