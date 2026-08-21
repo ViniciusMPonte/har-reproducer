@@ -16,7 +16,7 @@ def _token(
         origin_step=origin_step,
         origin_location=origin_location,
         extraction_exhausted=extraction_exhausted,
-        status="Resolved",
+        status="NotFound" if origin_step is None else "Resolved",
     )
 
 
@@ -130,6 +130,58 @@ def test_generate_with_empty_token_list_has_no_comment() -> None:
 
     assert output.startswith("curl -X GET")
     assert "#" not in output
+
+
+def _static_token(origin_step: int, path: str) -> DynamicToken:
+    return DynamicToken(
+        token_id="abc",
+        path=path,
+        current_value="v",
+        destination_location=TokenLocation.HEADER,
+        origin_step=origin_step,
+        origin_location=TokenLocation.HEADER,
+        status="Static",
+    )
+
+
+def test_generate_omits_dependency_line_for_a_static_token_and_emits_static_line() -> None:
+    generator: CurlGenerator = _generator()
+    request: StepRequest = StepRequest(url="https://x", method="GET")
+
+    output: str = generator.generate(request, [_static_token(23, "header:Content-Type")])
+
+    assert "# [Token" not in output
+    assert "# [Static 1] header:Content-Type←0023" in output
+
+
+def test_generate_mixes_resolved_and_static_tokens_in_separate_lines() -> None:
+    generator: CurlGenerator = _generator()
+    request: StepRequest = StepRequest(url="https://x", method="GET")
+    tokens: List[DynamicToken] = [
+        _static_token(1, "header:X"),
+        _static_token(2, "header:Y"),
+        _token_with_path(3, "header:X-Csrf"),
+    ]
+
+    lines: List[str] = generator.generate(request, tokens).splitlines()
+
+    assert lines[0] == "# [Token abc comes from response of step 0003]"
+    assert lines[1] == "# [Static 2] header:X←0001; header:Y←0002"
+    assert lines[2].startswith("curl -X GET")
+
+
+def test_generate_keeps_unresolved_tokens_separate_from_static_tokens() -> None:
+    generator: CurlGenerator = _generator()
+    request: StepRequest = StepRequest(url="https://x", method="GET")
+    tokens: List[DynamicToken] = [
+        _static_token(1, "header:X"),
+        _token_with_path(None, "header:Accept"),
+    ]
+
+    output: str = generator.generate(request, tokens)
+
+    assert "# [Static 1] header:X←0001" in output
+    assert "# [Unresolved 1] header:Accept" in output
 
 
 def test_unresolved_line_keeps_the_order_of_the_received_tokens() -> None:
