@@ -1,10 +1,12 @@
 import json
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Iterator, List
 
 import pytest
 
+from tests.support.auth_flow_tokens import AuthFlowTokens
 from tests.support.canned_http_server import CannedHttpServer
 
 
@@ -111,3 +113,46 @@ def test_new_header_pair_covers_the_header_agent_without_depending_on_content_ty
 
     assert har_response_value == har_request_value == "build-42"
     assert live_value == "build-99"
+
+
+def _get_status(server: CannedHttpServer, path: str, headers: Dict[str, str]) -> int:
+    request: urllib.request.Request = urllib.request.Request(
+        f"http://127.0.0.1:{server.port}{path}", headers=headers,
+    )
+    try:
+        with urllib.request.urlopen(request) as response:
+            return response.status
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def test_login_route_always_serves_the_live_token(canned_server: CannedHttpServer) -> None:
+    request: urllib.request.Request = urllib.request.Request(
+        f"http://127.0.0.1:{canned_server.port}/login", method="POST", data=b"{}",
+    )
+    with urllib.request.urlopen(request) as response:
+        body: str = response.read().decode("utf-8")
+
+    assert json.loads(body) == {"token": AuthFlowTokens.TOKEN_VIVO}
+
+
+def test_protected_route_rejects_the_har_recorded_token(canned_server: CannedHttpServer) -> None:
+    status: int = _get_status(
+        canned_server, "/protected", {"Authorization": f"Bearer {AuthFlowTokens.TOKEN_HAR}"},
+    )
+
+    assert status == 403
+
+
+def test_protected_route_accepts_the_live_token(canned_server: CannedHttpServer) -> None:
+    status: int = _get_status(
+        canned_server, "/protected", {"Authorization": f"Bearer {AuthFlowTokens.TOKEN_VIVO}"},
+    )
+
+    assert status == 200
+
+
+def test_protected_route_rejects_a_missing_authorization_header(canned_server: CannedHttpServer) -> None:
+    status: int = _get_status(canned_server, "/protected", {})
+
+    assert status == 403

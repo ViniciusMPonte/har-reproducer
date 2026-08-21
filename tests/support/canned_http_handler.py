@@ -1,6 +1,7 @@
 from http.server import BaseHTTPRequestHandler
 from typing import ClassVar, Dict, Optional, Tuple
 
+from tests.support.auth_flow_tokens import AuthFlowTokens
 from tests.support.canned_response import CannedResponse
 
 
@@ -9,12 +10,21 @@ class CannedHttpHandler(BaseHTTPRequestHandler):
     protocol_version: ClassVar[str] = "HTTP/1.1"
 
     ITEM_PATH_PREFIX: ClassVar[str] = "/item/"
+    PROTECTED_PATH: ClassVar[str] = "/protected"
 
     ITEM_RESPONSE: ClassVar[CannedResponse] = CannedResponse(
         200, [("Content-Type", "application/json")], '{"id": 9999}',
     )
 
+    PROTECTED_GRANTED_RESPONSE: ClassVar[CannedResponse] = CannedResponse(
+        200, [("Content-Type", "application/json")], '{"ok": true}',
+    )
+    PROTECTED_DENIED_RESPONSE: ClassVar[CannedResponse] = CannedResponse(403, [], "")
+
     CANNED_RESPONSES: ClassVar[Dict[Tuple[str, str], CannedResponse]] = {
+        ("POST", "/login"): CannedResponse(
+            200, [("Content-Type", "application/json")], f'{{"token": "{AuthFlowTokens.TOKEN_VIVO}"}}',
+        ),
         ("GET", "/login"): CannedResponse(
             200,
             [
@@ -67,7 +77,14 @@ class CannedHttpHandler(BaseHTTPRequestHandler):
     def _resolve(self, method: str, path: str) -> Optional[CannedResponse]:
         if method == "GET" and path.startswith(self.ITEM_PATH_PREFIX):
             return self.ITEM_RESPONSE
+        if method == "GET" and path == self.PROTECTED_PATH:
+            return self._protected_response()
         return self.CANNED_RESPONSES.get((method, path))
+
+    def _protected_response(self) -> CannedResponse:
+        if self.headers.get("Authorization") == f"Bearer {AuthFlowTokens.TOKEN_VIVO}":
+            return self.PROTECTED_GRANTED_RESPONSE
+        return self.PROTECTED_DENIED_RESPONSE
 
     def _serve_not_found(self) -> None:
         self.send_response(404)
