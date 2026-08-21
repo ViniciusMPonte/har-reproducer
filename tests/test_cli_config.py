@@ -35,7 +35,8 @@ def test_criteria_status_code_failure(
     scenario: SuccessCriterionScenario = SuccessCriterionScenario(cli_invoker, minimal_flow_har, tmp_path)
     result: CliInvocationResult = scenario.run('{"success_criteria": [{"type": "status_code", "expected": 500}]}')
 
-    assert result.exception is None
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
     assert "Final Validation Result: ✗ FAILURE" in result.stdout
     assert "Reproduction FAILED: Target state not reached." in result.stdout
     assert not any((scenario.output_dir / "extractors").glob("*"))
@@ -73,7 +74,8 @@ def test_criteria_body_contains_failure(
     scenario: SuccessCriterionScenario = SuccessCriterionScenario(cli_invoker, minimal_flow_har, tmp_path)
     result: CliInvocationResult = scenario.run('{"success_criteria": [{"type": "body_contains", "expected": "ausente"}]}')
 
-    assert result.exception is None
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
     assert "Final Validation Result: ✗ FAILURE" in result.stdout
     assert "Reproduction FAILED: Target state not reached." in result.stdout
     assert not any((scenario.output_dir / "extractors").glob("*"))
@@ -111,7 +113,8 @@ def test_criteria_url_match_failure(
     scenario: SuccessCriterionScenario = SuccessCriterionScenario(cli_invoker, minimal_flow_har, tmp_path)
     result: CliInvocationResult = scenario.run('{"success_criteria": [{"type": "url_match", "expected": "nunca"}]}')
 
-    assert result.exception is None
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
     assert "Final Validation Result: ✗ FAILURE" in result.stdout
     assert "Reproduction FAILED: Target state not reached." in result.stdout
     assert not any((scenario.output_dir / "extractors").glob("*"))
@@ -150,7 +153,8 @@ def test_criteria_html_element_present_failure(
     scenario: SuccessCriterionScenario = SuccessCriterionScenario(cli_invoker, minimal_flow_har, tmp_path)
     result: CliInvocationResult = scenario.run('{"success_criteria": [{"type": "html_element_present", "expected": "#nada"}]}')
 
-    assert result.exception is None
+    assert isinstance(result.exception, SystemExit)
+    assert result.exception.code == 1
     assert "Final Validation Result: ✗ FAILURE" in result.stdout
     assert "Reproduction FAILED: Target state not reached." in result.stdout
     assert not any((scenario.output_dir / "extractors").glob("*"))
