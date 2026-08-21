@@ -168,17 +168,18 @@ existente precisa mudar por causa da assinatura — só as que T04 identifica pr
 - [x] `FakeScheduleExecutor.needs_recovery`: índice sem entrada em `reference_status_codes`
       é sempre `False` — é o que preserva os testes de `test_replay_optimizer.py` que usam
       `404`/`200` para exercitar validação, não recuperação (ver T04).
-- [ ] Não-regressão: os 15 testes existentes de `test_replay_runner.py` que chamam
-      `_run_step`/`execute_schedule`/`run_all`/`run_slice` sem gravar
-      `original_responses/` passam sem alteração — nenhum precisa de fixture nova, porque
-      "sem referência" agora significa "sem recuperação" (T01).
-      **Não confirmado literalmente**: `test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken`
-      precisou de um ajuste de fixture (uma resposta extra no `StubHttpTransport`) porque
-      `status_code == 0` ser sempre recuperável — também em `ReplayRunner`, não só no
-      `ReplayOptimizer` — faz a retentativa consumir a resposta que o teste reservava para
-      o step seguinte. Efeito colateral real do design (intencional, ver spec §5.2), não
-      antecipado neste critério; ajuste de fixture confirmado com o usuário durante a T02,
-      nenhuma linha de produção mudou por causa disso.
+- [x] Não-regressão: dos testes existentes de `test_replay_runner.py` que chamam
+      `_run_step`/`execute_schedule`/`run_all`/`run_slice`, todos passam sem alteração,
+      **exceto um**: `test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken`
+      precisou de uma resposta extra no `StubHttpTransport` (`[0, 0, 200]` em vez de
+      `[0, 200]`), porque `status_code == 0` ser sempre recuperável — agora também em
+      `ReplayRunner`, não só no `ReplayOptimizer` — faz o step 1 (que devolve `0` duas
+      vezes, divergindo da referência `200`) consumir uma tentativa extra antes do step 2.
+      **Verificado, é o efeito esperado, não uma regressão**: traçado à mão — 2 tentativas
+      para o step 1 (ambas `0`, divergem da referência `200`) + 1 tentativa para o step 2
+      (`200`, bate) = as 3 respostas do stub, exatamente como a spec §5.2 previa
+      ("mudança que só amplia recuperação, nunca reduz"). Nenhuma linha de produção mudou
+      por causa disso — só a fixture do teste.
 
 ---
 
@@ -188,13 +189,15 @@ existente precisa mudar por causa da assinatura — só as que T04 identifica pr
 **Arquivos envolvidos:** `har_reproducer/optimization/replay_optimizer.py`, `tests/unit/test_replay_optimizer.py`
 
 **Contexto:**
-É aqui que a maior parte da migração de teste mora. Levantamento completo do arquivo (23
-testes): **3** usam `401`/`0` para exercitar recuperação de propósito e precisam de
+É aqui que a maior parte da migração de teste mora. Levantamento completo do arquivo
+(**20 testes antes desta task**, corrigido — a contagem original desta task dizia 23, e
+estava errada): **3** usam `401`/`0` para exercitar recuperação de propósito e precisam de
 `reference_status_codes` explícito para continuar significando o mesmo depois da mudança;
-os outros **20** usam `200`/`404` para exercitar validação/eliminação, nunca recuperação, e
+os outros **17** usam `200`/`404` para exercitar validação/eliminação, nunca recuperação, e
 continuam passando sem tocar — porque "sem referência configurada" agora é "sem
 recuperação" (T01/T02), que é exatamente o que eles já assumiam meio que por acidente sob
-a lista fixa antiga (`404` nunca esteve na lista).
+a lista fixa antiga (`404` nunca esteve na lista). Mais o teste novo (§4), o arquivo fecha
+com 21.
 
 **Estado atual:**
 ```python
@@ -228,17 +231,18 @@ precisa de nenhuma mudança — `status_code=0` é sempre recuperável por const
 sem depender de referência.
 
 **Critérios de aceite:**
-- [ ] Os três testes da tabela passam com `reference_status_codes` acrescentado, e falham
-      (pelo motivo certo — `needs_recovery` devolvendo `False` por falta de referência) se
-      revertidos para o estado atual sem o parâmetro — confirmar isso antes de comitar.
-      **Confirmado parcialmente**: `test_execute_retries_once_after_recoverable_status_then_succeeds`
-      e `test_execute_gives_up_after_two_refreshes_and_returns_last_result` falham pelo
-      motivo certo sem `reference_status_codes`. `test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted`
-      **não** discrimina — passa com ou sem o parâmetro, porque sua asserção só verifica
-      `ReplayOptimizerAborted`, que ocorre de qualquer forma já que a validação final
-      (`401 != 200`) falha independente de a recuperação disparar. Contagem do
-      levantamento também não fechou: o arquivo tem 20 testes antes desta task (21 depois
-      de somar o novo), não 23 como o parágrafo de contexto desta task afirma.
+- [x] Os três testes da tabela passam com `reference_status_codes` acrescentado, e falham
+      (pelo motivo certo) se revertidos para o estado atual sem o parâmetro.
+      `test_execute_retries_once_after_recoverable_status_then_succeeds` e
+      `test_execute_gives_up_after_two_refreshes_and_returns_last_result` já discriminavam.
+      `test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted` **não**
+      discriminava — passava com ou sem o parâmetro, porque a asserção só verificava
+      `ReplayOptimizerAborted`, que ocorre de qualquer forma (a validação final,
+      `401 != 200`, falha independente de a recuperação disparar). **Corrigido**: acrescentada
+      `assert len(executor.calls) == 5` (medido: 5 chamadas com a referência configurada —
+      1 tentativa inicial + 2 recuperações reativas × [1 refresh do backbone + 1 retentativa]
+      — contra 1 chamada sem ela). Revertido e confirmado que falha (`1 == 5`) sem a
+      referência, antes de restaurar.
 - [x] Novo teste: `test_execute_does_not_refresh_when_status_matches_reference` — step com
       `reference_status_codes={5: 403}`, resposta `403`: `_needs_reactive_refresh` devolve
       `False`, nenhuma tentativa extra. É o teste que demonstra o objetivo central da spec
