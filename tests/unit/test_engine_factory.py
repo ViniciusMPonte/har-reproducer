@@ -6,6 +6,7 @@ from har_reproducer.engines.dry_engine import DryEngine
 from har_reproducer.engines.engine import Engine
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import ProjectConfig
+from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from tests.support.fake_script_executor import FakeScriptExecutor
 from tests.support.fake_sleeper import FakeSleeper
 from tests.support.stub_http_transport import StubHttpTransport
@@ -58,3 +59,21 @@ def test_llm_is_none_when_project_config_has_no_llm_settings(tmp_path: Path) -> 
     factory: EngineFactory = _factory(tmp_path)
 
     assert factory.llm is None
+
+
+def test_create_main_injects_comparator_bound_to_workspace(tmp_path: Path) -> None:
+    factory: EngineFactory = _factory(tmp_path)
+
+    engine: Engine = factory.create(EngineMode.MAIN, Path("flow.har"), http_transport=StubHttpTransport(None))
+
+    assert isinstance(engine.comparator, ReplayResultComparator)
+    assert engine.comparator.workspace is factory.workspace
+
+
+def test_create_dry_injects_comparator_bound_to_workspace(tmp_path: Path) -> None:
+    factory: EngineFactory = _factory(tmp_path)
+
+    engine: Engine = factory.create(EngineMode.DRY, Path("flow.har"))
+
+    assert isinstance(engine.comparator, ReplayResultComparator)
+    assert engine.comparator.workspace is factory.workspace

@@ -1,11 +1,10 @@
-from typing import Callable, ClassVar, Set
+from typing import Callable, ClassVar
 
 from har_reproducer.models import StepResponse
 
 
 class StepRetryPolicy:
     MAX_STEP_ATTEMPTS: ClassVar[int] = 2
-    RECOVERABLE_STATUS_CODES: ClassVar[Set[int]] = {400, 401}
 
     def execute(
             self,
