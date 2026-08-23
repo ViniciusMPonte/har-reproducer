@@ -14,7 +14,7 @@ quem tem prazo real.
 | 1 | README: a promessa de "mínimo local" do `optimize` está errada | Alta | Trivial | — | ✅ feito (21/08) |
 | 2 | `origin_location` não é setada no cache hit → 71% dos comentários de proveniência mentem | Média | Pequeno | — | ✅ feito (21/08) — `CurlGenerator` passou a ler `Extractor.agent_type` do registry em vez de `DynamicToken.origin_location` |
 | 3 | `Optimization FAILED` / `Reproduction FAILED` saem com exit code 0 | Média | Pequeno | — | ✅ feito (21/08) |
-| 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | núcleo ✅ pelo item 11 (só em `main`/`replay`/`optimize`); fase 2 do `optimize` (testar âncora para remoção) continua aberta |
+| 4 | `optimize` nunca testa as âncoras — proveniência tratada como necessidade | **Alta** | Grande | — | ✅ feito (21/08) — fase 2 fechada por `docs/20260821-6 Âncoras Também Testadas para Remoção/`; reverificado contra servidor real em 23/08 |
 | 5 | `Authorization` congelado: comparação entre épocas + casamento parcial | **Alta** | Grande | ~~28/12/2026~~ 13/02/2027 (JWT atual) | ✅ dividido em 9+10+11, todos feitos |
 | 6 | Recuperabilidade por lista fixa de status (`{400,401,0}`) em vez de divergência da referência | Média | Médio | — | ✅ feito (21/08) — não é a redescoberta reativa: era só o gatilho de recuperação nos três lugares que já reexecutam extrator existente. A redescoberta reativa (criar extrator novo quando isso não basta) continua sem spec própria. |
 | 7 | `--steps-out` sobrescreve arquivo existente sem aviso | Baixa | Trivial | — | ✅ feito (21/08) |
@@ -104,9 +104,16 @@ precisa passar a esperar `SystemExit`.
 
 ---
 
-## 4. `optimize`: separar proveniência de necessidade
+## 4. `optimize`: separar proveniência de necessidade — ✅ feito, 21/08/2026
 
-**Evidência:** relatório §3.5 e §3.8. Já previsto na spec de 13/08, §6
+Fase 2 (teste de remoção das âncoras) implementada em `docs/20260821-6 Âncoras Também
+Testadas para Remoção/` (spec + 2 tasks: `ReplayOptimizer._reduce_anchors` + correção do
+parágrafo ⚠️ do README, mergeado em `master`). Reverificado contra servidor real em
+23/08/2026 (`docs/20260823 Reverificação das Correções do Otimizador/relatorio.md`):
+para o alvo `233`, `optimize` passou a devolver `[0, 233]` em vez de `[0, 153, 233]` — a
+única âncora real do fluxo (`153`, origem do JWT) foi testada e removida.
+
+**Evidência original:** relatório §3.5 e §3.8. Já previsto na spec de 13/08, §6
 ("classificação da aresta em proveniência × necessidade …, com proveniência **nunca**
 virando âncora de `compute_smart_schedule`").
 
