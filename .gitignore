@@ -17,3 +17,4 @@ Thumbs.db
 *.swp
 .mitmproxy
 .mcp.json
+tests/real/captures/
