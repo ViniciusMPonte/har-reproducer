@@ -246,6 +246,3 @@ uv run pytest -m real_capture
 # Roda tudo normalmente — os testes de tests/real/ sem captura no disco aparecem como SKIPPED
 uv run pytest
 ```
-
-Detalhe de arquitetura e decisões desta camada:
-`docs/20260824 Sistema de Testes com Capturas Reais/spec.md`.
