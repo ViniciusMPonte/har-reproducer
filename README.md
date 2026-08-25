@@ -174,12 +174,14 @@ Arquivo JSON passado via `--config`, com todos os campos opcionais:
 
 ## Testes
 
-A suíte tem duas camadas, ambas em `tests/`:
+A suíte tem três camadas, todas em `tests/`:
 
 - **`tests/golden/`** (caracterização de ponta a ponta): para cada cenário de `parse`/`run`/`replay`, compara a árvore de arquivos gerada e o `stdout` contra uma referência gravada. Um bloco marcado `slow` sobe um servidor HTTP local e o `mitmproxy` de verdade para cobrir `run --mode main` e os 4 modos de `replay` — fica fora da rodada padrão. `optimize` tem sua própria camada de testes `slow` (sem comparação de árvore golden, ver `tests/test_cli_optimize.py`), cobrindo o caminho feliz de ponta a ponta e a validação de erros antes de qualquer requisição de rede.
 - **`tests/unit/`**: testes de unidade que isolam uma classe por vez com dublês (`tests/support/`), sem invocar `main()` nem comparar árvore de diretório.
+- **`tests/real/`**: testes que rodam os mecanismos de produção (`BaselineDiff`, `CandidateResolver`, etc., sem dublê) contra **capturas reais** de sites de produção — `real_requests/`/`real_responses/`/`original_responses/` de um workspace real, gerado por um `run --mode main` de verdade. Ver seção própria abaixo.
 
-Toda a suíte é offline (sem rede) exceto o bloco `slow` citado acima.
+Toda a suíte é offline (sem rede) exceto o bloco `slow` de `tests/golden/` citado acima —
+`tests/real/` lê captura já gravada em disco, não faz requisição nenhuma.
 
 ```bash
 # Rodada padrão (unitários + golden offline, ~10s)
@@ -191,3 +193,55 @@ uv run pytest --runslow
 # Regrava a referência golden após uma mudança deliberada de comportamento
 HAR_REPRODUCER_UPDATE_GOLDEN=1 uv run pytest --runslow
 ```
+
+### `tests/real/` — testes contra capturas reais
+
+Diferente das outras duas camadas, `tests/real/` não usa dado sintético nem dublê: ele
+exercita a cadeia de produção de verdade (`BaselineDiff`, `CandidateResolver`,
+`OriginFinder`, agentes reais) contra a captura de um site real — útil para caracterizar
+comportamento que só aparece com dado de produção genuíno (sessões, tokens, decoys), e que
+seria artificial demais para reproduzir num `.har` sintético.
+
+**O dado nunca é commitado.** `tests/real/captures/` está no `.gitignore` — cada
+desenvolvedor mantém suas próprias capturas localmente. O que é versionado é só o código
+dos testes (`tests/real/*.py`, `tests/real/support/*.py`).
+
+Convenção de nome de pasta: `<domínio>__<AAAAMMDD>/`, onde a data é a da **captura** (quando
+o `run --mode main` de origem rodou), não a de quando o teste foi escrito — permite manter
+duas capturas do mesmo site em datas diferentes (`exemplo.com.br__20260824/`,
+`exemplo.com.br__20261102/`) para comparar o mesmo cenário em momentos diferentes.
+
+Para importar uma captura nova, a partir de um workspace já gerado por `run --mode main`:
+
+```python
+from datetime import date
+from pathlib import Path
+
+from tests.real.support.capture_importer import CaptureImporter
+
+CaptureImporter(Path("tests/real/captures")).import_capture(
+    workspace_output_dir=Path("/caminho/do/--output/usado/no/run"),
+    domain="exemplo.com.br",
+    captured_on=date(2026, 8, 24),
+)
+```
+
+Isso copia `real_requests/`, `real_responses/` e `original_responses/` do workspace de
+origem para `tests/real/captures/exemplo.com.br__20260824/`. Rodar de novo com o mesmo
+domínio/data funde por cima (sobrescreve os arquivos em comum, preserva o resto).
+
+Um teste que depende de uma captura específica pede a fixture correspondente (definida em
+`tests/real/conftest.py`) e é **pulado automaticamente** (`SKIPPED`, não `FAILED`) se a
+pasta não existir localmente — não precisa de nenhuma flag de CLI, a disponibilidade do
+dado já decide:
+
+```bash
+# Só os testes marcados real_capture
+uv run pytest -m real_capture
+
+# Roda tudo normalmente — os testes de tests/real/ sem captura no disco aparecem como SKIPPED
+uv run pytest
+```
+
+Detalhe de arquitetura e decisões desta camada:
+`docs/20260824 Sistema de Testes com Capturas Reais/spec.md`.
