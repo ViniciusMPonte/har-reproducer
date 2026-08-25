@@ -211,19 +211,23 @@ o `run --mode main` de origem rodou), não a de quando o teste foi escrito — p
 duas capturas do mesmo site em datas diferentes (`exemplo.com.br__20260824/`,
 `exemplo.com.br__20261102/`) para comparar o mesmo cenário em momentos diferentes.
 
-Para importar uma captura nova, a partir de um workspace já gerado por `run --mode main`:
+Pressuposto: você já tem um workspace gerado por um `run --mode main` de verdade (o
+`--output` daquela execução). A partir da raiz do projeto, roda direto no terminal — não
+precisa criar nenhum arquivo Python, é só trocar os três valores (`workspace_output_dir`,
+`domain`, `captured_on`) pelos seus:
 
-```python
+```bash
+uv run python -c "
 from datetime import date
 from pathlib import Path
-
 from tests.real.support.capture_importer import CaptureImporter
 
-CaptureImporter(Path("tests/real/captures")).import_capture(
-    workspace_output_dir=Path("/caminho/do/--output/usado/no/run"),
-    domain="exemplo.com.br",
+CaptureImporter(Path('tests/real/captures')).import_capture(
+    workspace_output_dir=Path('/caminho/do/--output/usado/no/run'),
+    domain='exemplo.com.br',
     captured_on=date(2026, 8, 24),
 )
+"
 ```
 
 Isso copia `real_requests/`, `real_responses/` e `original_responses/` do workspace de
