@@ -83,16 +83,16 @@ sobre uma árvore de diretórios real. `tests/real/support/test_real_capture.py`
 usado em `tests/unit/test_candidate_resolver.py`.
 
 **Critérios de aceite:**
-- [ ] `RealCapture(base_dir).step_request(12)` lê `base_dir/real_requests/req_0012.json` e
+- [x] `RealCapture(base_dir).step_request(12)` lê `base_dir/real_requests/req_0012.json` e
   devolve um `StepRequest` com os mesmos campos gravados.
-- [ ] `RealCapture(base_dir).step(12)` devolve um `Step` com `index == 12` e `.request`
+- [x] `RealCapture(base_dir).step(12)` devolve um `Step` com `index == 12` e `.request`
   igual ao de `step_request(12)`.
-- [ ] `RealCapture(base_dir).real_responses_dir == base_dir / "real_responses"` (idem para
+- [x] `RealCapture(base_dir).real_responses_dir == base_dir / "real_responses"` (idem para
   `original_responses_dir`) — sem exigir que os diretórios existam no disco (só formata o
   `Path`, não valida presença).
-- [ ] Ler um índice cujo arquivo não existe propaga `FileNotFoundError` (não retorna `None`
+- [x] Ler um índice cujo arquivo não existe propaga `FileNotFoundError` (não retorna `None`
   nem imprime aviso).
-- [ ] `py_compile` limpo em `real_capture.py` e `test_real_capture.py`.
+- [x] `py_compile` limpo em `real_capture.py` e `test_real_capture.py`.
 
 ## [T02] — `CaptureImporter`: copia uma captura real para `tests/real/captures/`
 
@@ -142,14 +142,14 @@ teste, invocado manualmente por quem estiver importando uma captura nova, fora d
 `pytest` (spec §3.5).
 
 **Critérios de aceite:**
-- [ ] `CaptureImporter(tmp_path / "captures").import_capture(origin_dir, "example.com", date(2026, 8, 24))`
+- [x] `CaptureImporter(tmp_path / "captures").import_capture(origin_dir, "example.com", date(2026, 8, 24))`
   cria `tmp_path/captures/example.com__20260824/` com as três subpastas copiadas.
-- [ ] Rodar `import_capture` duas vezes com o mesmo domínio/data funde por cima
+- [x] Rodar `import_capture` duas vezes com o mesmo domínio/data funde por cima
   (`dirs_exist_ok=True`) — arquivos de mesmo nome são sobrescritos, arquivos que só existem
   numa das duas cópias sobrevivem (spec §5).
-- [ ] `workspace_output_dir` sem uma das três subpastas propaga `FileNotFoundError` — não
+- [x] `workspace_output_dir` sem uma das três subpastas propaga `FileNotFoundError` — não
   cai num estado parcial silencioso.
-- [ ] `py_compile` limpo.
+- [x] `py_compile` limpo.
 
 ## [T03] — `tests/real/conftest.py`: diretório de capturas, marcador e fixture de skip gracioso
 
@@ -220,14 +220,14 @@ diferente do padrão `slow`, onde `pytest_collection_modifyitems` decide o skip 
 flag `--runslow`; aqui não há `pytest_collection_modifyitems` correspondente, de propósito.
 
 **Critérios de aceite:**
-- [ ] `git check-ignore -v tests/real/captures/qualquer_coisa` confirma que a nova linha do
+- [x] `git check-ignore -v tests/real/captures/qualquer_coisa` confirma que a nova linha do
   `.gitignore` cobre a pasta.
-- [ ] Um teste que pede `unimedriopreto_20260824_capture` sem a pasta existir no disco é
+- [x] Um teste que pede `unimedriopreto_20260824_capture` sem a pasta existir no disco é
   reportado como `SKIPPED`, com a mensagem citando o caminho ausente — não `FAILED`, não
   `ERROR`.
-- [ ] `pytest --collect-only -m real_capture` não lança (marcador registrado, sem
+- [x] `pytest --collect-only -m real_capture` não lança (marcador registrado, sem
   `PytestUnknownMarkWarning`).
-- [ ] `pytest tests/` inteiro continua com o mesmo `438 passed, 19 skipped` de antes desta
+- [x] `pytest tests/` inteiro continua com o mesmo `438 passed, 19 skipped` de antes desta
   task, mais os novos testes de T01 — nada existente regride.
 
 ## [T04] — Importar a captura real de `autorizador.unimedriopreto.com.br` de 24/08/2026
@@ -264,10 +264,10 @@ CaptureImporter(Path("tests/real/captures")).import_capture(
 o workspace de origem.
 
 **Critérios de aceite:**
-- [ ] A pasta existe no disco local com as três subpastas e 233 arquivos em cada.
-- [ ] `git status` não lista nada em `tests/real/captures/` (confirma que o `.gitignore` de
+- [x] A pasta existe no disco local com as três subpastas e 233 arquivos em cada.
+- [x] `git status` não lista nada em `tests/real/captures/` (confirma que o `.gitignore` de
   T03 realmente cobre) — nenhum `git add`/commit associado a esta task.
-- [ ] T05 (próxima task), depois desta, roda sem pular.
+- [x] T05 (próxima task), depois desta, roda sem pular.
 
 ## [T05] — Primeiro teste real: cookie de sessão do login (step 124), captura de 24/08
 
@@ -348,15 +348,53 @@ não resolvida na investigação anterior a esta etapa, que esta task finalmente
 dado real, não com hipótese.
 
 **Critérios de aceite:**
-- [ ] Com a captura de T04 presente, o teste roda (não pula) e passa, reportando o `status`
+- [x] Com a captura de T04 presente, o teste roda (não pula) e passa, reportando o `status`
   real observado (`"Static"` ou `"Resolved"` — qualquer que seja, documentado como
   comportamento atual, não assumido de antemão).
-- [ ] Sem a captura no disco (`tests/real/captures/` renomeado/ausente), o teste é
+- [x] Sem a captura no disco (`tests/real/captures/` renomeado/ausente), o teste é
   `SKIPPED`, não `FAILED`.
-- [ ] `resolved[0].origin_step == 12` — a origem do cookie de sessão bate com a mesma
+- [x] `resolved[0].origin_step == 12` — a origem do cookie de sessão bate com a mesma
   captura, independente do `status` observado.
-- [ ] Nenhum teste de `tests/unit/`/`tests/golden/` regride (`pytest tests/unit tests/golden -q`
+- [x] Nenhum teste de `tests/unit/`/`tests/golden/` regride (`pytest tests/unit tests/golden -q`
   continua verde).
+
+## Achado observado durante a implementação de T05
+
+O esboço de T05 previa `assert resolved[0].status == "Static"`. A implementação real usa
+`assert resolved[0].status in ("Static", "Resolved")` — divergência deliberada, porque o
+critério de aceite pede reportar o observado, não travar numa hipótese. **O status
+observado, contra a captura real de `autorizador.unimedriopreto.com.br__20260824`, foi
+`"Resolved"`.**
+
+Isso não é a mesma coisa que "a regra de negócio funciona". Investigação imediata (fora do
+escopo de T05, registrada aqui por rastreabilidade):
+
+- A porta de admissão não rejeitou porque `real_responses/res_0012.json`, na captura
+  importada, contém o valor de uma execução **posterior** ao `run` original (a sobrescrita
+  do `optimize` que rodou depois, sobre o mesmo workspace) — artefato de qual arquivo restou
+  em disco no momento da importação, não uma propriedade estável do fluxo.
+- Como não rejeitou, o `RegexAgent` construiu um extrator a partir de
+  `original_responses/res_0012.json` (HAR imutável) — que contém o cookie de sessão
+  literalmente no trecho `setCookie('JSESSIONID', '68ECB342...')` — e a verificação passou
+  (`verified=True`, `agent_type=RegexAgent`, `origin_location=SCRIPT`).
+- **Esse trecho é o mesmo decoy que gira a cada requisição real**, comprovado três vezes
+  contra o servidor nesta mesma sessão de trabalho (`.curl.sh` real do step `12` rodado 3×,
+  três valores diferentes, nenhum igual ao cookie enviado). O regex construído, aplicado a
+  qualquer resposta real diferente da de origem, extrai um valor aleatório — não a sessão.
+  Confirmado rodando o regex real contra um corpo fabricado com outro valor: retorna esse
+  outro valor, sem erro.
+
+Ou seja: dependendo de qual arquivo de execução sobrou em disco no momento do check, o mesmo
+candidato pode virar (a) um literal congelado sem extrator (a história documentada antes
+desta etapa), ou (b) um extrator **verificado e aparentemente correto**, mas que sempre
+esteve errado — porque a origem escolhida (o corpo do script) nunca foi a sessão de verdade,
+só parecia ser, na única amostra em que foi comparado. (b) é mais grave que (a): falha
+silenciosamente, sem nenhum sinal (`verified=True`) de que algo está errado.
+
+Isso muda o que uma etapa de correção futura precisa endereçar: não é só "criar extrator
+quando falta" — é a porta de admissão (e a origem via corpo de script) não distinguirem eco
+fiel de decoy. Registrado aqui, fora de escopo de implementação nesta etapa (decisão do
+usuário ao fechar T05): decidir e implementar a correção fica para uma etapa própria.
 
 ## Fechamento
 
