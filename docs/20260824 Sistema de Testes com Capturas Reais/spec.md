@@ -77,11 +77,13 @@ sensíveis dentro da captura — decisão do usuário: o único requisito é iso
 
 `GoldenWorkspace`/`GoldenWorkspaceFactory` (`tests/support/golden_workspace.py`) comparam a
 **árvore de arquivos inteira** gerada por um `run`/`replay`/`parse` contra uma referência
-gravada, rodando a ferramenta de ponta a ponta contra um servidor **sintético e local**
+gravada, rodando a ferramenta de ponta a ponta contra um alvo **sintético e local**
 (`tests/fixtures/*.har`, com `__PORT__` materializado por `HarMaterializer` contra um
-`CannedHttpServer`; os cenários marcados `slow` — ex.: `tests/test_auth_flow.py`,
-`tests/test_cli_optimize.py` — seguem usando esse mesmo servidor sintético, não um
-`mitmproxy` real). Serve para caracterizar o pipeline completo contra
+`CannedHttpServer`). Nos cenários marcados `slow` que cobrem `run --mode main` (ex.:
+`tests/test_auth_flow.py`) o `CliInvoker` chama o comando de produção de verdade, que
+sempre abre um `mitmproxy` real como proxy (`cli_handlers.py:86`, `subprocess.Popen` de
+`mitmdump` em `MitmProxyOrchestrator.run`) — o alvo por trás do proxy é sintético, o proxy
+não é. Serve para caracterizar o pipeline completo contra
 um cenário controlado e determinístico — não para testar um mecanismo isolado (uma classe,
 um método) contra o comportamento real de um site de produção específico, com data e
 domínio próprios. São eixos diferentes: golden = "o pipeline inteiro continua consistente";
