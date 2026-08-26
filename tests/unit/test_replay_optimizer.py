@@ -241,6 +241,7 @@ def test_run_phase2_elimination_restores_candidate_after_refreshes_exhausted() -
         reference_status_codes={9: 200},
     )
     optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [8]
 
     with pytest.raises(ReplayOptimizerAborted):
         optimizer._run_phase2(8, 9, anchors=[8, 9], backbone=[8], success_criteria=SUCCESS_CRITERIA)
@@ -422,6 +423,196 @@ def test_optimize_end_to_end_reduces_interior_anchor_not_needed_by_target(tmp_pa
     result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 0, 233, SUCCESS_CRITERIA)
 
     assert result == [0, 233]
+
+
+def test_execute_raw_serves_second_call_for_same_backbone_index_from_cache_without_hitting_network() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[{0: _ok(200)}, {0: _ok(999)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+
+    assert first[0][1].status_code == 200
+    assert second[0][1].status_code == 200
+    assert len(executor.calls) == 1
+
+
+def test_execute_raw_force_refresh_ignores_cache_and_overwrites_it() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[{0: _ok(200)}, {0: _ok(999)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    optimizer._execute_raw([0], {0})
+    forced: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0}, force_refresh=True)
+    cached_again: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+
+    assert forced[0][1].status_code == 999
+    assert len(executor.calls) == 2
+    assert cached_again[0][1].status_code == 999
+    assert len(executor.calls) == 2
+
+
+def test_execute_raw_requests_made_counts_only_network_calls_not_cache_hits() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    optimizer._execute_raw([0], {0})
+    optimizer._execute_raw([0], {0})
+
+    assert optimizer.requests_made == 1
+
+
+def test_execute_raw_does_not_cache_response_that_needs_recovery() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[{0: _ok(500)}, {0: _ok(200)}],
+        reference_status_codes={0: 200},
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+
+    assert first[0][1].status_code == 500
+    assert second[0][1].status_code == 200
+    assert len(executor.calls) == 2
+
+
+def test_execute_raw_does_not_cache_transport_failure_status_zero() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[{0: _ok(0)}, {0: _ok(200)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+
+    assert first[0][1].status_code == 0
+    assert second[0][1].status_code == 200
+    assert len(executor.calls) == 2
+
+
+def test_execute_raw_caches_response_when_index_has_no_reference_status_code() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[{0: _ok(500)}, {0: _ok(999)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0], {0})
+
+    assert first[0][1].status_code == 500
+    assert second[0][1].status_code == 500
+    assert len(executor.calls) == 1
+
+
+def test_execute_raw_never_caches_indexes_outside_backbone() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 5], {0, 5}),
+        existing_indexes=[0, 5],
+        responses_by_call=[{5: _ok(200)}, {5: _ok(999)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([5], {5})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([5], {5})
+
+    assert first[0][1].status_code == 200
+    assert second[0][1].status_code == 999
+    assert len(executor.calls) == 2
+
+
+def test_execute_raw_caches_multiple_backbone_indexes_independently() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 1], {0, 1}),
+        existing_indexes=[0, 1],
+        responses_by_call=[{0: _ok(200), 1: _ok(201)}],
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0, 1]
+
+    first: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0, 1], {0, 1})
+    second: List[Tuple[int, StepResponse]] = optimizer._execute_raw([0, 1], {0, 1})
+
+    assert [r.status_code for _, r in first] == [200, 201]
+    assert [r.status_code for _, r in second] == [200, 201]
+    assert len(executor.calls) == 1
+
+
+def test_execute_reactive_refresh_forces_real_reexecution_ignoring_cache() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        responses_by_call=[
+            {5: _ok(401)},
+            {0: _ok(200)},
+            {5: _ok(200)},
+        ],
+        reference_status_codes={5: 200},
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+    optimizer._backbone_response_cache[0] = _ok(111)
+
+    optimizer._execute([5], {5})
+
+    assert executor.calls[1].ordered_indexes == [0]
+    assert optimizer._backbone_response_cache[0].status_code == 200
+
+
+def test_execute_reactive_refresh_final_diverging_response_is_never_cached() -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0], {0}),
+        existing_indexes=[0],
+        default_response=_ok(401),
+        reference_status_codes={0: 200, 5: 200},
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+    optimizer.backbone = [0]
+
+    results: List[Tuple[int, StepResponse]] = optimizer._execute([5], {5})
+
+    assert [response.status_code for _, response in results] == [401]
+    assert len(executor.calls) == 5
+    assert 0 not in optimizer._backbone_response_cache
+
+
+def test_optimize_end_to_end_executes_backbone_index_only_once_across_reduce_and_confirm(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(executor)
+
+    result: Optional[List[int]] = optimizer.optimize(workspace, "run-1", 0, 233, SUCCESS_CRITERIA)
+
+    assert result == [0, 233]
+    assert sum(1 for call in executor.calls if 0 in call.ordered_indexes) == 1
 
 
 def test_optimize_writes_to_custom_output_path_when_given(tmp_path: Path) -> None:

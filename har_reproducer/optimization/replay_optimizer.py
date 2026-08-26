@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import ClassVar, List, Optional, Set, Tuple
+from typing import ClassVar, Dict, List, Optional, Set, Tuple
 
 from har_reproducer.contracts import ScheduleExecutor
 from har_reproducer.fs_io import Workspace
@@ -28,6 +28,7 @@ class ReplayOptimizer:
         self.max_requests: int = max_requests
         self.requests_made: int = 0
         self.backbone: List[int] = []
+        self._backbone_response_cache: Dict[int, StepResponse] = {}
 
     def optimize(
             self,
@@ -102,21 +103,39 @@ class ReplayOptimizer:
                 f"ReplayOptimizer: detected recoverable status in schedule — refreshing backbone before "
                 f"retrying (attempt {refreshes}/{self.MAX_REACTIVE_REFRESHES})..."
             )
-            self._execute_raw(self.backbone, set(self.backbone))
+            self._execute_raw(self.backbone, set(self.backbone), force_refresh=True)
             results = self._execute_raw(ordered_indexes, schedule)
         return results
 
-    def _execute_raw(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple[int, StepResponse]]:
-        results: List[Tuple[int, StepResponse]] = self.schedule_executor.execute_schedule(
-            ordered_indexes, schedule, annotate=False
-        )
-        self.requests_made += len(ordered_indexes)
-        if self.requests_made > self.max_requests:
-            raise ValueError(
-                f"ReplayOptimizer: teto de requisições atingido ({self.requests_made}/{self.max_requests}) — "
-                f"abortando a busca."
+    def _execute_raw(
+            self, ordered_indexes: List[int], schedule: Set[int], force_refresh: bool = False
+    ) -> List[Tuple[int, StepResponse]]:
+        missing: List[int] = [
+            index for index in ordered_indexes
+            if force_refresh or index not in self._backbone_response_cache
+        ]
+        fresh_by_index: Dict[int, StepResponse] = {}
+        if missing:
+            fresh: List[Tuple[int, StepResponse]] = self.schedule_executor.execute_schedule(
+                missing, schedule, annotate=False
             )
-        return results
+            self.requests_made += len(missing)
+            if self.requests_made > self.max_requests:
+                raise ValueError(
+                    f"ReplayOptimizer: teto de requisições atingido ({self.requests_made}/{self.max_requests}) — "
+                    f"abortando a busca."
+                )
+            fresh_by_index = dict(fresh)
+            self._remember(fresh)
+        return [
+            (index, fresh_by_index[index] if index in fresh_by_index else self._backbone_response_cache[index])
+            for index in ordered_indexes
+        ]
+
+    def _remember(self, fresh: List[Tuple[int, StepResponse]]) -> None:
+        for index, response in fresh:
+            if index in self.backbone and not self.schedule_executor.needs_recovery(index, response):
+                self._backbone_response_cache[index] = response
 
     def _needs_reactive_refresh(self, results: List[Tuple[int, StepResponse]]) -> bool:
         return any(self.schedule_executor.needs_recovery(index, response) for index, response in results)
