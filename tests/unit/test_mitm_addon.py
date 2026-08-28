@@ -73,3 +73,47 @@ def test_build_content_returns_empty_text_for_empty_body() -> None:
     content: Dict[str, Any] = MitmAddon._build_content(response)
 
     assert content == {"text": "", "mimeType": "text/plain"}
+
+
+def _response_with_set_cookie_headers(*set_cookie_values: str) -> Response:
+    response: Response = Response.make(200, b"", {"content-type": "text/plain"})
+    for value in set_cookie_values:
+        response.headers.add("set-cookie", value)
+    return response
+
+
+def test_response_cookies_list_preserves_domain_and_path() -> None:
+    response: Response = _response_with_set_cookie_headers("a=1; Domain=.exemplo.com; Path=/api")
+
+    cookies_list = MitmAddon._response_cookies_list(response)
+
+    assert cookies_list == [
+        {"name": "a", "value": "1", "domain": ".exemplo.com", "path": "/api", "expired": False}
+    ]
+
+
+def test_response_cookies_list_marks_max_age_zero_as_expired() -> None:
+    response: Response = _response_with_set_cookie_headers("a=1; Max-Age=0")
+
+    cookies_list = MitmAddon._response_cookies_list(response)
+
+    assert cookies_list[0]["expired"] is True
+
+
+def test_response_cookies_list_defaults_domain_none_and_path_root_when_absent() -> None:
+    response: Response = _response_with_set_cookie_headers("a=1")
+
+    cookies_list = MitmAddon._response_cookies_list(response)
+
+    assert cookies_list == [{"name": "a", "value": "1", "domain": None, "path": "/", "expired": False}]
+
+
+def test_response_cookies_list_produces_one_entry_per_cookie_for_multiple_set_cookie_headers() -> None:
+    response: Response = _response_with_set_cookie_headers("a=1", "b=2; Path=/x")
+
+    cookies_list = MitmAddon._response_cookies_list(response)
+
+    assert cookies_list == [
+        {"name": "a", "value": "1", "domain": None, "path": "/", "expired": False},
+        {"name": "b", "value": "2", "domain": None, "path": "/x", "expired": False},
+    ]
