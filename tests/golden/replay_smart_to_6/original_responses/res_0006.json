@@ -4,6 +4,7 @@
     "Content-Type": "text/html"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "<html><body>ok</body></html>",
   "body_mime": "text/html",
   "redirect_url": null,

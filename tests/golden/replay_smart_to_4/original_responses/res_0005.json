@@ -4,6 +4,7 @@
     "Content-Type": "text/plain"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "PLAINVAL777",
   "body_mime": "text/plain",
   "redirect_url": null,
