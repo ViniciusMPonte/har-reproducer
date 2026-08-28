@@ -7,16 +7,20 @@ from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
+from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
+from har_reproducer.session.cookie_jar import CookieJar
 from har_reproducer.session.session_store import SessionStore
 from tests.support.fake_schedule_executor import FakeScheduleExecutor
 from tests.support.stub_http_transport import StubHttpTransport
-from tests.unit.test_replay_runner import FakeReplayTokenResolver
+from tests.unit.test_replay_runner import FakeReplayTokenResolver, _write_request_file
 
 
 def test_replay_runner_satisfies_schedule_executor_protocol(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    jar: CookieJar = CookieJar()
     runner: ReplayRunner = ReplayRunner(
         workspace=workspace,
         curl_token_comment=CurlTokenComment(step_index_width=4),
@@ -29,6 +33,8 @@ def test_replay_runner_satisfies_schedule_executor_protocol(tmp_path: Path) -> N
         replay_run_dir=workspace.replay_run_dir("run-1"),
         res_refer_dir=workspace.real_responses,
         original_responses_dir=workspace.original_responses,
+        cookie_jar=jar,
+        cookie_jar_curl_override=CookieJarCurlOverride(jar),
     )
 
     executor: ScheduleExecutor = runner

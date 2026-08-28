@@ -5,12 +5,14 @@ import pytest
 
 from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io.workspace import Workspace
-from har_reproducer.models import StepResponse
+from har_reproducer.models import CookieAttributes, StepRequest, StepResponse
 from har_reproducer.replay.curl_token_comment import CurlTokenComment, OriginStatusPhrase, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
+from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
+from har_reproducer.session.cookie_jar import CookieJar
 from har_reproducer.session.session_store import SessionStore
 from tests.support.stub_http_transport import StubHttpTransport
 
@@ -38,7 +40,9 @@ def _runner(
         workspace: Workspace,
         replay_token_resolver: Optional[ReplayTokenResolver] = None,
         http_transport: Optional[HttpTransport] = None,
+        cookie_jar: Optional[CookieJar] = None,
 ) -> ReplayRunner:
+    jar: CookieJar = cookie_jar if cookie_jar is not None else CookieJar()
     return ReplayRunner(
         workspace=workspace,
         curl_token_comment=_CURL_TOKEN_COMMENT,
@@ -51,6 +55,14 @@ def _runner(
         replay_run_dir=workspace.replay_run_dir("run-1"),
         res_refer_dir=workspace.real_responses,
         original_responses_dir=workspace.original_responses,
+        cookie_jar=jar,
+        cookie_jar_curl_override=CookieJarCurlOverride(jar),
+    )
+
+
+def _write_request_file(workspace: Workspace, index: int, url: str = "https://exemplo.com/x") -> None:
+    workspace.request_file(index).write_text(
+        StepRequest(url=url, method="GET").model_dump_json(), encoding="utf-8"
     )
 
 
@@ -103,6 +115,7 @@ def test_compute_smart_schedule_still_expands_after_dependency_annotated_as_stat
     workspace.curl_file(5).write_text(
         _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://y", encoding="utf-8"
     )
+    _write_request_file(workspace, 5)
     runner: ReplayRunner = _runner(workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"}))
     runner._run_step(5, schedule={5})
 
@@ -242,6 +255,7 @@ def test_run_schedule_hybrid_verdict_fails_when_intermediate_step_broken(tmp_pat
     for index in (1, 2):
         workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
         workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+        _write_request_file(workspace, index)
     runner: ReplayRunner = _runner(
         workspace,
         http_transport=StubHttpTransport(
@@ -260,6 +274,7 @@ def test_run_schedule_hybrid_verdict_succeeds_with_soft_intermediate_mismatch(tm
     for index in (1, 2):
         workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
         workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+        _write_request_file(workspace, index)
     runner: ReplayRunner = _runner(
         workspace, http_transport=StubHttpTransport([StepResponse(status_code=404), StepResponse(status_code=200)])
     )
@@ -275,6 +290,7 @@ def test_run_schedule_hybrid_verdict_all_ok(tmp_path: Path, capsys: pytest.Captu
     for index in (1, 2):
         workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
         workspace.response_file(index).write_text('{"status_code": 200}', encoding="utf-8")
+        _write_request_file(workspace, index)
     runner: ReplayRunner = _runner(
         workspace, http_transport=StubHttpTransport([StepResponse(status_code=200), StepResponse(status_code=200)])
     )
@@ -323,6 +339,7 @@ def test_run_step_annotates_fallback_token_in_curl(tmp_path: Path) -> None:
     workspace.curl_file(0).write_text(
         _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
+    _write_request_file(workspace, 0)
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver(set(), fallback_token_ids={"abc"})
     )
@@ -337,6 +354,7 @@ def test_run_step_annotates_fallback_token_in_curl(tmp_path: Path) -> None:
 def test_run_step_persists_stub_transport_response(tmp_path: Path) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    _write_request_file(workspace, 0)
     transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
     runner: ReplayRunner = _runner(workspace, http_transport=transport)
 
@@ -345,6 +363,99 @@ def test_run_step_persists_stub_transport_response(tmp_path: Path) -> None:
     assert response.status_code == 200
     persisted: str = workspace.replay_response_file("run-1", 0).read_text(encoding="utf-8")
     assert '"status_code":200' in persisted.replace(" ", "")
+
+
+def test_run_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl --cookie 'sess=old' https://exemplo.com/x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    runner: ReplayRunner = _runner(workspace, http_transport=transport, cookie_jar=jar)
+
+    runner._run_step(0, schedule={0})
+
+    assert "sess=abc" in transport.calls[0].curl_literal
+    assert "sess=old" not in transport.calls[0].curl_literal
+
+
+def test_run_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl https://exemplo.com/x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    runner: ReplayRunner = _runner(workspace, http_transport=transport, cookie_jar=jar)
+
+    runner._run_step(0, schedule={0})
+
+    assert "--cookie" in transport.calls[0].curl_literal
+    assert "sess=abc" in transport.calls[0].curl_literal
+
+
+def test_run_step_feeds_jar_from_response_set_cookie(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl https://exemplo.com/x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    jar: CookieJar = CookieJar()
+    response: StepResponse = StepResponse(
+        status_code=200, cookies={"sess": "abc"}, cookie_attributes={"sess": CookieAttributes()},
+    )
+    runner: ReplayRunner = _runner(workspace, http_transport=StubHttpTransport(response), cookie_jar=jar)
+
+    runner._run_step(0, schedule={0})
+
+    assert jar.current("exemplo.com", 443, "/") == {"sess": "abc"}
+
+
+def test_execute_schedule_propagates_cookie_set_by_earlier_step_to_later_step(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl https://exemplo.com/login", encoding="utf-8")
+    _write_request_file(workspace, 0, url="https://exemplo.com/login")
+    workspace.curl_file(1).write_text("curl --cookie 'sess=old' https://exemplo.com/dashboard", encoding="utf-8")
+    _write_request_file(workspace, 1, url="https://exemplo.com/dashboard")
+    login_response: StepResponse = StepResponse(
+        status_code=200, cookies={"sess": "abc"}, cookie_attributes={"sess": CookieAttributes()},
+    )
+    transport: StubHttpTransport = StubHttpTransport([login_response, StepResponse(status_code=200)])
+    runner: ReplayRunner = _runner(workspace, http_transport=transport)
+
+    runner.execute_schedule([0, 1], {0, 1})
+
+    assert "sess=abc" in transport.calls[1].curl_literal
+    assert "sess=old" not in transport.calls[1].curl_literal
+
+
+def test_run_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl https://exemplo.com/x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    workspace.original_response_file(0).write_text('{"status_code": 200}', encoding="utf-8")
+    first_response: StepResponse = StepResponse(
+        status_code=401, cookies={"sess": "abc"}, cookie_attributes={"sess": CookieAttributes()},
+    )
+    second_response: StepResponse = StepResponse(status_code=200)
+    transport: StubHttpTransport = StubHttpTransport([first_response, second_response])
+    runner: ReplayRunner = _runner(workspace, http_transport=transport)
+
+    runner._run_step(0, schedule={0})
+
+    assert len(transport.calls) == 2
+    assert "sess=abc" in transport.calls[1].curl_literal
+
+
+def test_run_step_no_jar_cookie_leaves_curl_unchanged(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    workspace.curl_file(0).write_text("curl --cookie 'sess=already-correct' https://exemplo.com/x", encoding="utf-8")
+    _write_request_file(workspace, 0)
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    runner: ReplayRunner = _runner(workspace, http_transport=transport)
+
+    runner._run_step(0, schedule={0})
+
+    assert transport.calls[0].curl_literal == "curl --cookie 'sess=already-correct' https://exemplo.com/x"
 
 
 def test_needs_recovery_delegates_to_comparator(tmp_path: Path) -> None:
@@ -361,6 +472,7 @@ def test_run_step_single_attempt_when_status_matches_reference(
 ) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    _write_request_file(workspace, 0)
     workspace.original_response_file(0).write_text('{"status_code": 401}', encoding="utf-8")
     transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=401))
     runner: ReplayRunner = _runner(workspace, http_transport=transport)
@@ -377,6 +489,7 @@ def test_run_step_retries_after_recovery_when_status_diverges_from_reference(
 ) -> None:
     workspace: Workspace = Workspace(tmp_path)
     workspace.curl_file(0).write_text("curl -X GET https://x", encoding="utf-8")
+    _write_request_file(workspace, 0)
     workspace.original_response_file(0).write_text('{"status_code": 200}', encoding="utf-8")
     transport: StubHttpTransport = StubHttpTransport(
         [StepResponse(status_code=403), StepResponse(status_code=200)]
@@ -402,6 +515,7 @@ def test_execute_schedule_returns_index_response_pairs_without_comparator(tmp_pa
     workspace: Workspace = Workspace(tmp_path)
     for index in (2, 5):
         workspace.curl_file(index).write_text("curl -X GET https://x", encoding="utf-8")
+        _write_request_file(workspace, index)
     runner: ReplayRunner = _runner(
         workspace, http_transport=StubHttpTransport([StepResponse(status_code=200), StepResponse(status_code=404)])
     )
@@ -417,6 +531,7 @@ def test_execute_schedule_annotate_false_suppresses_curl_annotation(tmp_path: Pa
     workspace.curl_file(0).write_text(
         _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
+    _write_request_file(workspace, 0)
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"})
     )
@@ -431,6 +546,7 @@ def test_execute_schedule_annotate_true_default_keeps_curl_annotation(tmp_path: 
     workspace.curl_file(0).write_text(
         _CURL_TOKEN_COMMENT.format_dependency_line("abc", 2) + "\ncurl -X GET https://x", encoding="utf-8"
     )
+    _write_request_file(workspace, 0)
     runner: ReplayRunner = _runner(
         workspace, replay_token_resolver=FakeReplayTokenResolver({"abc"})
     )
