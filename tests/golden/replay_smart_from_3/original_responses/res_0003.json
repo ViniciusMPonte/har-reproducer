@@ -4,6 +4,7 @@
     "Content-Type": "application/json"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "{\"id\": 4242, \"ok\": true}",
   "body_mime": "application/json",
   "redirect_url": null,

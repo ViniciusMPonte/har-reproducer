@@ -11,6 +11,13 @@
   "cookies": {
     "SESSIONID": "abc123live"
   },
+  "cookie_attributes": {
+    "SESSIONID": {
+      "domain": null,
+      "path": "/",
+      "expired": false
+    }
+  },
   "body": "<html><body><div id=\"marker\">tok_CSS_9</div><script>var nonce = \"scr_NONCE_9\";</script></body></html>",
   "body_mime": "text/html",
   "redirect_url": null,

@@ -8,6 +8,13 @@
   "cookies": {
     "SESSIONID": "abc123sess"
   },
+  "cookie_attributes": {
+    "SESSIONID": {
+      "domain": null,
+      "path": "/",
+      "expired": false
+    }
+  },
   "body": "<html><body><div id=\"marker\">tok_CSS_1</div><script>var nonce = \"scr_NONCE_2\";</script></body></html>",
   "body_mime": "text/html",
   "redirect_url": null,

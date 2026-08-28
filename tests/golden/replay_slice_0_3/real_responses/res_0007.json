@@ -10,6 +10,13 @@
   "cookies": {
     "PREFS": "xyz999"
   },
+  "cookie_attributes": {
+    "PREFS": {
+      "domain": null,
+      "path": "/",
+      "expired": false
+    }
+  },
   "body": "<html><body>prefs</body></html>",
   "body_mime": "text/html",
   "redirect_url": null,

@@ -1,18 +1,23 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Optional
 
 import pytest
 
 from har_reproducer.engines.dry_engine import DryEngine
 from har_reproducer.engines.engine import Engine
 from har_reproducer.fs_io.workspace import Workspace
-from har_reproducer.models import SkipRulesConfig, Step, StepRequest, StepResponse, SuccessCriterion
+from har_reproducer.models import (
+    CookieAttributes, SkipRulesConfig, Step, StepAnalysis, StepRequest, StepResponse, SuccessCriterion,
+)
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
+from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
+from har_reproducer.session.cookie_jar import CookieJar
 from har_reproducer.session.session_store import SessionStore
 from har_reproducer.validation.validator import Validator
+from tests.support.stub_http_transport import StubHttpTransport
 
 
 class RecordedResolveAllCall(NamedTuple):
@@ -33,7 +38,10 @@ def _engine(
         token_resolver: FakeTokenResolver,
         success_criteria: List[SuccessCriterion],
         engine_cls: type = Engine,
+        http_transport: object = None,
+        cookie_jar: Optional[CookieJar] = None,
 ) -> Engine:
+    jar: CookieJar = cookie_jar if cookie_jar is not None else CookieJar()
     return engine_cls(
         har_path=Path("flow.har"),
         workspace=Workspace(tmp_path),
@@ -45,7 +53,9 @@ def _engine(
         validator=Validator(),
         comparator=ReplayResultComparator(Workspace(tmp_path)),
         success_criteria=success_criteria,
-        http_transport=None,
+        http_transport=http_transport,
+        cookie_jar=jar,
+        cookie_jar_curl_override=CookieJarCurlOverride(jar),
     )
 
 
@@ -174,3 +184,80 @@ def test_reproduce_keeps_returning_the_final_validation_result(tmp_path: Path) -
     engine: SilentEngine = _silent_engine(tmp_path, _har_with_bodyless_entries(tmp_path, 2, 5))
 
     assert engine._reproduce() is True
+
+
+def _step_with_curl(index: int, url: str, curl_template: str) -> Step:
+    return Step(
+        index=index,
+        request=StepRequest(url=url, method="GET"),
+        response=StepResponse(status_code=200),
+        analysis=StepAnalysis(step_index=index, curl_template=curl_template),
+    )
+
+
+def test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_path: Path) -> None:
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    engine: Engine = _engine(
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
+    )
+    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl --cookie 'sess=old' https://exemplo.com/login")
+
+    engine._attempt_step(step)
+
+    assert "sess=abc" in transport.calls[0].curl_literal
+    assert "sess=old" not in transport.calls[0].curl_literal
+
+
+def test_attempt_step_feeds_jar_from_response_set_cookie(tmp_path: Path) -> None:
+    jar: CookieJar = CookieJar()
+    response: StepResponse = StepResponse(
+        status_code=200, cookies={"sess": "abc"}, cookie_attributes={"sess": CookieAttributes()},
+    )
+    transport: StubHttpTransport = StubHttpTransport(response)
+    engine: Engine = _engine(
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
+    )
+    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+
+    engine._attempt_step(step)
+
+    assert jar.current("exemplo.com", 443, "/") == {"sess": "abc"}
+
+
+def test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie(tmp_path: Path) -> None:
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    engine: Engine = _engine(
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
+    )
+    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+
+    engine._attempt_step(step)
+
+    assert "--cookie" in transport.calls[0].curl_literal
+    assert "sess=abc" in transport.calls[0].curl_literal
+
+
+def test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends(tmp_path: Path) -> None:
+    first_response: StepResponse = StepResponse(
+        status_code=401, cookies={"sess": "abc"}, cookie_attributes={"sess": CookieAttributes()},
+    )
+    second_response: StepResponse = StepResponse(status_code=200)
+    transport: StubHttpTransport = StubHttpTransport([first_response, second_response])
+    jar: CookieJar = CookieJar()
+    engine: Engine = _engine(
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
+    )
+    engine.comparator = ReplayResultComparator(Workspace(tmp_path))
+    Workspace(tmp_path).original_response_file(0).write_text(
+        StepResponse(status_code=200).model_dump_json(), encoding="utf-8"
+    )
+    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+
+    engine.execute_step(step)
+
+    assert len(transport.calls) == 2
+    assert "sess=abc" in transport.calls[1].curl_literal

@@ -9,7 +9,8 @@ from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
-from har_reproducer.reproduction import StepRetryPolicy
+from har_reproducer.reproduction import CookieJarCurlOverride, RequestUrlScope, StepRetryPolicy
+from har_reproducer.session import CookieJar
 from har_reproducer.session.session_store import SessionStore
 
 
@@ -29,6 +30,8 @@ class ReplayRunner:
             replay_run_dir: Path,
             res_refer_dir: Path,
             original_responses_dir: Path,
+            cookie_jar: CookieJar,
+            cookie_jar_curl_override: CookieJarCurlOverride,
     ) -> None:
         self.workspace: Workspace = workspace
         self.curl_token_comment: CurlTokenComment = curl_token_comment
@@ -41,6 +44,8 @@ class ReplayRunner:
         self.replay_run_dir: Path = replay_run_dir
         self.res_refer_dir: Path = res_refer_dir
         self.original_responses_dir: Path = original_responses_dir
+        self.cookie_jar: CookieJar = cookie_jar
+        self.cookie_jar_curl_override: CookieJarCurlOverride = cookie_jar_curl_override
 
     def run_all(self) -> bool:
         ordered_indexes, schedule = self._schedule_all()
@@ -107,7 +112,11 @@ class ReplayRunner:
             if annotate and fallback_token_ids:
                 self._annotate_fallback_tokens(index, fallback_token_ids)
             curl_resolved: str = self.session_store.render(curl_text)
-            return self.http_transport.send_request(curl_resolved, index)
+            host, port, path = RequestUrlScope.parts_for_step(self.workspace, index)
+            curl_with_jar: str = self.cookie_jar_curl_override.apply(curl_resolved, host, port, path)
+            response: StepResponse = self.http_transport.send_request(curl_with_jar, index)
+            self.cookie_jar.feed(host, port, response.cookies, response.cookie_attributes)
+            return response
 
         def recover(response: StepResponse) -> bool:
             if not self.comparator.needs_recovery(index, response):

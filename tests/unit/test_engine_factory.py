@@ -7,6 +7,8 @@ from har_reproducer.engines.engine import Engine
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import ProjectConfig
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
+from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
+from har_reproducer.session.cookie_jar import CookieJar
 from tests.support.fake_script_executor import FakeScriptExecutor
 from tests.support.fake_sleeper import FakeSleeper
 from tests.support.stub_http_transport import StubHttpTransport
@@ -77,3 +79,23 @@ def test_create_dry_injects_comparator_bound_to_workspace(tmp_path: Path) -> Non
 
     assert isinstance(engine.comparator, ReplayResultComparator)
     assert engine.comparator.workspace is factory.workspace
+
+
+def test_create_main_injects_cookie_jar_and_matching_curl_override(tmp_path: Path) -> None:
+    factory: EngineFactory = _factory(tmp_path)
+
+    engine: Engine = factory.create(EngineMode.MAIN, Path("flow.har"), http_transport=StubHttpTransport(None))
+
+    assert isinstance(engine.cookie_jar, CookieJar)
+    assert isinstance(engine.cookie_jar_curl_override, CookieJarCurlOverride)
+    assert engine.cookie_jar_curl_override.cookie_jar is engine.cookie_jar
+
+
+def test_create_dry_injects_cookie_jar_and_matching_curl_override(tmp_path: Path) -> None:
+    factory: EngineFactory = _factory(tmp_path)
+
+    engine: Engine = factory.create(EngineMode.DRY, Path("flow.har"))
+
+    assert isinstance(engine.cookie_jar, CookieJar)
+    assert isinstance(engine.cookie_jar_curl_override, CookieJarCurlOverride)
+    assert engine.cookie_jar_curl_override.cookie_jar is engine.cookie_jar

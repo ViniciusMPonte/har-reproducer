@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from mitmproxy.http import HTTPFlow, Request, Response
+from mitmproxy.net.http import cookies as mitm_cookies
 
 from har_reproducer.reproduction.mitm_env import MitmEnv
 
@@ -72,10 +73,16 @@ class MitmAddon:
         return [{"name": name, "value": value} for name, value in request.cookies.items(multi=True)]
 
     @staticmethod
-    def _response_cookies_list(response: Response) -> List[Dict[str, str]]:
-        cookies_list: List[Dict[str, str]] = []
-        for name, (value, _attrs) in response.cookies.items(multi=True):
-            cookies_list.append({"name": name, "value": value})
+    def _response_cookies_list(response: Response) -> List[Dict[str, Any]]:
+        cookies_list: List[Dict[str, Any]] = []
+        for name, (value, attrs) in response.cookies.items(multi=True):
+            cookies_list.append({
+                "name": name,
+                "value": value,
+                "domain": attrs.get("domain"),
+                "path": attrs.get("path", "/"),
+                "expired": mitm_cookies.is_expired(attrs),
+            })
         return cookies_list
 
     @staticmethod

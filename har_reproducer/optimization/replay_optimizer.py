@@ -4,7 +4,8 @@ from typing import ClassVar, Dict, List, Optional, Set, Tuple
 from har_reproducer.contracts import ScheduleExecutor
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import StepResponse, SuccessCriterion
-from har_reproducer.reproduction import SilentExtractorMetadataStore
+from har_reproducer.reproduction import RequestUrlScope, SilentExtractorMetadataStore
+from har_reproducer.session import CookieJar
 from har_reproducer.validation import Validator
 
 
@@ -21,10 +22,14 @@ class ReplayOptimizer:
             self,
             schedule_executor: ScheduleExecutor,
             metadata_store: SilentExtractorMetadataStore,
+            workspace: Workspace,
+            cookie_jar: CookieJar,
             max_requests: int = 500,
     ) -> None:
         self.schedule_executor: ScheduleExecutor = schedule_executor
         self.metadata_store: SilentExtractorMetadataStore = metadata_store
+        self.workspace: Workspace = workspace
+        self.cookie_jar: CookieJar = cookie_jar
         self.max_requests: int = max_requests
         self.requests_made: int = 0
         self.backbone: List[int] = []
@@ -95,6 +100,8 @@ class ReplayOptimizer:
         return [i for i in self.schedule_executor.existing_step_indexes() if from_index <= i <= boundary]
 
     def _execute(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple[int, StepResponse]]:
+        self.cookie_jar.reset()
+        self._feed_cookie_jar_from_backbone_cache()
         refreshes: int = 0
         results: List[Tuple[int, StepResponse]] = self._execute_raw(ordered_indexes, schedule)
         while self._needs_reactive_refresh(results) and refreshes < self.MAX_REACTIVE_REFRESHES:
@@ -104,8 +111,18 @@ class ReplayOptimizer:
                 f"retrying (attempt {refreshes}/{self.MAX_REACTIVE_REFRESHES})..."
             )
             self._execute_raw(self.backbone, set(self.backbone), force_refresh=True)
+            self.cookie_jar.reset()
+            self._feed_cookie_jar_from_backbone_cache()
             results = self._execute_raw(ordered_indexes, schedule)
         return results
+
+    def _feed_cookie_jar_from_backbone_cache(self) -> None:
+        for index in sorted(self.backbone):
+            response: Optional[StepResponse] = self._backbone_response_cache.get(index)
+            if response is None:
+                continue
+            host, port, _ = RequestUrlScope.parts_for_step(self.workspace, index)
+            self.cookie_jar.feed(host, port, response.cookies, response.cookie_attributes)
 
     def _execute_raw(
             self, ordered_indexes: List[int], schedule: Set[int], force_refresh: bool = False
