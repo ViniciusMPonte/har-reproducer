@@ -241,17 +241,26 @@ def test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie(tmp
     assert "sess=abc" in transport.calls[0].curl_literal
 
 
-def test_attempt_step_crashes_when_request_url_is_templated_without_separator(tmp_path: Path) -> None:
+def test_attempt_step_resolves_scope_from_persisted_url_when_request_url_is_templated_in_memory(
+        tmp_path: Path,
+) -> None:
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
     transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
     engine: Engine = _engine(
-        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=CookieJar(),
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
     step: Step = _step_with_curl(
         0, "https://exemplo.com{{extractor:abc123}}", "curl https://exemplo.com/pagina",
     )
+    engine.workspace.request_file(0).write_text(
+        StepRequest(url="https://exemplo.com/pagina", method="GET").model_dump_json(), encoding="utf-8",
+    )
 
-    with pytest.raises(ValueError):
-        engine._attempt_step(step)
+    engine._attempt_step(step)
+
+    assert "sess=abc" in transport.calls[0].curl_literal
+    assert "https://exemplo.com/pagina" in transport.calls[0].curl_literal
 
 
 def test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends(tmp_path: Path) -> None:
