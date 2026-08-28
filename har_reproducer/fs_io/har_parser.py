@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Set
 
-from har_reproducer.models import Step, StepRequest, StepResponse
+from har_reproducer.models import CookieAttributes, Step, StepRequest, StepResponse
 
 
 class HARParser:
@@ -75,6 +75,12 @@ class HARParser:
 
         res_headers: Dict[str, str] = {v["name"]: v["value"] for v in res_data.get("headers", [])}
         res_cookies: Dict[str, str] = {c["name"]: c["value"] for c in res_data.get("cookies", [])}
+        res_cookie_attributes: Dict[str, CookieAttributes] = {
+            c["name"]: CookieAttributes(
+                domain=c.get("domain"), path=c.get("path", "/"), expired=c.get("expired", False)
+            )
+            for c in res_data.get("cookies", [])
+        }
 
         res_content: Dict[str, Any] = res_data.get("content", {})
         text: Optional[str] = res_content.get("text")
@@ -86,6 +92,7 @@ class HARParser:
             status_code=res_data["status"],
             headers=res_headers,
             cookies=res_cookies,
+            cookie_attributes=res_cookie_attributes,
             body=body,
             body_mime=res_content.get("mimeType"),
             redirect_url=res_data.get("redirectUrl")

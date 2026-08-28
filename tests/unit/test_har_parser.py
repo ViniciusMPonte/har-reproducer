@@ -97,3 +97,52 @@ def test_entries_missing_response_body_handles_entry_without_content_key() -> No
     }
 
     assert HARParser.entries_missing_response_body([entry]) == 1
+
+
+def test_parse_entry_builds_cookie_attributes_from_capture_envelope() -> None:
+    entry: Dict[str, Any] = {
+        "request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []},
+        "response": {
+            "status": 200,
+            "headers": [],
+            "cookies": [{"name": "sess", "value": "x", "domain": ".exemplo.com", "path": "/", "expired": False}],
+            "content": {},
+        },
+    }
+
+    step: Step = HARParser.parse_entry(entry, 0)
+
+    assert step.response is not None
+    attrs = step.response.cookie_attributes["sess"]
+    assert attrs.domain == ".exemplo.com"
+    assert attrs.path == "/"
+    assert attrs.expired is False
+
+
+def test_parse_entry_defaults_expired_to_false_for_genuine_har_cookie() -> None:
+    entry: Dict[str, Any] = {
+        "request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []},
+        "response": {
+            "status": 200,
+            "headers": [],
+            "cookies": [{"name": "sess", "value": "x"}],
+            "content": {},
+        },
+    }
+
+    step: Step = HARParser.parse_entry(entry, 0)
+
+    assert step.response is not None
+    assert step.response.cookie_attributes["sess"].expired is False
+
+
+def test_parse_entry_produces_empty_cookie_attributes_when_no_response_cookies() -> None:
+    entry: Dict[str, Any] = {
+        "request": {"url": "https://x", "method": "GET", "headers": [], "cookies": []},
+        "response": {"status": 200, "headers": [], "cookies": [], "content": {}},
+    }
+
+    step: Step = HARParser.parse_entry(entry, 0)
+
+    assert step.response is not None
+    assert step.response.cookie_attributes == {}
