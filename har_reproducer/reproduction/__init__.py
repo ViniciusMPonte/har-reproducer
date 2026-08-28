@@ -3,6 +3,7 @@ from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetada
 from har_reproducer.reproduction.extractor_runner import ExtractorRunner
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.mitm_proxy_orchestrator import MitmProxyOrchestrator
+from har_reproducer.reproduction.request_url_scope import RequestUrlScope
 from har_reproducer.reproduction.script_executor import ScriptExecutor
 from har_reproducer.reproduction.sleeper import Sleeper
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
@@ -16,6 +17,7 @@ __all__ = [
     "ExtractorRunner",
     "MitmEnv",
     "MitmProxyOrchestrator",
+    "RequestUrlScope",
     "ScriptExecutor",
     "SilentExtractorMetadataStore",
     "Sleeper",
