@@ -14,6 +14,7 @@ from har_reproducer.models import ProjectConfig
 from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
 from har_reproducer.reproduction import (
+    CookieJarCurlOverride,
     CurlGenerator,
     ExtractorMetadataStore,
     ExtractorRunner,
@@ -22,7 +23,7 @@ from har_reproducer.reproduction import (
     StepRetryPolicy,
     StepSkipEvaluator,
 )
-from har_reproducer.session import SessionStore
+from har_reproducer.session import CookieJar, SessionStore
 from har_reproducer.tracking import (
     BaselineDiff,
     CandidateResolver,
@@ -74,6 +75,8 @@ class EngineFactory:
         )
         token_resolver_responses_dir: Path = execution_responses_dir or self.workspace.original_responses
         session_store: SessionStore = SessionStore()
+        cookie_jar: CookieJar = CookieJar()
+        cookie_jar_curl_override: CookieJarCurlOverride = CookieJarCurlOverride(cookie_jar)
         extractor_runner: ExtractorRunner = ExtractorRunner(self.workspace, self.script_executor)
         metadata_store: ExtractorMetadataStore = ExtractorMetadataStore(self.workspace)
         discovery_corpus: ResponseCorpus = ResponseCorpus(self.workspace.original_responses, Workspace.STEP_INDEX_WIDTH)
@@ -96,6 +99,8 @@ class EngineFactory:
             ReplayResultComparator(self.workspace),
             self.project_config.success_criteria,
             transport,
+            cookie_jar,
+            cookie_jar_curl_override,
         )
 
     def _build_tracker(

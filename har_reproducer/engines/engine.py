@@ -5,8 +5,8 @@ from har_reproducer.contracts import HttpTransport
 from har_reproducer.fs_io import HARParser, Workspace
 from har_reproducer.models import Step, StepRequest, StepResponse, SuccessCriterion
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
-from har_reproducer.reproduction import StepRetryPolicy, StepSkipEvaluator
-from har_reproducer.session import SessionStore
+from har_reproducer.reproduction import CookieJarCurlOverride, RequestUrlScope, StepRetryPolicy, StepSkipEvaluator
+from har_reproducer.session import CookieJar, SessionStore
 from har_reproducer.templates import ExtractorTemplate
 from har_reproducer.tracking import TokenResolver, TokenTracker
 from har_reproducer.validation import Validator
@@ -28,6 +28,8 @@ class Engine:
             comparator: ReplayResultComparator,
             success_criteria: List[SuccessCriterion],
             http_transport: Optional[HttpTransport],
+            cookie_jar: CookieJar,
+            cookie_jar_curl_override: CookieJarCurlOverride,
     ) -> None:
         self.har_path: Path = har_path
         self.workspace: Workspace = workspace
@@ -40,6 +42,8 @@ class Engine:
         self.comparator: ReplayResultComparator = comparator
         self.success_criteria: List[SuccessCriterion] = success_criteria
         self.http_transport: Optional[HttpTransport] = http_transport
+        self.cookie_jar: CookieJar = cookie_jar
+        self.cookie_jar_curl_override: CookieJarCurlOverride = cookie_jar_curl_override
 
     def run(self) -> bool:
         return self._reproduce()
@@ -148,5 +152,8 @@ class Engine:
     def _attempt_step(self, step: Step) -> StepResponse:
         assert self.http_transport is not None
         curl_literal: str = self.session_store.render(step.analysis.curl_template)
-        response: StepResponse = self.http_transport.send_request(curl_literal, step.index)
+        host, port, path = RequestUrlScope.parts(step.request.url)
+        curl_with_jar: str = self.cookie_jar_curl_override.apply(curl_literal, host, port, path)
+        response: StepResponse = self.http_transport.send_request(curl_with_jar, step.index)
+        self.cookie_jar.feed(host, port, response.cookies, response.cookie_attributes)
         return response
