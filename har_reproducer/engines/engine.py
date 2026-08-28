@@ -152,7 +152,7 @@ class Engine:
     def _attempt_step(self, step: Step) -> StepResponse:
         assert self.http_transport is not None
         curl_literal: str = self.session_store.render(step.analysis.curl_template)
-        host, port, path = RequestUrlScope.parts(step.request.url)
+        host, port, path = RequestUrlScope.parts_for_step(self.workspace, step.index)
         curl_with_jar: str = self.cookie_jar_curl_override.apply(curl_literal, host, port, path)
         response: StepResponse = self.http_transport.send_request(curl_with_jar, step.index)
         self.cookie_jar.feed(host, port, response.cookies, response.cookie_attributes)

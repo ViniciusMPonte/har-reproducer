@@ -186,13 +186,16 @@ def test_reproduce_keeps_returning_the_final_validation_result(tmp_path: Path) -
     assert engine._reproduce() is True
 
 
-def _step_with_curl(index: int, url: str, curl_template: str) -> Step:
-    return Step(
+def _step_with_curl(index: int, url: str, curl_template: str, workspace: Optional[Workspace] = None) -> Step:
+    step: Step = Step(
         index=index,
         request=StepRequest(url=url, method="GET"),
         response=StepResponse(status_code=200),
         analysis=StepAnalysis(step_index=index, curl_template=curl_template),
     )
+    if workspace is not None:
+        workspace.request_file(index).write_text(step.request.model_dump_json(), encoding="utf-8")
+    return step
 
 
 def test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_path: Path) -> None:
@@ -202,7 +205,10 @@ def test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_pa
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl --cookie 'sess=old' https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl --cookie 'sess=old' https://exemplo.com/login",
+        workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
@@ -219,7 +225,9 @@ def test_attempt_step_feeds_jar_from_response_set_cookie(tmp_path: Path) -> None
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
@@ -233,12 +241,79 @@ def test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie(tmp
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
     assert "--cookie" in transport.calls[0].curl_literal
     assert "sess=abc" in transport.calls[0].curl_literal
+
+
+def test_attempt_step_resolves_scope_from_persisted_url_when_request_url_is_templated_in_memory(
+        tmp_path: Path,
+) -> None:
+    jar: CookieJar = CookieJar()
+    jar.feed("exemplo.com", 443, {"sess": "abc"}, {})
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    engine: Engine = _engine(
+        tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
+    )
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com{{extractor:abc123}}", "curl https://exemplo.com/pagina",
+    )
+    engine.workspace.request_file(0).write_text(
+        StepRequest(url="https://exemplo.com/pagina", method="GET").model_dump_json(), encoding="utf-8",
+    )
+
+    engine._attempt_step(step)
+
+    assert "sess=abc" in transport.calls[0].curl_literal
+    assert "https://exemplo.com/pagina" in transport.calls[0].curl_literal
+
+
+class _UrlMutatingFakeTracker:
+
+    def __init__(self, templated_url: str) -> None:
+        self.templated_url: str = templated_url
+
+    def analyze_step(self, step: Step, first_entry: Step) -> StepAnalysis:
+        step.request.url = self.templated_url
+        return StepAnalysis(step_index=step.index, curl_template=f"curl {step.request.url}")
+
+
+def _har_with_single_entry(tmp_path: Path, url: str) -> Path:
+    entries: List[Dict[str, Any]] = [{
+        "request": {"url": url, "method": "GET", "headers": [], "cookies": []},
+        "response": {"status": 200, "headers": [], "cookies": [], "content": {"text": "corpo", "mimeType": "text/plain"}},
+    }]
+    har_path: Path = tmp_path / "flow.har"
+    har_path.write_text(json.dumps({"log": {"entries": entries}}), encoding="utf-8")
+    return har_path
+
+
+# Simplificação deliberada (spec seção 6, T04 do implementation_plan): em vez de rodar
+# o pipeline real de extração (BaselineDiff/CandidateResolver/TokenTracker) para
+# produzir um token que colida de fato com a URL de outro step, usa um tracker fake
+# que só reproduz a mutação in-place que PlaceholderApplier faz em produção — monta a
+# colisão real via extração ponta a ponta seria complexidade desproporcional só para
+# travar uma garantia de ordem de execução (_persist_request_step antes de
+# analyze_step).
+def test_reproduce_persists_real_request_url_before_tracker_mutates_it_in_memory(tmp_path: Path) -> None:
+    real_url: str = "https://exemplo.com/pagina"
+    templated_url: str = "https://exemplo.com{{extractor:abc123}}"
+    har_path: Path = _har_with_single_entry(tmp_path, real_url)
+    transport: StubHttpTransport = StubHttpTransport(StepResponse(status_code=200))
+    engine: Engine = _engine(tmp_path, FakeTokenResolver(), [], http_transport=transport)
+    engine.har_path = har_path
+    engine.tracker = _UrlMutatingFakeTracker(templated_url)
+
+    assert engine._reproduce() is True
+
+    persisted: str = engine.workspace.request_file(0).read_text(encoding="utf-8")
+    assert real_url in persisted
+    assert templated_url not in persisted
 
 
 def test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends(tmp_path: Path) -> None:
@@ -255,7 +330,9 @@ def test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_s
     Workspace(tmp_path).original_response_file(0).write_text(
         StepResponse(status_code=200).model_dump_json(), encoding="utf-8"
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine.execute_step(step)
 
