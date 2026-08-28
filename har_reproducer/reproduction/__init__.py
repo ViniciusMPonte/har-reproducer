@@ -1,3 +1,4 @@
+from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
 from har_reproducer.reproduction.curl_http_transport import CurlHttpTransport
 from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore, SilentExtractorMetadataStore
 from har_reproducer.reproduction.extractor_runner import ExtractorRunner
@@ -11,6 +12,7 @@ from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 from har_reproducer.reproduction.curl_generator import CurlGenerator
 
 __all__ = [
+    "CookieJarCurlOverride",
     "CurlGenerator",
     "CurlHttpTransport",
     "ExtractorMetadataStore",
