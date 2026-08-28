@@ -44,9 +44,9 @@ corrigir o código.
   correção.
 
 **Critérios de aceite:**
-- [ ] `pytest tests/unit/test_engine.py -k test_attempt_step_crashes_when_request_url_is_templated_without_separator -v` passa (o teste confirma que `ValueError` é levantado hoje).
-- [ ] O teste usa `pytest.raises(ValueError)` ao redor de `engine._attempt_step(step)`, não um `try/except` manual.
-- [ ] Nenhum outro teste de `tests/unit/test_engine.py` foi alterado nesta task.
+- [x] `pytest tests/unit/test_engine.py -k test_attempt_step_crashes_when_request_url_is_templated_without_separator -v` passa (o teste confirma que `ValueError` é levantado hoje).
+- [x] O teste usa `pytest.raises(ValueError)` ao redor de `engine._attempt_step(step)`, não um `try/except` manual.
+- [x] Nenhum outro teste de `tests/unit/test_engine.py` foi alterado nesta task.
 
 ---
 
@@ -103,9 +103,9 @@ def _attempt_step(self, step: Step) -> StepResponse:
   `ValueError` (spec seção 3.1).
 
 **Critérios de aceite:**
-- [ ] O teste de T01 (`test_attempt_step_crashes_when_request_url_is_templated_without_separator`) é atualizado: em vez de `pytest.raises(ValueError)`, agora persiste `workspace.request_file(0)` com a URL real (`https://exemplo.com/pagina`) antes de chamar `_attempt_step`, e confirma que `engine._attempt_step(step)` **não** levanta exceção e resolve `host`/`port`/`path` a partir da URL persistida, não da templada em memória — ex.: `assert transport.calls[0].curl_literal` contém a URL/porta esperada, coerente com `https://exemplo.com/pagina`, mesmo com `step.request.url` ainda templado no objeto em memória.
-- [ ] Os 4 testes existentes citados na spec (`test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending`, `test_attempt_step_feeds_jar_from_response_set_cookie`, `test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie`, `test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends`) **ainda falham** neste ponto do plano (vão passar a falhar com `FileNotFoundError`, não mais o comportamento atual) — isso é esperado e fica coberto por T03, não por esta task. Rodar `pytest tests/unit/test_engine.py -v` aqui só para confirmar que as falhas são exatamente essas 4 e pelo motivo esperado (`FileNotFoundError` de `workspace.request_file`), não outra coisa.
-- [ ] `git grep "RequestUrlScope.parts(step.request.url)"` não retorna nenhuma ocorrência em `har_reproducer/` depois desta task.
+- [x] O teste de T01 (`test_attempt_step_crashes_when_request_url_is_templated_without_separator`) é atualizado: em vez de `pytest.raises(ValueError)`, agora persiste `workspace.request_file(0)` com a URL real (`https://exemplo.com/pagina`) antes de chamar `_attempt_step`, e confirma que `engine._attempt_step(step)` **não** levanta exceção e resolve `host`/`port`/`path` a partir da URL persistida, não da templada em memória — ex.: `assert transport.calls[0].curl_literal` contém a URL/porta esperada, coerente com `https://exemplo.com/pagina`, mesmo com `step.request.url` ainda templado no objeto em memória.
+- [x] Os 4 testes existentes citados na spec (`test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending`, `test_attempt_step_feeds_jar_from_response_set_cookie`, `test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie`, `test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends`) **ainda falham** neste ponto do plano (vão passar a falhar com `FileNotFoundError`, não mais o comportamento atual) — isso é esperado e fica coberto por T03, não por esta task. Rodar `pytest tests/unit/test_engine.py -v` aqui só para confirmar que as falhas são exatamente essas 4 e pelo motivo esperado (`FileNotFoundError` de `workspace.request_file`), não outra coisa.
+- [x] `git grep "RequestUrlScope.parts(step.request.url)"` não retorna nenhuma ocorrência em `har_reproducer/` depois desta task.
 
 ---
 
@@ -167,12 +167,12 @@ def _step_with_curl(index: int, url: str, curl_template: str, workspace: Optiona
   parâmetro opcional é a forma preferida por evitar repetição).
 
 **Critérios de aceite:**
-- [ ] `pytest tests/unit/test_engine.py -v` — todos os testes do arquivo passam, incluindo os 4 citados e o de T01/T02.
-- [ ] `test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending`: `"sess=abc" in transport.calls[0].curl_literal` e `"sess=old" not in transport.calls[0].curl_literal` continuam verdadeiros (não-regressão do comportamento já coberto).
-- [ ] `test_attempt_step_feeds_jar_from_response_set_cookie`: `jar.current("exemplo.com", 443, "/") == {"sess": "abc"}` continua verdadeiro.
-- [ ] `test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie`: `"--cookie" in transport.calls[0].curl_literal` e `"sess=abc" in transport.calls[0].curl_literal` continuam verdadeiros.
-- [ ] `test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends`: `len(transport.calls) == 2` e `"sess=abc" in transport.calls[1].curl_literal` continuam verdadeiros — inclusive confirmando que persistir o `request_file` uma única vez (antes da primeira tentativa) é suficiente para as duas tentativas de `StepRetryPolicy` (spec seção 5, "Retry de step").
-- [ ] Nenhum outro teste de `tests/unit/test_engine.py` (os que não usam `_step_with_curl`) foi alterado nesta task.
+- [x] `pytest tests/unit/test_engine.py -v` — todos os testes do arquivo passam, incluindo os 4 citados e o de T01/T02.
+- [x] `test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending`: `"sess=abc" in transport.calls[0].curl_literal` e `"sess=old" not in transport.calls[0].curl_literal` continuam verdadeiros (não-regressão do comportamento já coberto).
+- [x] `test_attempt_step_feeds_jar_from_response_set_cookie`: `jar.current("exemplo.com", 443, "/") == {"sess": "abc"}` continua verdadeiro.
+- [x] `test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie`: `"--cookie" in transport.calls[0].curl_literal` e `"sess=abc" in transport.calls[0].curl_literal` continuam verdadeiros.
+- [x] `test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_sends`: `len(transport.calls) == 2` e `"sess=abc" in transport.calls[1].curl_literal` continuam verdadeiros — inclusive confirmando que persistir o `request_file` uma única vez (antes da primeira tentativa) é suficiente para as duas tentativas de `StepRetryPolicy` (spec seção 5, "Retry de step").
+- [x] Nenhum outro teste de `tests/unit/test_engine.py` (os que não usam `_step_with_curl`) foi alterado nesta task.
 
 ---
 
@@ -219,9 +219,9 @@ real (não via `_attempt_step` isolado, que já não exercita `_process_entry`).
   com a URL real.
 
 **Critérios de aceite:**
-- [ ] O novo teste falha (`FileNotFoundError` ou URL templada persistida) se `_persist_request_step` for movido, no código de produção, para depois de `analyze_step` (validar manualmente reordenando as duas linhas em `_process_entry` durante a implementação da task, confirmando o teste pega a quebra, e desfazendo a mudança antes de commitar).
-- [ ] `pytest tests/unit/test_engine.py -v` passa com o código de produção no estado correto (ordem atual, inalterada).
-- [ ] O teste não duplica nenhuma asserção já coberta por T01-T03 sobre o comportamento do jar (cookies aplicados/alimentados) — só verifica a ordem/conteúdo de `request_file`.
+- [x] O novo teste falha (`FileNotFoundError` ou URL templada persistida) se `_persist_request_step` for movido, no código de produção, para depois de `analyze_step` (validar manualmente reordenando as duas linhas em `_process_entry` durante a implementação da task, confirmando o teste pega a quebra, e desfazendo a mudança antes de commitar).
+- [x] `pytest tests/unit/test_engine.py -v` passa com o código de produção no estado correto (ordem atual, inalterada).
+- [x] O teste não duplica nenhuma asserção já coberta por T01-T03 sobre o comportamento do jar (cookies aplicados/alimentados) — só verifica a ordem/conteúdo de `request_file`.
 
 ---
 
