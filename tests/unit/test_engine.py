@@ -186,13 +186,16 @@ def test_reproduce_keeps_returning_the_final_validation_result(tmp_path: Path) -
     assert engine._reproduce() is True
 
 
-def _step_with_curl(index: int, url: str, curl_template: str) -> Step:
-    return Step(
+def _step_with_curl(index: int, url: str, curl_template: str, workspace: Optional[Workspace] = None) -> Step:
+    step: Step = Step(
         index=index,
         request=StepRequest(url=url, method="GET"),
         response=StepResponse(status_code=200),
         analysis=StepAnalysis(step_index=index, curl_template=curl_template),
     )
+    if workspace is not None:
+        workspace.request_file(index).write_text(step.request.model_dump_json(), encoding="utf-8")
+    return step
 
 
 def test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_path: Path) -> None:
@@ -202,7 +205,10 @@ def test_attempt_step_overrides_curl_cookie_with_jar_state_before_sending(tmp_pa
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl --cookie 'sess=old' https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl --cookie 'sess=old' https://exemplo.com/login",
+        workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
@@ -219,7 +225,9 @@ def test_attempt_step_feeds_jar_from_response_set_cookie(tmp_path: Path) -> None
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
@@ -233,7 +241,9 @@ def test_attempt_step_adds_cookie_flag_when_curl_has_none_but_jar_has_cookie(tmp
     engine: Engine = _engine(
         tmp_path, FakeTokenResolver(), [], http_transport=transport, cookie_jar=jar,
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine._attempt_step(step)
 
@@ -277,7 +287,9 @@ def test_execute_step_retry_feeds_jar_from_first_attempt_before_second_attempt_s
     Workspace(tmp_path).original_response_file(0).write_text(
         StepResponse(status_code=200).model_dump_json(), encoding="utf-8"
     )
-    step: Step = _step_with_curl(0, "https://exemplo.com/login", "curl https://exemplo.com/login")
+    step: Step = _step_with_curl(
+        0, "https://exemplo.com/login", "curl https://exemplo.com/login", workspace=engine.workspace,
+    )
 
     engine.execute_step(step)
 
