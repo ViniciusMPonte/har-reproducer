@@ -23,7 +23,10 @@ class CookieJarCurlOverride:
         return shlex.join(rebuilt)
 
     def _tokenize(self, curl_resolved: str) -> List[str]:
-        return [token for token in shlex.split(curl_resolved) if token != self.LINE_CONTINUATION_ARTIFACT]
+        return [
+            token for token in shlex.split(curl_resolved, comments=True)
+            if token != self.LINE_CONTINUATION_ARTIFACT
+        ]
 
     def _parse_cookie_tokens(self, tokens: List[str]) -> Dict[str, str]:
         index: Optional[int] = self._cookie_flag_index(tokens)

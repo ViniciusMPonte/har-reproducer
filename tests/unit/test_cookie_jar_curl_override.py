@@ -10,6 +10,7 @@ from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOverride
 from har_reproducer.reproduction.curl_generator import CurlGenerator
 from har_reproducer.session import CookieJar, SessionStore
+from har_reproducer.templates.extractor_template import ExtractorTemplate
 
 
 def _override(cookie_jar: CookieJar) -> CookieJarCurlOverride:
@@ -113,6 +114,53 @@ def test_apply_reconstructs_real_curl_generator_output_runnable_via_real_bash(tm
     received_argv: List[str] = json.loads(dump_file.read_text(encoding="utf-8"))
 
     assert "\n" not in received_argv
+    assert "-X" in received_argv
+    assert "GET" in received_argv
+    assert "https://exemplo.com/login" in received_argv
+    assert "--cookie" in received_argv
+    cookie_index: int = received_argv.index("--cookie")
+    cookie_value: str = received_argv[cookie_index + 1]
+    cookie_pairs: Dict[str, str] = dict(
+        pair.strip().split("=", 1) for pair in cookie_value.split(";")
+    )
+    assert cookie_pairs["a"] == "9"
+    assert cookie_pairs["sess"] == "x"
+
+
+def test_apply_does_not_turn_curl_sh_shebang_into_command_name(tmp_path: Path) -> None:
+    session_store: SessionStore = SessionStore()
+    generator: CurlGenerator = CurlGenerator(CurlTokenComment(step_index_width=4), session_store)
+    request: StepRequest = StepRequest(
+        url="https://exemplo.com/login",
+        method="GET",
+        headers={"Accept": "text/html"},
+        cookies={"a": "1"},
+    )
+    curl_text: str = generator.generate(request, [])
+    bash_script: str = ExtractorTemplate.render_bash_script(curl_text)
+    assert bash_script.startswith("#!/bin/bash\n")
+
+    cookie_jar: CookieJar = CookieJar()
+    cookie_jar.feed("exemplo.com", 443, {"a": "9", "sess": "x"}, {})
+    override: CookieJarCurlOverride = _override(cookie_jar)
+
+    result: str = override.apply(bash_script, "exemplo.com", 443, "/login")
+
+    assert not result.startswith("'#!/bin/bash'")
+
+    dump_file: Path = tmp_path / "argv.json"
+    _fake_curl_script(tmp_path, dump_file)
+    env: Dict[str, str] = dict(os.environ)
+    env["PATH"] = f"{tmp_path}:{env.get('PATH', '')}"
+
+    completed: subprocess.CompletedProcess = subprocess.run(
+        ["bash", "-c", result], capture_output=True, env=env, timeout=10,
+    )
+
+    assert completed.returncode == 0, completed.stderr.decode("utf-8", errors="replace")
+    received_argv: List[str] = json.loads(dump_file.read_text(encoding="utf-8"))
+
+    assert "#!/bin/bash" not in received_argv
     assert "-X" in received_argv
     assert "GET" in received_argv
     assert "https://exemplo.com/login" in received_argv
