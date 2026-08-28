@@ -13,10 +13,17 @@ class StepRequest(BaseModel):
     is_skippable: bool = False
 
 
+class CookieAttributes(BaseModel):
+    domain: Optional[str] = None
+    path: str = "/"
+    expired: bool = False
+
+
 class StepResponse(BaseModel):
     status_code: int
     headers: Dict[str, str] = Field(default_factory=dict)
     cookies: Dict[str, str] = Field(default_factory=dict)
+    cookie_attributes: Dict[str, CookieAttributes] = Field(default_factory=dict)
     body: Optional[Union[str, bytes]] = None
     body_mime: Optional[str] = None
     redirect_url: Optional[str] = None

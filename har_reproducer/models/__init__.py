@@ -8,7 +8,7 @@ from har_reproducer.models.criteria import (
     UrlMatchCriterion,
 )
 from har_reproducer.models.execution import ScriptExecutionResult
-from har_reproducer.models.http import Step, StepRequest, StepResponse
+from har_reproducer.models.http import CookieAttributes, Step, StepRequest, StepResponse
 from har_reproducer.models.session import (
     AgentType,
     DynamicToken,
@@ -22,6 +22,7 @@ from har_reproducer.models.session import (
 __all__ = [
     "AgentType",
     "BodyContainsCriterion",
+    "CookieAttributes",
     "DynamicToken",
     "Extractor",
     "HtmlElementPresentCriterion",
