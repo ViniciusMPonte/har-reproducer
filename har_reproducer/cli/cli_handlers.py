@@ -16,6 +16,7 @@ from har_reproducer.replay.replay_result_comparator import ReplayResultComparato
 from har_reproducer.replay.replay_runner import ReplayRunner
 from har_reproducer.replay.replay_token_resolver import ReplayTokenResolver
 from har_reproducer.reproduction import (
+    CookieJarCurlOverride,
     CurlHttpTransport,
     ExtractorMetadataStore,
     ExtractorRunner,
@@ -25,6 +26,7 @@ from har_reproducer.reproduction import (
     Sleeper,
     StepRetryPolicy,
 )
+from har_reproducer.session import CookieJar
 from har_reproducer.session.session_store import SessionStore
 
 
@@ -124,8 +126,11 @@ class CliHandlers:
         )
         script_executor: ScriptExecutor = ScriptExecutor()
         sleeper: Sleeper = Sleeper()
+        cookie_jar: CookieJar = CookieJar()
+        cookie_jar_curl_override: CookieJarCurlOverride = CookieJarCurlOverride(cookie_jar)
         runner: ReplayRunner = self._build_replay_runner(
-            workspace, orchestrator, run_id, res_refer_dir, script_executor, sleeper
+            workspace, orchestrator, run_id, res_refer_dir, script_executor, sleeper,
+            cookie_jar, cookie_jar_curl_override,
         )
 
         result: bool = orchestrator.run(lambda: self._dispatch_replay_mode(runner, args))
@@ -146,8 +151,11 @@ class CliHandlers:
         )
         script_executor: ScriptExecutor = ScriptExecutor()
         sleeper: Sleeper = Sleeper()
+        cookie_jar: CookieJar = CookieJar()
+        cookie_jar_curl_override: CookieJarCurlOverride = CookieJarCurlOverride(cookie_jar)
         runner: ReplayRunner = self._build_replay_runner(
             workspace, orchestrator, run_id, res_refer_dir, script_executor, sleeper,
+            cookie_jar, cookie_jar_curl_override,
             metadata_store_factory=SilentExtractorMetadataStore,
         )
         self._validate_optimize_from_index(runner, args.from_index)
@@ -156,6 +164,8 @@ class CliHandlers:
             schedule_executor=runner,
             metadata_store=SilentExtractorMetadataStore(workspace),
             max_requests=args.max_requests,
+            workspace=workspace,
+            cookie_jar=cookie_jar,
         )
         output_path: Optional[Path] = Path(args.steps_out) if args.steps_out else None
 
@@ -222,6 +232,8 @@ class CliHandlers:
             res_refer_dir: Path,
             script_executor: ScriptExecutor,
             sleeper: Sleeper,
+            cookie_jar: CookieJar,
+            cookie_jar_curl_override: CookieJarCurlOverride,
             metadata_store_factory: Type[ExtractorMetadataStore] = ExtractorMetadataStore,
     ) -> ReplayRunner:
         session_store: SessionStore = SessionStore()
@@ -249,6 +261,8 @@ class CliHandlers:
             replay_run_dir=workspace.replay_run_dir(run_id),
             res_refer_dir=res_refer_dir,
             original_responses_dir=workspace.original_responses,
+            cookie_jar=cookie_jar,
+            cookie_jar_curl_override=cookie_jar_curl_override,
         )
 
     @staticmethod
