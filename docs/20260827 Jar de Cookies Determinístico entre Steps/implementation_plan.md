@@ -40,15 +40,15 @@ class StepResponse(BaseModel):
   como string simples (spec seção 3.1).
 
 **Critérios de aceite:**
-- [ ] `CookieAttributes()` (sem argumentos) produz `domain=None, path="/",
+- [x] `CookieAttributes()` (sem argumentos) produz `domain=None, path="/",
   expired=False`.
-- [ ] `StepResponse(status_code=200).cookie_attributes == {}` (default
+- [x] `StepResponse(status_code=200).cookie_attributes == {}` (default
   vazio, não quebra nenhuma construção existente de `StepResponse` que não
   passa esse campo).
-- [ ] `StepResponse(status_code=200, cookies={"a": "1"}).model_dump_json()`
+- [x] `StepResponse(status_code=200, cookies={"a": "1"}).model_dump_json()`
   inclui tanto `"cookies"` quanto `"cookie_attributes"` no JSON serializado
   (round-trip via `model_validate_json` preserva os dois campos).
-- [ ] Não-regressão: toda a suíte de testes que constrói `StepResponse`
+- [x] Não-regressão: toda a suíte de testes que constrói `StepResponse`
   diretamente (`grep -rn "StepResponse(" tests/` — usado em
   `test_engine.py`, `test_replay_runner.py`, `test_replay_optimizer.py`,
   `test_curl_http_transport.py`, `test_har_parser.py`, `test_cookie_agent.py`
@@ -104,16 +104,16 @@ def _response_cookies_list(response: Response) -> List[Dict[str, Any]]:
   retorno declarado.
 
 **Critérios de aceite:**
-- [ ] Uma resposta simulada com `Set-Cookie: a=1; Domain=.exemplo.com;
+- [x] Uma resposta simulada com `Set-Cookie: a=1; Domain=.exemplo.com;
   Path=/api` produz `{"name": "a", "value": "1", "domain": ".exemplo.com",
   "path": "/api", "expired": False}`.
-- [ ] Uma resposta simulada com `Set-Cookie: a=1; Max-Age=0` produz
+- [x] Uma resposta simulada com `Set-Cookie: a=1; Max-Age=0` produz
   `"expired": True`.
-- [ ] Uma resposta simulada com `Set-Cookie: a=1` (sem `Domain`/`Path`)
+- [x] Uma resposta simulada com `Set-Cookie: a=1` (sem `Domain`/`Path`)
   produz `"domain": None, "path": "/"`.
-- [ ] Múltiplos `Set-Cookie` na mesma resposta produzem uma entrada por
+- [x] Múltiplos `Set-Cookie` na mesma resposta produzem uma entrada por
   cookie (não-regressão do comportamento de multiplicidade já existente).
-- [ ] Não-regressão: `test_mitm_addon.py` (suíte já existente) continua
+- [x] Não-regressão: `test_mitm_addon.py` (suíte já existente) continua
   passando; qualquer teste que hoje só verifica `{"name", "value"}` precisa
   ser ajustado pra também aceitar as chaves novas (não que elas estejam
   ausentes).
@@ -181,16 +181,16 @@ response: StepResponse = StepResponse(
   de request não têm atributos de `Set-Cookie` pra preservar.
 
 **Critérios de aceite:**
-- [ ] Parseando um envelope de captura (formato produzido por T02) com
+- [x] Parseando um envelope de captura (formato produzido por T02) com
   `{"name": "sess", "value": "x", "domain": ".exemplo.com", "path": "/",
   "expired": False}`, `step.response.cookie_attributes["sess"]` bate exatamente
   (`domain=".exemplo.com"`, `path="/"`, `expired=False`).
-- [ ] Parseando uma entry de HAR genuíno (cookies sem chave `expired`),
+- [x] Parseando uma entry de HAR genuíno (cookies sem chave `expired`),
   `step.response.cookie_attributes[nome].expired == False` (default, sem
   levantar `KeyError`).
-- [ ] Uma entry sem nenhum cookie na resposta produz
+- [x] Uma entry sem nenhum cookie na resposta produz
   `cookie_attributes == {}`.
-- [ ] Não-regressão: `test_har_parser.py` (suíte existente) continua
+- [x] Não-regressão: `test_har_parser.py` (suíte existente) continua
   passando; `res_cookies`/`req_cookies` continuam com o mesmo shape
   `Dict[str, str]` de antes.
 
@@ -249,18 +249,18 @@ class RequestUrlScope:
   definido" (T05), não lança exceção.
 
 **Critérios de aceite:**
-- [ ] `RequestUrlScope.parts("https://exemplo.com/login")` →
+- [x] `RequestUrlScope.parts("https://exemplo.com/login")` →
   `("exemplo.com", 443, "/login")`.
-- [ ] `RequestUrlScope.parts("http://exemplo.com/login")` →
+- [x] `RequestUrlScope.parts("http://exemplo.com/login")` →
   `("exemplo.com", 80, "/login")`.
-- [ ] `RequestUrlScope.parts("https://exemplo.com:8443/api")` →
+- [x] `RequestUrlScope.parts("https://exemplo.com:8443/api")` →
   `("exemplo.com", 8443, "/api")` (porta explícita tem prioridade sobre o
   default do scheme).
-- [ ] `RequestUrlScope.parts("https://exemplo.com")` (sem path) →
+- [x] `RequestUrlScope.parts("https://exemplo.com")` (sem path) →
   `path == "/"`.
-- [ ] `RequestUrlScope.parts("https://[::1]:9000/x")` (IPv6 com colchetes) →
+- [x] `RequestUrlScope.parts("https://[::1]:9000/x")` (IPv6 com colchetes) →
   host reconhecido corretamente (`urlparse` já resolve isso nativamente).
-- [ ] `RequestUrlScope.parts_for_step(workspace, index)` lê
+- [x] `RequestUrlScope.parts_for_step(workspace, index)` lê
   `workspace.request_file(index)`, faz o parse de `StepRequest` e devolve o
   mesmo resultado que `parts(request.url)` chamado diretamente.
 
@@ -351,22 +351,22 @@ class CookieJar:
   Limitação aceita (spec seção 1).
 
 **Critérios de aceite:**
-- [ ] `feed("exemplo.com", 443, {"a": "1"}, {})` seguido de
+- [x] `feed("exemplo.com", 443, {"a": "1"}, {})` seguido de
   `current("exemplo.com", 443, "/")` → `{"a": "1"}`.
-- [ ] `feed` com `attributes={"a": CookieAttributes(domain=".exemplo.com")}`
+- [x] `feed` com `attributes={"a": CookieAttributes(domain=".exemplo.com")}`
   seguido de `current("sub.exemplo.com", 443, "/")` → inclui `"a"`
   (subdomínio casa) **e** `current("exemplo.com", 443, "/")` → também inclui
   `"a"` (domínio-base também casa, via o wrapper portado).
   `current("outro.com", 443, "/")` → não inclui `"a"`.
   `current("exemplo.com", 8443, "/")` → não inclui `"a"` (porta diferente).
-- [ ] `feed` de um cookie com `attrs.expired=True` remove esse nome do
+- [x] `feed` de um cookie com `attrs.expired=True` remove esse nome do
   escopo correspondente — uma chamada `current` subsequente pro mesmo escopo
   não o inclui mais.
-- [ ] `current` de um escopo nunca alimentado devolve `{}` (não lança
+- [x] `current` de um escopo nunca alimentado devolve `{}` (não lança
   exceção).
-- [ ] `reset()` limpa todo o estado — `current` depois de `reset()` devolve
+- [x] `reset()` limpa todo o estado — `current` depois de `reset()` devolve
   `{}` mesmo pra escopos alimentados antes do reset.
-- [ ] `current("exemplo.com", 443, "/admin")` inclui um cookie alimentado
+- [x] `current("exemplo.com", 443, "/admin")` inclui um cookie alimentado
   com `path="/"` (path-match por prefixo — comportamento documentado, não
   RFC-exato).
 
@@ -469,22 +469,22 @@ class CookieJarCurlOverride:
   preserva a formatação original de qualquer request que o jar não afeta.
 
 **Critérios de aceite:**
-- [ ] Curl sem `--cookie` nenhum, jar com `{"sess": "x"}` pro escopo → o
+- [x] Curl sem `--cookie` nenhum, jar com `{"sess": "x"}` pro escopo → o
   resultado tem um `--cookie 'sess=x'` novo inserido.
-- [ ] Curl com `--cookie 'a=1; b=2'`, jar com `{"a": "9"}` pro escopo → o
+- [x] Curl com `--cookie 'a=1; b=2'`, jar com `{"a": "9"}` pro escopo → o
   resultado tem `--cookie` com `a=9` (jar vence) e `b=2` preservado (chave
   que o jar não tem, mantém o valor original).
-- [ ] Curl com `--data-binary '{"cmd": "--cookie fake"}'`, jar com algo pro
+- [x] Curl com `--data-binary '{"cmd": "--cookie fake"}'`, jar com algo pro
   escopo → o `--data-binary` do resultado continua com o payload original
   intacto (a substring `--cookie` dentro do JSON não é confundida com a
   flag real, nem duplicada, nem removida).
-- [ ] Curl gerado no formato multi-linha real de `CurlGenerator.generate`
+- [x] Curl gerado no formato multi-linha real de `CurlGenerator.generate`
   (com as continuações `\`), passado por `apply` com jar não-vazio → o
   resultado, quando executado via `bash -c` de verdade num teste de
   integração local, recebe exatamente os argumentos esperados (sem tokens
   `\n` espúrios) — validar com um script auxiliar que imprime `argv`
   recebido, não só inspecionar a string.
-- [ ] Jar vazio pro escopo da request → `apply` devolve a string de entrada
+- [x] Jar vazio pro escopo da request → `apply` devolve a string de entrada
   **idêntica**, byte a byte (early return, sem tokenizar).
 
 ---
@@ -547,23 +547,23 @@ def _attempt_step(self, step: Step) -> StepResponse:
 - Nenhum reset é necessário — execução única e sequencial.
 
 **Critérios de aceite:**
-- [ ] Dois steps consecutivos: o primeiro devolve uma resposta com
+- [x] Dois steps consecutivos: o primeiro devolve uma resposta com
   `Set-Cookie: sess=abc`; o segundo tem `--cookie 'sess=old'` fixo no
   `curl_template` gerado — depois da mudança, a request enviada de fato pro
   segundo step carrega `sess=abc`, não `sess=old` (teste de integração com
   um `HttpTransport` fake que grava o texto do curl recebido).
-- [ ] Um step cujo `curl_template` não tem `--cookie` nenhum, mas o jar já
+- [x] Um step cujo `curl_template` não tem `--cookie` nenhum, mas o jar já
   tem cookie pro escopo daquele host: a request enviada ganha um `--cookie`
   novo.
-- [ ] Retry (`StepRetryPolicy`): se a primeira tentativa de um step (que
+- [x] Retry (`StepRetryPolicy`): se a primeira tentativa de um step (que
   dispara recuperação) já vier com `Set-Cookie`, a segunda tentativa do
   mesmo step já usa esse valor no jar.
-- [ ] Não-regressão: `test_engine.py` (suíte existente) continua passando —
+- [x] Não-regressão: `test_engine.py` (suíte existente) continua passando —
   ajustar a construção de `Engine` no teste pra passar os dois novos
   parâmetros (`grep -c "Engine(" tests/unit/test_engine.py` → 1 site).
   `test_engine_factory.py` idem, ajustado pra verificar que `create()`
   repassa `cookie_jar`/`cookie_jar_curl_override` ao `engine_cls`.
-- [ ] Um HAR sem nenhum `Set-Cookie` em nenhuma resposta: comportamento do
+- [x] Um HAR sem nenhum `Set-Cookie` em nenhuma resposta: comportamento do
   `run` idêntico ao de antes da mudança (jar sempre vazio, `apply` sempre
   early-return).
 
@@ -632,16 +632,16 @@ def _run_step(self, index: int, schedule: Set[int], annotate: bool = True) -> St
   comportamento correto (spec seção 3.6).
 
 **Critérios de aceite:**
-- [ ] `run_smart`/`run_slice` pulando um step intermediário que originalmente
+- [x] `run_smart`/`run_slice` pulando um step intermediário que originalmente
   setava um cookie usado por um step posterior no schedule: se o step que
   seta o cookie **está** no schedule computado, o cookie propaga
   corretamente pro step posterior.
-- [ ] Mesma verificação de retry do T07, agora em `ReplayRunner`.
-- [ ] Não-regressão: `test_replay_runner.py` (suíte existente) continua
+- [x] Mesma verificação de retry do T07, agora em `ReplayRunner`.
+- [x] Não-regressão: `test_replay_runner.py` (suíte existente) continua
   passando — ajustar o único site de construção de `ReplayRunner`
   (`grep -c "ReplayRunner(" tests/unit/test_replay_runner.py` → 1) pra
   passar os dois novos parâmetros.
-- [ ] Um `.curl.sh` cujo `--cookie` já está correto (nenhum cookie no jar
+- [x] Um `.curl.sh` cujo `--cookie` já está correto (nenhum cookie no jar
   pro escopo): comportamento idêntico ao de antes da mudança.
 
 ---
@@ -735,27 +735,27 @@ def _execute(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple
   alimentando o jar em ordem ascendente.
 
 **Critérios de aceite:**
-- [ ] Uma tentativa de fase 2 que remove um candidato do schedule (função
+- [x] Uma tentativa de fase 2 que remove um candidato do schedule (função
   `trial` em `_reduce_anchors`) e cujo êxito depende de um cookie que **só**
   o candidato removido estabelecia: a tentativa reduzida falha de verdade
   (o jar, resetado, não carrega mais aquele cookie) — não passa por
   contaminação de uma tentativa anterior.
-- [ ] Uma tentativa cujo êxito depende de um cookie estabelecido por um step
+- [x] Uma tentativa cujo êxito depende de um cookie estabelecido por um step
   do **backbone** (não por `ordered_indexes`): o curl da primeira request de
   `ordered_indexes` nesta tentativa já sai com esse cookie aplicado (jar
   pré-alimentado antes de `_execute_raw`, não depois).
-- [ ] Refresh reativo (`_needs_reactive_refresh`): depois do backbone ser
+- [x] Refresh reativo (`_needs_reactive_refresh`): depois do backbone ser
   reexecutado com `force_refresh=True`, a tentativa seguinte de
   `ordered_indexes` usa os cookies do backbone **recém-reexecutado**, não os
   da versão anterior.
-- [ ] Não-regressão: `test_replay_optimizer.py` (suíte existente, 39
+- [x] Não-regressão: `test_replay_optimizer.py` (suíte existente, 39
   chamadas ao helper `_optimizer(...)` — grep confirma esse é o único ponto
   de construção no arquivo de teste) — ajustar `_optimizer` pra construir e
   passar `workspace`/`cookie_jar` (usar `tmp_path` já disponível como
   fixture do pytest onde a assinatura do teste ainda não o recebe); os 9
   call sites de `.optimize(workspace, ...)` **não mudam** (assinatura do
   método intacta).
-- [ ] Um `optimize` sem nenhum `Set-Cookie` em nenhuma resposta do fluxo:
+- [x] Um `optimize` sem nenhum `Set-Cookie` em nenhuma resposta do fluxo:
   resultado do schedule reduzido idêntico ao de antes da mudança.
 
 ---
@@ -829,19 +829,19 @@ def handle_optimize(self, args: Namespace) -> bool:
   ```
 
 **Critérios de aceite:**
-- [ ] `handle_optimize`: o objeto `cookie_jar` passado pro
+- [x] `handle_optimize`: o objeto `cookie_jar` passado pro
   `ReplayOptimizer(...)` é literalmente (`is`) o mesmo objeto que
   `runner.cookie_jar` (o `ReplayRunner` construído por
   `_build_replay_runner`) — teste de integração com `id()`/`is` explícito,
   não só igualdade de valor.
-- [ ] `handle_replay` (sem `optimize`): `run_all`/`run_slice`/`run_smart`/
+- [x] `handle_replay` (sem `optimize`): `run_all`/`run_slice`/`run_smart`/
   `run_list` continuam funcionando (teste e2e via `tests/golden/replay_*`
   já existente) com o jar sempre presente, mesmo que vazio na maioria dos
   casos (nenhuma regressão de comportamento pra HARs sem cookie dinâmico).
-- [ ] Não-regressão: nenhuma das golden trees de `tests/golden/replay_*`/
+- [x] Não-regressão: nenhuma das golden trees de `tests/golden/replay_*`/
   `tests/golden/run_*` muda de conteúdo pra um HAR de fixture sem
   `Set-Cookie` nenhum (jar sempre vazio nesse caso — comportamento
   observável idêntico ao de antes da feature).
-- [ ] `py_compile`/import de `cli_handlers.py` sem erro depois da mudança
+- [x] `py_compile`/import de `cli_handlers.py` sem erro depois da mudança
   (checagem de compilação, já que é um arquivo grande com várias raízes de
   composição — garantir que nenhuma outra raiz foi afetada por engano).
