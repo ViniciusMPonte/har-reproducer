@@ -197,6 +197,15 @@ Regras ao preencher:
   daquela fixture — `grep` por quem a usa/por `assert_matches`, não só os exemplos que vêm
   à mente ao escrever a task. Descobrir o resto do raio de impacto só na implementação é
   caro (já aconteceu: um plano previu regenerar 2 árvores e a mudança de fixture afetava 19).
+- Uma mudança **aditiva** num modelo que os testes golden serializam e comparam byte a byte
+  (ex.: um campo novo com default em `StepResponse`) ainda quebra a comparação de árvore, mesmo
+  sem alterar nenhum comportamento observável do sistema — "aditivo no modelo" não é o mesmo que
+  "invisível no arquivo persistido". Se uma task mexe num modelo que aparece em `res_*.json`/
+  `req_*.json` de qualquer `tests/golden/`, prever a regeneração (`HAR_REPRODUCER_UPDATE_GOLDEN=1`,
+  ver README) como parte do fechamento do plano, não descobrir isso só ao rodar `--runslow` depois
+  (já aconteceu: T01-T03 do jar de cookies adicionaram `cookie_attributes` a `StepResponse` sem
+  prever isso, e só apareceu ao rodar a suíte e2e depois de todas as tasks "de comportamento"
+  prontas).
 
 Regra de processo: **apresentar o plano inteiro (todas as tasks) e esperar aprovação
 do usuário antes de começar a implementação (Passo 3).** É uma aprovação separada da

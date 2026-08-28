@@ -116,6 +116,33 @@ veredito híbrido: `✓ SUCCESS` só se o último step casar e nenhum intermedi�
 tiver `status_code == 0`.
 Suporta 4 modos (`all`/`slice`/`smart`/`list`, ver `ReplayRunner._schedule_*`).
 
+### Jar de cookies (`CookieJar`)
+
+`run`, `replay` e `optimize` compartilham um `CookieJar` (`session/cookie_jar.py`) que simula a
+propagação automática de cookies de um navegador: toda resposta lida (fresca ou cacheada)
+alimenta o jar via `feed()` com os cookies e atributos (`domain`/`path`/`expired`) que o
+`Set-Cookie` declarou; toda request subsequente cujo host/porta/path casem com o escopo de um
+cookie conhecido tem esse cookie sobreposto ao que o HAR gravou, via `CookieJarCurlOverride`
+(`reproduction/cookie_jar_curl_override.py`), que reescreve o `--cookie` de um `.curl.sh` já
+resolvido tokenizando por regras de shell (`shlex`), nunca por regex de texto livre.
+`RequestUrlScope` (`reproduction/request_url_scope.py`) deriva `(host, porta, path)` de uma URL —
+compartilhado pelos três modos.
+
+⚠️ `ReplayOptimizer` é o único ponto que precisa resetar e realimentar o jar manualmente
+(`_feed_cookie_jar_from_backbone_cache`), porque o mesmo `schedule_executor`/jar atravessa todas
+as tentativas de uma busca — sem isso, cookies de uma tentativa vazariam pra próxima e
+mascarariam se um step removido do schedule era de fato necessário. A alimentação a partir do
+backbone cacheado precisa acontecer **antes** de qualquer tráfego novo da tentativa, não depois —
+inverter essa ordem faz a feature virar no-op silencioso (achado de revisão adversarial da spec
+original).
+
+⚠️ Dívida técnica aceita conscientemente, replicando limitações do próprio `stickycookie` do
+mitmproxy (usado como referência de implementação): sem regra de precedência determinística entre
+dois escopos que colidem no mesmo nome de cookie, e casamento de path por prefixo simples
+(`startswith`), não pelo algoritmo exato do RFC 6265 — um cookie `Path=/foo` também vaza para
+`/foobar`. Ver `docs/20260827 Jar de Cookies Determinístico entre Steps/spec.md`, seções 1 e 5,
+para os casos de borda completos.
+
 ### Módulos de suporte
 
 - **`config/project_config_loader.py`** — carrega/valida `config.json`
