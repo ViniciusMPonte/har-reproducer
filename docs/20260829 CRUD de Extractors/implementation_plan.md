@@ -44,10 +44,10 @@ comando `extractor`, por isso vive em arquivo próprio (spec seção 4), não em
   (mesmo padrão dos demais modelos), mantendo `__all__` em ordem alfabética.
 
 **Critérios de aceite:**
-- [ ] `ExtractorSampleResult(sample_label="origin_step", output="abc", error=None, matches_expected=True)` serializa via `model_dump_json()` e desserializa de volta via `model_validate_json()` preservando todos os campos.
-- [ ] `ExtractorSampleResult(sample_label="x")` (só o campo obrigatório) tem `output`, `error`, `matches_expected` todos `None` por padrão.
-- [ ] `from har_reproducer.models import ExtractorSampleResult` funciona sem importar o submódulo diretamente.
-- [ ] Nenhum modelo existente (`Extractor`, `DynamicToken`, etc.) muda de comportamento — `__all__` só ganha uma entrada nova.
+- [x] `ExtractorSampleResult(sample_label="origin_step", output="abc", error=None, matches_expected=True)` serializa via `model_dump_json()` e desserializa de volta via `model_validate_json()` preservando todos os campos.
+- [x] `ExtractorSampleResult(sample_label="x")` (só o campo obrigatório) tem `output`, `error`, `matches_expected` todos `None` por padrão.
+- [x] `from har_reproducer.models import ExtractorSampleResult` funciona sem importar o submódulo diretamente.
+- [x] Nenhum modelo existente (`Extractor`, `DynamicToken`, etc.) muda de comportamento — `__all__` só ganha uma entrada nova.
 
 ## [T02] — `ExtractorMetadataStore`: `list_all()` enumera todos os extractors de um workspace
 
@@ -104,10 +104,10 @@ class ExtractorMetadataStore:
   comportamento "silencioso" de escrita usado em `optimize`.
 
 **Critérios de aceite:**
-- [ ] Workspace sem nenhum `.meta.json` em `extractors/` → `list_all()` retorna `[]`.
-- [ ] Workspace com 2 `.meta.json` válidos → `list_all()` retorna os 2 `Extractor`, em ordem determinística (por nome de arquivo).
-- [ ] Workspace com 1 `.meta.json` válido + 1 corrompido (JSON inválido) → `list_all()` retorna só o válido, sem levantar exceção (o `[AVISO]` de `load()` é impresso, mas a chamada não falha).
-- [ ] `load(token_id)` e `save(extractor)` continuam se comportando exatamente como antes (não regride nenhum teste existente de `test_extractor_metadata_store.py`).
+- [x] Workspace sem nenhum `.meta.json` em `extractors/` → `list_all()` retorna `[]`.
+- [x] Workspace com 2 `.meta.json` válidos → `list_all()` retorna os 2 `Extractor`, em ordem determinística (por nome de arquivo).
+- [x] Workspace com 1 `.meta.json` válido + 1 corrompido (JSON inválido) → `list_all()` retorna só o válido, sem levantar exceção (o `[AVISO]` de `load()` é impresso, mas a chamada não falha).
+- [x] `load(token_id)` e `save(extractor)` continuam se comportando exatamente como antes (não regride nenhum teste existente de `test_extractor_metadata_store.py`).
 
 ## [T03] — `ExtractorValidator`: valida nome de função e roda `code` contra múltiplas amostras sem persistir
 
@@ -173,12 +173,12 @@ seção 1: extractor que funciona numa amostra e falha em outras).
 - `har_reproducer/reproduction/__init__.py` passa a exportar `ExtractorValidator`.
 
 **Critérios de aceite:**
-- [ ] `defines_expected_function("deadbeef", "def extract_t_deadbeef(response):\n    return 'x'\n")` → `True`.
-- [ ] `defines_expected_function("deadbeef", "def extract_wrong_name(response):\n    return 'x'\n")` → `False`.
-- [ ] `run_against_samples` com uma amostra cuja forma não bate com `StepResponse` (ex.: `{"foo": "bar"}`) devolve `ExtractorSampleResult(error=...)` sem tentar executar nada (nenhum script temporário é gravado para essa amostra).
-- [ ] `run_against_samples` com 2 amostras válidas (uma onde o `code` acerta o valor, outra onde erra) devolve 2 `ExtractorSampleResult` distintos, cada um com seu próprio `output`/`error`, sem uma amostra sobrescrever o arquivo temporário da outra (verificável rodando ambas e checando que os dois resultados batem com o `code` fornecido, não com um resultado cruzado).
-- [ ] Depois de qualquer chamada a `run_against_samples` (sucesso ou falha), nenhum arquivo temporário residual sobra em `temp_extractors/`.
-- [ ] `expected_values={"origin_step": "certo"}` com uma amostra rotulada `"origin_step"` que extrai `"certo"` → `matches_expected=True` nesse resultado; se extrair outro valor → `matches_expected=False`; amostra sem entrada em `expected_values` → `matches_expected=None`.
+- [x] `defines_expected_function("deadbeef", "def extract_t_deadbeef(response):\n    return 'x'\n")` → `True`.
+- [x] `defines_expected_function("deadbeef", "def extract_wrong_name(response):\n    return 'x'\n")` → `False`.
+- [x] `run_against_samples` com uma amostra cuja forma não bate com `StepResponse` (ex.: `{"foo": "bar"}`) devolve `ExtractorSampleResult(error=...)` sem tentar executar nada (nenhum script temporário é gravado para essa amostra).
+- [x] `run_against_samples` com 2 amostras válidas (uma onde o `code` acerta o valor, outra onde erra) devolve 2 `ExtractorSampleResult` distintos, cada um com seu próprio `output`/`error`, sem uma amostra sobrescrever o arquivo temporário da outra (verificável rodando ambas e checando que os dois resultados batem com o `code` fornecido, não com um resultado cruzado).
+- [x] Depois de qualquer chamada a `run_against_samples` (sucesso ou falha), nenhum arquivo temporário residual sobra em `temp_extractors/`.
+- [x] `expected_values={"origin_step": "certo"}` com uma amostra rotulada `"origin_step"` que extrai `"certo"` → `matches_expected=True` nesse resultado; se extrair outro valor → `matches_expected=False`; amostra sem entrada em `expected_values` → `matches_expected=None`.
 
 ## [T04] — `ExtractorCurlBinder`: vincula/desvincula um `token_id` a um `.curl.sh` já persistido
 
@@ -240,13 +240,13 @@ curl persistido diretamente, preservando tudo que não muda.
 - `har_reproducer/reproduction/__init__.py` passa a exportar `ExtractorCurlBinder`.
 
 **Critérios de aceite:**
-- [ ] `bind` num curl com `-H 'X-Plain: SEGREDO123'` e `literal_value="SEGREDO123"` produz um curl cujo corpo contém `-H 'X-Plain: {{extractor:<id>}}'` e devolve contagem `1`.
-- [ ] `bind` num curl onde `literal_value` aparece em 2 tokens diferentes (ex.: um header e um valor de cookie iguais por coincidência) substitui as 2 ocorrências e devolve contagem `2`.
-- [ ] `bind` num curl onde `literal_value` não aparece em nenhum token devolve contagem `0` e o texto do curl inalterado (exceto talvez a linha de dependência, que a spec deixa a cargo do handler decidir se ainda insere com 0 substituições — ver T08, que trata isso como recusa).
-- [ ] Depois de `bind`, o texto resultante ainda contém o shebang `#!/bin/bash` e todas as linhas de comentário que não são a deste `token_id` (ex.: `# [Static ...]`, linha de dependência de outro `token_id`), inalteradas.
-- [ ] `bind` sobre uma linha de dependência já existente para este `token_id` com sufixo de status (`OriginStatusPhrase`/`ReplayStatusPhrase`) reescreve a linha sem o sufixo (reset deliberado).
-- [ ] `unbind` depois de um `bind` que criou N ocorrências do placeholder restaura as N ocorrências para `replacement_value` e devolve contagem `N`; a linha de dependência deste `token_id` desaparece do texto resultante; outras linhas de comentário permanecem.
-- [ ] `CurlTokenComment.parse(novo_texto)` depois de `bind` inclui `{token_id: origin_step}`; depois do `unbind` correspondente, não inclui mais esse `token_id`.
+- [x] `bind` num curl com `-H 'X-Plain: SEGREDO123'` e `literal_value="SEGREDO123"` produz um curl cujo corpo contém `-H 'X-Plain: {{extractor:<id>}}'` e devolve contagem `1`.
+- [x] `bind` num curl onde `literal_value` aparece em 2 tokens diferentes (ex.: um header e um valor de cookie iguais por coincidência) substitui as 2 ocorrências e devolve contagem `2`.
+- [x] `bind` num curl onde `literal_value` não aparece em nenhum token devolve contagem `0` e o texto do curl inalterado (exceto talvez a linha de dependência, que a spec deixa a cargo do handler decidir se ainda insere com 0 substituições — ver T08, que trata isso como recusa).
+- [x] Depois de `bind`, o texto resultante ainda contém o shebang `#!/bin/bash` e todas as linhas de comentário que não são a deste `token_id` (ex.: `# [Static ...]`, linha de dependência de outro `token_id`), inalteradas.
+- [x] `bind` sobre uma linha de dependência já existente para este `token_id` com sufixo de status (`OriginStatusPhrase`/`ReplayStatusPhrase`) reescreve a linha sem o sufixo (reset deliberado).
+- [x] `unbind` depois de um `bind` que criou N ocorrências do placeholder restaura as N ocorrências para `replacement_value` e devolve contagem `N`; a linha de dependência deste `token_id` desaparece do texto resultante; outras linhas de comentário permanecem.
+- [x] `CurlTokenComment.parse(novo_texto)` depois de `bind` inclui `{token_id: origin_step}`; depois do `unbind` correspondente, não inclui mais esse `token_id`.
 
 ## [T05] — `ExtractorCliHandlers`: esqueleto, guard de workspace, envelope JSON, `list`/`get`, e roteamento de erros do `argparse` para JSON
 
@@ -370,12 +370,12 @@ ponta antes das ações que escrevem (T06-T09).
   de `handlers: CliHandlers` (dependência por construtor, guia de estilo).
 
 **Critérios de aceite:**
-- [ ] `extractor list --output <dir-inexistente>` devolve `{"ok": false, "error": "Workspace directory does not exist: <dir>"}` em stdout, sem criar o diretório.
-- [ ] `extractor list --output <workspace-vazio-sem-curls>` (se `require_curls=True` for o default de `list`) devolve `{"ok": false, "error": "..."}`; se a task decidir que `list` não exige curls, documentar essa escolha nos critérios e testar o caminho de sucesso com 0 extractors (`{"ok": true, "extractors": []}`).
-- [ ] `extractor list --output <workspace com 2 extractors, 1 referenciado por um curl>` devolve `{"ok": true, "extractors": [...]}` com o campo de referência (`referenced_by`) correto para os dois.
-- [ ] `extractor get --output <dir> --token-id <inexistente>` devolve `{"ok": false, "error": "extractor not found: <id>"}`.
-- [ ] `extractor get --output <dir>` (sem `--token-id`, flag obrigatória ausente) devolve, via stdout, `{"ok": false, "error": "invalid arguments for extractor command"}` e **nenhum** texto de uso do `argparse` aparece em stdout nem quebra o teste por escrever em stderr sem tratamento (usar `CliInvoker`, que já captura ambos).
-- [ ] `parse`/`run`/`replay`/`optimize` continuam funcionando exatamente como antes (não regride `test_cli_handlers.py` nem os testes de `parse`/`run`) — o roteamento especial em `main.py` só se aplica quando `sys.argv[1] == "extractor"`.
+- [x] `extractor list --output <dir-inexistente>` devolve `{"ok": false, "error": "Workspace directory does not exist: <dir>"}` em stdout, sem criar o diretório.
+- [x] `extractor list --output <workspace-vazio-sem-curls>` (se `require_curls=True` for o default de `list`) devolve `{"ok": false, "error": "..."}`; se a task decidir que `list` não exige curls, documentar essa escolha nos critérios e testar o caminho de sucesso com 0 extractors (`{"ok": true, "extractors": []}`).
+- [x] `extractor list --output <workspace com 2 extractors, 1 referenciado por um curl>` devolve `{"ok": true, "extractors": [...]}` com o campo de referência (`referenced_by`) correto para os dois.
+- [x] `extractor get --output <dir> --token-id <inexistente>` devolve `{"ok": false, "error": "extractor not found: <id>"}`.
+- [x] `extractor get --output <dir>` (sem `--token-id`, flag obrigatória ausente) devolve, via stdout, `{"ok": false, "error": "invalid arguments for extractor command"}` e **nenhum** texto de uso do `argparse` aparece em stdout nem quebra o teste por escrever em stderr sem tratamento (usar `CliInvoker`, que já captura ambos).
+- [x] `parse`/`run`/`replay`/`optimize` continuam funcionando exatamente como antes (não regride `test_cli_handlers.py` nem os testes de `parse`/`run`) — o roteamento especial em `main.py` só se aplica quando `sys.argv[1] == "extractor"`.
 
 ## [T06] — `ExtractorCliHandlers`: `handle_create`/`handle_update` (validação completa antes de persistir)
 
@@ -436,14 +436,14 @@ persistir, sem nunca deixar um `.py` quebrado no disco quando a validação repr
   e `update` (mesmas flags, todas opcionais exceto `--output --token-id`).
 
 **Critérios de aceite:**
-- [ ] `create` com `code` cuja função tem nome errado → recusa antes de tocar `real_responses/` ou `extractors/` (nenhum arquivo novo é criado).
-- [ ] `create` com `origin_step` cujo `real_responses/res_NNNN.json` não existe → recusa `"response for step N not found"`, nenhum arquivo escrito.
-- [ ] `create` com `code` que extrai um valor diferente de `--captured-value` → recusa; **nenhum** `.py` novo aparece em `extractors/` (prova de que a ordem evita o `.py` quebrado da versão ingênua via `ExtractorRunner.run()`).
-- [ ] `create` bem-sucedido escreve `.py` **e** `.meta.json` na mesma chamada; `ExtractorMetadataStore.load(token_id)` depois devolve o extractor persistido; `ExtractorRunner.run_existing(token_id, ...)` roda e bate com o valor esperado.
-- [ ] `create` com `token_id` já existente → recusa `"token_id already exists, use update"`, sem sobrescrever o extractor anterior.
-- [ ] `update` só com `--code-file` (sem `--origin-step`) sobre um extractor existente usa o `origin_step` já persistido no passo 4, não falha por `origin_step` ausente.
-- [ ] `update` com `token_id` inexistente → recusa `"token_id does not exist, use create"`.
-- [ ] `update` que muda só `captured_value` (mantendo o `code` antigo) preserva o `code`/`agent_type`/`origin_step` anteriores no `.meta.json` resultante.
+- [x] `create` com `code` cuja função tem nome errado → recusa antes de tocar `real_responses/` ou `extractors/` (nenhum arquivo novo é criado).
+- [x] `create` com `origin_step` cujo `real_responses/res_NNNN.json` não existe → recusa `"response for step N not found"`, nenhum arquivo escrito.
+- [x] `create` com `code` que extrai um valor diferente de `--captured-value` → recusa; **nenhum** `.py` novo aparece em `extractors/` (prova de que a ordem evita o `.py` quebrado da versão ingênua via `ExtractorRunner.run()`).
+- [x] `create` bem-sucedido escreve `.py` **e** `.meta.json` na mesma chamada; `ExtractorMetadataStore.load(token_id)` depois devolve o extractor persistido; `ExtractorRunner.run_existing(token_id, ...)` roda e bate com o valor esperado.
+- [x] `create` com `token_id` já existente → recusa `"token_id already exists, use update"`, sem sobrescrever o extractor anterior.
+- [x] `update` só com `--code-file` (sem `--origin-step`) sobre um extractor existente usa o `origin_step` já persistido no passo 4, não falha por `origin_step` ausente.
+- [x] `update` com `token_id` inexistente → recusa `"token_id does not exist, use create"`.
+- [x] `update` que muda só `captured_value` (mantendo o `code` antigo) preserva o `code`/`agent_type`/`origin_step` anteriores no `.meta.json` resultante.
 
 ## [T07] — `ExtractorCliHandlers`: `handle_delete` (checagem de referência via placeholder no corpo do curl)
 
@@ -475,12 +475,12 @@ referenciar o `token_id` — a menos que `--force` (spec seção 3.6, seção 5)
   (`--output --token-id [--force]`, `--force` como `action="store_true"`).
 
 **Critérios de aceite:**
-- [ ] `delete` de um `token_id` referenciado por um curl (via placeholder no corpo) sem `--force` → recusa, `.py`/`.meta.json` continuam existindo.
-- [ ] `delete` de um `token_id` cujo placeholder está no corpo do curl mas a linha de comentário foi removida manualmente → ainda assim recusa (prova de que a checagem usa o placeholder, não só `CurlTokenComment.parse`).
-- [ ] `delete --force` de um `token_id` referenciado remove `.py`/`.meta.json` mesmo assim.
-- [ ] `delete` de um `token_id` não referenciado por nenhum curl remove ambos os arquivos sem precisar de `--force`.
-- [ ] `delete` de um `token_id` cujo `.meta.json` já não existe (mas o `.py` sim) remove o `.py` sem erro (idempotente).
-- [ ] `delete` de um `token_id` totalmente inexistente (nem `.py` nem `.meta.json`) não levanta exceção — devolve sucesso (nada a remover) ou uma mensagem clara, a task escolhe qual, desde que não seja um traceback cru.
+- [x] `delete` de um `token_id` referenciado por um curl (via placeholder no corpo) sem `--force` → recusa, `.py`/`.meta.json` continuam existindo.
+- [x] `delete` de um `token_id` cujo placeholder está no corpo do curl mas a linha de comentário foi removida manualmente → ainda assim recusa (prova de que a checagem usa o placeholder, não só `CurlTokenComment.parse`).
+- [x] `delete --force` de um `token_id` referenciado remove `.py`/`.meta.json` mesmo assim.
+- [x] `delete` de um `token_id` não referenciado por nenhum curl remove ambos os arquivos sem precisar de `--force`.
+- [x] `delete` de um `token_id` cujo `.meta.json` já não existe (mas o `.py` sim) remove o `.py` sem erro (idempotente).
+- [x] `delete` de um `token_id` totalmente inexistente (nem `.py` nem `.meta.json`) não levanta exceção — devolve sucesso (nada a remover) ou uma mensagem clara, a task escolhe qual, desde que não seja um traceback cru.
 
 ## [T08] — `ExtractorCliHandlers`: `handle_bind`/`handle_unbind`
 
@@ -517,12 +517,12 @@ detalhada na spec). `unbind` desfaz.
   (`--output --token-id --curl req_NNNN.curl.sh --value`) e `unbind` (mesmas flags).
 
 **Critérios de aceite:**
-- [ ] `bind` de um `token_id` inexistente → recusa, arquivo do curl não é tocado (comparar mtime/conteúdo antes e depois).
-- [ ] `bind` bem-sucedido: o `.curl.sh` no disco passa a conter `{{extractor:<id>}}` no lugar do literal, e a linha `# [Token <id> comes from response of step <origin_step-do-Extractor>]` — o `origin_step` usado é o do `Extractor` carregado, **não** uma flag (a ação `bind` na tabela do parser não expõe `--origin-step`).
-- [ ] `bind` cujo `--value` não aparece no curl → recusa, arquivo inalterado.
-- [ ] `unbind` depois de um `bind` bem-sucedido restaura o literal e remove a linha de dependência; `CurlTokenComment.parse` no texto resultante não inclui mais esse `token_id`.
-- [ ] `unbind` de um `token_id` não vinculado ao curl indicado → recusa, arquivo inalterado.
-- [ ] Ciclo completo `bind` → `unbind` → `delete` (sem `--force`) num mesmo `token_id`/curl: `delete` sucede porque `unbind` já removeu a referência — nenhum estado inconsistente fica para trás.
+- [x] `bind` de um `token_id` inexistente → recusa, arquivo do curl não é tocado (comparar mtime/conteúdo antes e depois).
+- [x] `bind` bem-sucedido: o `.curl.sh` no disco passa a conter `{{extractor:<id>}}` no lugar do literal, e a linha `# [Token <id> comes from response of step <origin_step-do-Extractor>]` — o `origin_step` usado é o do `Extractor` carregado, **não** uma flag (a ação `bind` na tabela do parser não expõe `--origin-step`).
+- [x] `bind` cujo `--value` não aparece no curl → recusa, arquivo inalterado.
+- [x] `unbind` depois de um `bind` bem-sucedido restaura o literal e remove a linha de dependência; `CurlTokenComment.parse` no texto resultante não inclui mais esse `token_id`.
+- [x] `unbind` de um `token_id` não vinculado ao curl indicado → recusa, arquivo inalterado.
+- [x] Ciclo completo `bind` → `unbind` → `delete` (sem `--force`) num mesmo `token_id`/curl: `delete` sucede porque `unbind` já removeu a referência — nenhum estado inconsistente fica para trás.
 
 ## [T09] — `ExtractorCliHandlers`: `handle_test`
 
@@ -560,11 +560,11 @@ várias respostas reais antes de comprometer a mudança com `update` (spec seç�
   (`--output [--token-id | --code-file] --sample ARQ [--sample ARQ ...] [--expect ARQ=valor ...]`).
 
 **Critérios de aceite:**
-- [ ] `test --token-id <id> --sample res_0003.json` roda o `code` já persistido contra a amostra indicada, sem escrever nada em `extractors/` (mtime dos arquivos existentes inalterado).
-- [ ] `test --code-file correcao.py --sample res_0003.json --sample res_0007.json` roda o código do arquivo contra as duas amostras, devolvendo 2 resultados — nenhuma persistência.
-- [ ] `test` sem `--token-id` nem `--code-file` → recusa clara, sem traceback.
-- [ ] `test --token-id <id> --sample arquivo_invalido.json` (JSON malformado) devolve `results` com um `ExtractorSampleResult(error=...)` para essa amostra; se houver mais `--sample` válidos na mesma chamada, eles ainda aparecem no resultado.
-- [ ] `test ... --expect res_0003.json=VALOR_ESPERADO` marca `matches_expected` corretamente no resultado daquela amostra; amostra sem `--expect` correspondente tem `matches_expected: null`.
+- [x] `test --token-id <id> --sample res_0003.json` roda o `code` já persistido contra a amostra indicada, sem escrever nada em `extractors/` (mtime dos arquivos existentes inalterado).
+- [x] `test --code-file correcao.py --sample res_0003.json --sample res_0007.json` roda o código do arquivo contra as duas amostras, devolvendo 2 resultados — nenhuma persistência.
+- [x] `test` sem `--token-id` nem `--code-file` → recusa clara, sem traceback.
+- [x] `test --token-id <id> --sample arquivo_invalido.json` (JSON malformado) devolve `results` com um `ExtractorSampleResult(error=...)` para essa amostra; se houver mais `--sample` válidos na mesma chamada, eles ainda aparecem no resultado.
+- [x] `test ... --expect res_0003.json=VALOR_ESPERADO` marca `matches_expected` corretamente no resultado daquela amostra; amostra sem `--expect` correspondente tem `matches_expected: null`.
 
 ## [T10] — `README.md`: nova seção `extractor` — CRUD de extratores de um workspace
 
@@ -603,7 +603,7 @@ parágrafo de efeito/comportamento).
     rodar `run` de novo), espelhando a seção 1 da spec.
 
 **Critérios de aceite:**
-- [ ] `README.md` tem uma subseção `### \`extractor\`` entre `### optimize` e `## Configuração`, seguindo o mesmo formato markdown das subseções vizinhas (mesmo nível de cabeçalho, mesmo estilo de tabela).
-- [ ] A tabela documenta as 8 ações e bate exatamente com as flags implementadas em T05-T09 (nenhuma flag documentada que não existe no `CliParser`, nenhuma flag implementada que ficou de fora do README).
-- [ ] A nota sobre saída-sempre-JSON está presente e destacada.
-- [ ] Nenhuma seção existente do README (`parse`, `run`, `replay`, `optimize`, `Configuração`, `Testes`) é reordenada ou alterada além da inserção da nova subseção.
+- [x] `README.md` tem uma subseção `### \`extractor\`` entre `### optimize` e `## Configuração`, seguindo o mesmo formato markdown das subseções vizinhas (mesmo nível de cabeçalho, mesmo estilo de tabela).
+- [x] A tabela documenta as 8 ações e bate exatamente com as flags implementadas em T05-T09 (nenhuma flag documentada que não existe no `CliParser`, nenhuma flag implementada que ficou de fora do README).
+- [x] A nota sobre saída-sempre-JSON está presente e destacada.
+- [x] Nenhuma seção existente do README (`parse`, `run`, `replay`, `optimize`, `Configuração`, `Testes`) é reordenada ou alterada além da inserção da nova subseção.
