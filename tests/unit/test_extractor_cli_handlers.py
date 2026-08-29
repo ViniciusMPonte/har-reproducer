@@ -330,6 +330,102 @@ def test_extractor_update_rejects_nonexistent_token_id(tmp_path: Path) -> None:
     assert payload == {"ok": False, "error": "token_id does not exist, use create"}
 
 
+def test_extractor_delete_rejects_when_referenced_by_curl_without_force(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    ExtractorMetadataStore(workspace).save(_extractor("aaaa"))
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\n"
+        "# [Token aaaa comes from response of step 0000]\n"
+        "curl 'https://exemplo.com' -H 'X-Token: {{extractor:aaaa}}'",
+        encoding="utf-8",
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "aaaa"]
+    )
+
+    assert payload["ok"] is False
+    assert "still referenced by" in payload["error"]
+    assert payload["referenced_by"] == ["req_0000.curl.sh"]
+    assert workspace.extractor_meta_file("aaaa").exists()
+
+
+def test_extractor_delete_rejects_when_placeholder_in_body_without_comment_line(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    ExtractorMetadataStore(workspace).save(_extractor("cccc"))
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\ncurl 'https://exemplo.com' -H 'X-Token: {{extractor:cccc}}'",
+        encoding="utf-8",
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "cccc"]
+    )
+
+    assert payload["ok"] is False
+    assert payload["referenced_by"] == ["req_0000.curl.sh"]
+    assert workspace.extractor_meta_file("cccc").exists()
+
+
+def test_extractor_delete_force_removes_despite_reference(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    ExtractorMetadataStore(workspace).save(_extractor("aaaa"))
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\n"
+        "# [Token aaaa comes from response of step 0000]\n"
+        "curl 'https://exemplo.com' -H 'X-Token: {{extractor:aaaa}}'",
+        encoding="utf-8",
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "aaaa", "--force"]
+    )
+
+    assert payload["ok"] is True
+    assert not workspace.extractor_file("aaaa").exists()
+    assert not workspace.extractor_meta_file("aaaa").exists()
+
+
+def test_extractor_delete_removes_when_not_referenced(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    ExtractorMetadataStore(workspace).save(_extractor("bbbb"))
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "bbbb"]
+    )
+
+    assert payload["ok"] is True
+    assert not workspace.extractor_file("bbbb").exists()
+    assert not workspace.extractor_meta_file("bbbb").exists()
+
+
+def test_extractor_delete_is_idempotent_when_meta_missing_but_py_exists(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.extractor_file("orfaa").write_text("def extract_t_orfaa(response):\n    return 'x'\n", encoding="utf-8")
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "orfaa"]
+    )
+
+    assert payload["ok"] is True
+    assert not workspace.extractor_file("orfaa").exists()
+
+
+def test_extractor_delete_of_totally_nonexistent_token_does_not_raise(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "naoexiste"]
+    )
+
+    assert payload["ok"] is True
+
+
 def test_extractor_update_changing_only_captured_value_preserves_other_fields(tmp_path: Path) -> None:
     output_dir: Path = _build_workspace_with_curls(tmp_path)
     workspace: Workspace = Workspace(output_dir)

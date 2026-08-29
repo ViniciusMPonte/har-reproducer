@@ -26,6 +26,9 @@ class ExtractorCliHandlers:
     def handle_update(self, args: Namespace) -> bool:
         return self._run_safely(lambda: self._create_or_update(args, is_update=True))
 
+    def handle_delete(self, args: Namespace) -> bool:
+        return self._run_safely(lambda: self._delete(args))
+
     def _list(self, args: Namespace) -> Dict[str, Any]:
         workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
         extractors: List[Extractor] = ExtractorMetadataStore(workspace).list_all()
@@ -53,6 +56,20 @@ class ExtractorCliHandlers:
             if token_id in SessionStore.TOKEN_PLACEHOLDER_PATTERN.findall(curl_text):
                 referencing.append(curl_file.name)
         return referencing
+
+    def _delete(self, args: Namespace) -> Dict[str, Any]:
+        workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
+        referencing: List[str] = self._referencing_curls(workspace, args.token_id)
+        if referencing and not args.force:
+            return {
+                "ok": False,
+                "error": f"still referenced by {', '.join(referencing)}",
+                "referenced_by": referencing,
+            }
+
+        workspace.extractor_file(args.token_id).unlink(missing_ok=True)
+        workspace.extractor_meta_file(args.token_id).unlink(missing_ok=True)
+        return {"ok": True, "token_id": args.token_id}
 
     def _create_or_update(self, args: Namespace, is_update: bool) -> Dict[str, Any]:
         workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)

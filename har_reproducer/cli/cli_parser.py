@@ -119,6 +119,7 @@ class CliParser:
         self._build_extractor_get_subparser(action_subparsers)
         self._build_extractor_create_subparser(action_subparsers)
         self._build_extractor_update_subparser(action_subparsers)
+        self._build_extractor_delete_subparser(action_subparsers)
 
     def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
         list_parser: ArgumentParser = action_subparsers.add_parser("list")
@@ -178,3 +179,16 @@ class CliParser:
             "--verified", dest="verified", action="store_true", default=None, help="Mark the extractor as verified"
         )
         update_parser.set_defaults(func=self._extractor_handlers.handle_update)
+
+    def _build_extractor_delete_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        delete_parser: ArgumentParser = action_subparsers.add_parser("delete")
+        delete_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        delete_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        delete_parser.add_argument(
+            "--force",
+            dest="force",
+            action="store_true",
+            default=False,
+            help="Delete even if still referenced by a .curl.sh",
+        )
+        delete_parser.set_defaults(func=self._extractor_handlers.handle_delete)
