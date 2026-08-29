@@ -116,6 +116,32 @@ veredito híbrido: `✓ SUCCESS` só se o último step casar e nenhum intermedi�
 tiver `status_code == 0`.
 Suporta 4 modos (`all`/`slice`/`smart`/`list`, ver `ReplayRunner._schedule_*`).
 
+### Pipeline do comando `extractor`
+
+Único ponto de entrada que **edita** artefatos já persistidos por um `run` anterior
+(`.curl.sh`, `extract_<id>.py`/`.meta.json`) em vez de gerá-los do zero a partir do
+HAR — `run`/`dry` criam, `replay`/`optimize` só leem e reexecutam, `extractor` é o
+único que também escreve de volta sobre o que já existe. `ExtractorCliHandlers`
+(`cli/extractor_cli_handlers.py`) expõe 8 ações (`list`/`get`/`create`/`update`/
+`delete`/`bind`/`unbind`/`test`) para correção pontual de extractors — sem rodar
+`Agent`/LLM de novo, sem subir o proxy/mitm. Toda escrita (`create`/`update`) só
+acontece depois de validar o `code` fornecido contra pelo menos uma resposta real
+(`ExtractorValidator`), nunca via `ExtractorRunner.run()` (que escreve o `.py` antes
+de comparar — ver ⚠️ abaixo). `ExtractorCurlBinder` edita um `.curl.sh` persistido em
+lugar (bind/unbind de um placeholder), reaproveitando o mesmo padrão de tokenização
+por `shlex` de `CookieJarCurlOverride`, mas separando as linhas de comentário do
+corpo antes de tokenizar — a saída aqui é persistida, não efêmera como a de
+`CookieJarCurlOverride.apply`, então perder uma linha de comentário de outro token
+seria uma regressão real, não um detalhe sem efeito.
+
+⚠️ `ExtractorRunner.run(extractor)` escreve `extract_<id>.py` em disco **antes** de
+executar e comparar o resultado (`_write_extractor_script` roda primeiro) — não serve
+como "validar antes de aceitar". Qualquer novo consumidor que precise validar um
+`code` contra uma resposta sem arriscar deixar um `.py` quebrado persistido deve usar
+`ExtractorValidator.run_against_samples` (escreve só em `temp_extractors/`, nunca em
+`extractors/`), não `ExtractorRunner.run()`. Ver `docs/20260829 CRUD de Extractors/spec.md`,
+seção 3.4, para o raciocínio completo.
+
 ### Jar de cookies (`CookieJar`)
 
 `run`, `replay` e `optimize` compartilham um `CookieJar` (`session/cookie_jar.py`) que simula a
