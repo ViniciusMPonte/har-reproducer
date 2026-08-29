@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import AgentType, Extractor
@@ -8,6 +8,37 @@ from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetada
 
 def _extractor(token_id: str) -> Extractor:
     return Extractor(token_id=token_id, code="return 1", agent_type=AgentType.REGEX, valid_count=3)
+
+
+def test_list_all_returns_empty_list_when_no_meta_files(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+
+    extractors: List[Extractor] = ExtractorMetadataStore(workspace).list_all()
+
+    assert extractors == []
+
+
+def test_list_all_returns_all_valid_extractors_in_deterministic_order(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(_extractor("bbbb"))
+    store.save(_extractor("aaaa"))
+
+    extractors: List[Extractor] = store.list_all()
+
+    assert [extractor.token_id for extractor in extractors] == ["aaaa", "bbbb"]
+
+
+def test_list_all_skips_corrupted_meta_file_without_raising(tmp_path: Path) -> None:
+    workspace: Workspace = Workspace(tmp_path)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(_extractor("valid1"))
+    corrupted_meta_file: Path = workspace.extractor_meta_file("corrupted")
+    corrupted_meta_file.write_text("{not valid json", encoding="utf-8")
+
+    extractors: List[Extractor] = store.list_all()
+
+    assert [extractor.token_id for extractor in extractors] == ["valid1"]
 
 
 def test_silent_store_load_returns_same_extractor_as_base_store(tmp_path: Path) -> None:
