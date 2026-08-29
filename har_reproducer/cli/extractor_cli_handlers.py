@@ -2,7 +2,7 @@ import json
 import re
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Callable, ClassVar, Dict, List, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Tuple
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import AgentType, Extractor, ExtractorSampleResult
@@ -40,6 +40,9 @@ class ExtractorCliHandlers:
 
     def handle_unbind(self, args: Namespace) -> bool:
         return self._run_safely(lambda: self._unbind(args))
+
+    def handle_test(self, args: Namespace) -> bool:
+        return self._run_safely(lambda: self._test(args))
 
     def _list(self, args: Namespace) -> Dict[str, Any]:
         workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
@@ -214,6 +217,88 @@ class ExtractorCliHandlers:
             "verified": extractor.verified,
             "samples": samples_payload,
         }
+
+    def _test(self, args: Namespace) -> Dict[str, Any]:
+        workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
+        code, code_error = self._resolve_test_code(workspace, args)
+        if code_error is not None:
+            return {"ok": False, "error": code_error}
+
+        token_id: str = args.token_id if args.token_id is not None else ""
+        samples, sample_errors = self._resolve_test_samples(workspace, args.sample)
+        expected_values: Optional[Dict[str, str]] = self._parse_expected_values(args.expect)
+
+        validator: ExtractorValidator = ExtractorValidator(workspace, ScriptExecutor())
+        valid_results: List[ExtractorSampleResult] = (
+            validator.run_against_samples(token_id, code, samples, expected_values) if samples else []
+        )
+        results: List[ExtractorSampleResult] = self._merge_sample_results(
+            args.sample, sample_errors, valid_results
+        )
+        return {"ok": True, "results": [result.model_dump() for result in results]}
+
+    @staticmethod
+    def _resolve_test_code(workspace: Workspace, args: Namespace) -> Tuple[Optional[str], Optional[str]]:
+        if args.code_file is not None:
+            return Path(args.code_file).read_text(encoding="utf-8"), None
+
+        if args.token_id is None:
+            return None, "either --token-id or --code-file must be provided"
+
+        extractor: Optional[Extractor] = ExtractorMetadataStore(workspace).load(args.token_id)
+        if extractor is None:
+            return None, f"extractor not found: {args.token_id}"
+        return extractor.code, None
+
+    def _resolve_test_samples(
+            self, workspace: Workspace, sample_args: List[str]
+    ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, ExtractorSampleResult]]:
+        samples: Dict[str, Dict[str, Any]] = {}
+        errors: Dict[str, ExtractorSampleResult] = {}
+        for sample_arg in sample_args:
+            label: str = Path(sample_arg).name
+            try:
+                samples[label] = self._load_sample(workspace, sample_arg)
+            except Exception as exc:
+                errors[label] = ExtractorSampleResult(sample_label=label, error=str(exc))
+        return samples, errors
+
+    @staticmethod
+    def _load_sample(workspace: Workspace, sample_arg: str) -> Dict[str, Any]:
+        sample_path: Path = Path(sample_arg)
+        if not sample_path.is_absolute():
+            candidate: Path = workspace.real_responses / sample_path
+            if not candidate.exists():
+                candidate = workspace.original_responses / sample_path
+            if candidate.exists():
+                sample_path = candidate
+        return json.loads(sample_path.read_text(encoding="utf-8"))
+
+    @staticmethod
+    def _parse_expected_values(expect_args: Optional[List[str]]) -> Optional[Dict[str, str]]:
+        if not expect_args:
+            return None
+
+        expected_values: Dict[str, str] = {}
+        for expect_arg in expect_args:
+            raw_label, _, value = expect_arg.partition("=")
+            expected_values[Path(raw_label).name] = value
+        return expected_values
+
+    @staticmethod
+    def _merge_sample_results(
+            sample_args: List[str],
+            errors: Dict[str, ExtractorSampleResult],
+            valid_results: List[ExtractorSampleResult],
+    ) -> List[ExtractorSampleResult]:
+        valid_by_label: Dict[str, ExtractorSampleResult] = {
+            result.sample_label: result for result in valid_results
+        }
+        merged: List[ExtractorSampleResult] = []
+        for sample_arg in sample_args:
+            label: str = Path(sample_arg).name
+            merged.append(errors.get(label) or valid_by_label.get(label))
+        return merged
 
     @staticmethod
     def _prepare_workspace(output_dir: Path, require_curls: bool) -> Workspace:

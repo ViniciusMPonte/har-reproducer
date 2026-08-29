@@ -615,3 +615,148 @@ def test_extractor_update_changing_only_captured_value_preserves_other_fields(tm
     assert persisted.agent_type == AgentType.REGEX
     assert persisted.origin_step == 0
     assert persisted.captured_value == "valor_certo"
+
+
+def test_extractor_test_uses_persisted_code_without_writing_anything(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 3, VALID_RESPONSE)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3))
+    meta_file: Path = workspace.extractor_meta_file("deadbeef")
+    mtime_before: int = meta_file.stat().st_mtime_ns
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--sample", "res_0003.json",
+        ]
+    )
+
+    assert payload["ok"] is True
+    assert len(payload["results"]) == 1
+    assert payload["results"][0]["sample_label"] == "res_0003.json"
+    assert payload["results"][0]["output"] == "valor_certo"
+    assert meta_file.stat().st_mtime_ns == mtime_before
+    assert _extractors_dir_files(workspace) == ["extract_deadbeef.meta.json"]
+
+
+def test_extractor_test_with_code_file_runs_against_multiple_samples_without_token_id(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 3, VALID_RESPONSE)
+    _write_response(workspace, 7, {**VALID_RESPONSE, "headers": {"X-Token": "outro_valor"}})
+    code_file: Path = _write_code_file(
+        tmp_path, "def extract_token(response):\n    return response['headers']['X-Token']\n"
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--code-file", str(code_file),
+            "--sample", "res_0003.json", "--sample", "res_0007.json",
+        ]
+    )
+
+    assert payload["ok"] is True
+    assert len(payload["results"]) == 2
+    outputs: Dict[str, Any] = {result["sample_label"]: result["output"] for result in payload["results"]}
+    assert outputs["res_0003.json"] == "valor_certo"
+    assert outputs["res_0007.json"] == "outro_valor"
+    assert _extractors_dir_files(workspace) == []
+
+
+def test_extractor_test_without_token_id_or_code_file_rejects_clearly(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    _write_response(Workspace(output_dir), 3, VALID_RESPONSE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "test", "--output", str(output_dir), "--sample", "res_0003.json"]
+    )
+
+    assert payload == {"ok": False, "error": "either --token-id or --code-file must be provided"}
+
+
+def test_extractor_test_rejects_nonexistent_token_id(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    _write_response(Workspace(output_dir), 3, VALID_RESPONSE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--sample", "res_0003.json",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "extractor not found: deadbeef"}
+
+
+def test_extractor_test_isolates_malformed_sample_without_aborting_others(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 3, VALID_RESPONSE)
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3)
+    )
+    bad_sample: Path = tmp_path / "malformado.json"
+    bad_sample.write_text("{not valid json", encoding="utf-8")
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--token-id", "deadbeef",
+            "--sample", "res_0003.json", "--sample", str(bad_sample),
+        ]
+    )
+
+    assert payload["ok"] is True
+    results_by_label: Dict[str, Any] = {result["sample_label"]: result for result in payload["results"]}
+    assert results_by_label["res_0003.json"]["output"] == "valor_certo"
+    assert results_by_label["res_0003.json"]["error"] is None
+    assert results_by_label["malformado.json"]["error"] is not None
+    assert results_by_label["malformado.json"]["output"] is None
+
+
+def test_extractor_test_with_expect_marks_matches_expected_and_null_when_absent(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 3, VALID_RESPONSE)
+    _write_response(workspace, 7, VALID_RESPONSE)
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3)
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--token-id", "deadbeef",
+            "--sample", "res_0003.json", "--sample", "res_0007.json",
+            "--expect", "res_0003.json=valor_certo",
+        ]
+    )
+
+    assert payload["ok"] is True
+    results_by_label: Dict[str, Any] = {result["sample_label"]: result for result in payload["results"]}
+    assert results_by_label["res_0003.json"]["matches_expected"] is True
+    assert results_by_label["res_0007.json"]["matches_expected"] is None
+
+
+def test_extractor_test_resolves_relative_sample_from_original_responses_when_missing_in_real(
+        tmp_path: Path,
+) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.original_response_file(9).write_text(json.dumps(VALID_RESPONSE), encoding="utf-8")
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=9)
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "test", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--sample", "res_0009.json",
+        ]
+    )
+
+    assert payload["ok"] is True
+    assert payload["results"][0]["output"] == "valor_certo"

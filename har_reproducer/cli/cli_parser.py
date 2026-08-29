@@ -122,6 +122,7 @@ class CliParser:
         self._build_extractor_delete_subparser(action_subparsers)
         self._build_extractor_bind_subparser(action_subparsers)
         self._build_extractor_unbind_subparser(action_subparsers)
+        self._build_extractor_test_subparser(action_subparsers)
 
     def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
         list_parser: ArgumentParser = action_subparsers.add_parser("list")
@@ -216,3 +217,26 @@ class CliParser:
             "--value", required=True, help="Literal value to restore in place of the extractor placeholder"
         )
         unbind_parser.set_defaults(func=self._extractor_handlers.handle_unbind)
+
+    def _build_extractor_test_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        test_parser: ArgumentParser = action_subparsers.add_parser("test")
+        test_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        test_parser.add_argument("--token-id", dest="token_id", default=None, help="Extractor token_id")
+        test_parser.add_argument(
+            "--code-file", dest="code_file", default=None, help="Path to a file with the extractor code"
+        )
+        test_parser.add_argument(
+            "--sample",
+            dest="sample",
+            action="append",
+            required=True,
+            help="Path to a sample response JSON, relative to real_responses/original_responses or absolute",
+        )
+        test_parser.add_argument(
+            "--expect",
+            dest="expect",
+            action="append",
+            default=None,
+            help="Expected value for a sample, format ARQ=valor",
+        )
+        test_parser.set_defaults(func=self._extractor_handlers.handle_test)
