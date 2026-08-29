@@ -11,11 +11,13 @@ from har_reproducer.reproduction.sleeper import Sleeper
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 from har_reproducer.reproduction.curl_generator import CurlGenerator
+from har_reproducer.reproduction.extractor_curl_binder import ExtractorCurlBinder
 
 __all__ = [
     "CookieJarCurlOverride",
     "CurlGenerator",
     "CurlHttpTransport",
+    "ExtractorCurlBinder",
     "ExtractorMetadataStore",
     "ExtractorRunner",
     "ExtractorValidator",
