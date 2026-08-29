@@ -117,6 +117,8 @@ class CliParser:
 
         self._build_extractor_list_subparser(action_subparsers)
         self._build_extractor_get_subparser(action_subparsers)
+        self._build_extractor_create_subparser(action_subparsers)
+        self._build_extractor_update_subparser(action_subparsers)
 
     def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
         list_parser: ArgumentParser = action_subparsers.add_parser("list")
@@ -128,3 +130,51 @@ class CliParser:
         get_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
         get_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
         get_parser.set_defaults(func=self._extractor_handlers.handle_get)
+
+    def _build_extractor_create_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        create_parser: ArgumentParser = action_subparsers.add_parser("create")
+        create_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        create_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        create_parser.add_argument(
+            "--code-file", dest="code_file", required=True, help="Path to a file with the extractor code"
+        )
+        create_parser.add_argument(
+            "--agent-type",
+            dest="agent_type",
+            required=True,
+            help="AgentType value describing how the extractor was produced",
+        )
+        create_parser.add_argument(
+            "--origin-step", dest="origin_step", type=int, required=True, help="Step index the response comes from"
+        )
+        create_parser.add_argument(
+            "--captured-value", dest="captured_value", default=None, help="Value expected from the origin_step sample"
+        )
+        create_parser.add_argument(
+            "--verified", dest="verified", action="store_true", default=None, help="Mark the extractor as verified"
+        )
+        create_parser.set_defaults(func=self._extractor_handlers.handle_create)
+
+    def _build_extractor_update_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        update_parser: ArgumentParser = action_subparsers.add_parser("update")
+        update_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        update_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        update_parser.add_argument(
+            "--code-file", dest="code_file", default=None, help="Path to a file with the extractor code"
+        )
+        update_parser.add_argument(
+            "--agent-type",
+            dest="agent_type",
+            default=None,
+            help="AgentType value describing how the extractor was produced",
+        )
+        update_parser.add_argument(
+            "--origin-step", dest="origin_step", type=int, default=None, help="Step index the response comes from"
+        )
+        update_parser.add_argument(
+            "--captured-value", dest="captured_value", default=None, help="Value expected from the origin_step sample"
+        )
+        update_parser.add_argument(
+            "--verified", dest="verified", action="store_true", default=None, help="Mark the extractor as verified"
+        )
+        update_parser.set_defaults(func=self._extractor_handlers.handle_update)

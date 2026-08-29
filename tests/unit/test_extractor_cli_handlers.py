@@ -1,12 +1,25 @@
 import json
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from har_reproducer.fs_io.workspace import Workspace
 from har_reproducer.models import AgentType, Extractor
 from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore
+from har_reproducer.reproduction.extractor_runner import ExtractorRunner
+from har_reproducer.reproduction.script_executor import ScriptExecutor
 from tests.support.cli_invocation_result import CliInvocationResult
 from tests.support.cli_invoker import CliInvoker
+
+VALID_RESPONSE: Dict[str, object] = {
+    "status_code": 200,
+    "headers": {"X-Token": "valor_certo"},
+    "cookies": {},
+    "cookie_attributes": {},
+    "body": "{}",
+    "body_mime": "application/json",
+}
+
+WORKING_CODE: str = "def extract_t_deadbeef(response):\n    return response['headers']['X-Token']\n"
 
 
 def _extractor(token_id: str) -> Extractor:
@@ -18,6 +31,20 @@ def _build_workspace_with_curls(tmp_path: Path) -> Path:
     workspace: Workspace = Workspace(output_dir)
     workspace.curl_file(0).write_text("#!/bin/bash\ncurl 'https://exemplo.com'", encoding="utf-8")
     return output_dir
+
+
+def _write_response(workspace: Workspace, step_index: int, response: Dict[str, object]) -> None:
+    workspace.response_file(step_index).write_text(json.dumps(response), encoding="utf-8")
+
+
+def _write_code_file(tmp_path: Path, code: str) -> Path:
+    code_file: Path = tmp_path / "code.py"
+    code_file.write_text(code, encoding="utf-8")
+    return code_file
+
+
+def _extractors_dir_files(workspace: Workspace) -> List[str]:
+    return sorted(path.name for path in workspace.extractors.iterdir())
 
 
 def _invoke_json(argv: list) -> Dict[str, Any]:
@@ -133,3 +160,194 @@ def test_existing_commands_still_work_after_extractor_wiring(tmp_path: Path) -> 
     result: CliInvocationResult = invoker.invoke(["parse"])
 
     assert isinstance(result.exception, SystemExit)
+
+
+def test_extractor_create_rejects_divergent_function_name_without_writing_anything(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    code_file: Path = _write_code_file(tmp_path, "def extract_wrong_name(response):\n    return 'x'\n")
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "0",
+        ]
+    )
+
+    assert payload["ok"] is False
+    assert "extract_t_deadbeef" in payload["error"]
+    assert _extractors_dir_files(workspace) == []
+
+
+def test_extractor_create_rejects_missing_response_file_without_writing_anything(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "7",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "response for step 7 not found"}
+    assert _extractors_dir_files(workspace) == []
+
+
+def test_extractor_create_rejects_mismatched_captured_value_and_leaves_extractors_dir_empty(
+        tmp_path: Path,
+) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "0",
+            "--captured-value", "valor_errado",
+        ]
+    )
+
+    assert payload["ok"] is False
+    assert _extractors_dir_files(workspace) == []
+    assert list(workspace.temp_extractors.iterdir()) == []
+
+
+def test_extractor_create_success_writes_py_and_meta_and_is_runnable(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "0",
+            "--captured-value", "valor_certo",
+        ]
+    )
+
+    assert payload["ok"] is True
+    assert payload["token_id"] == "deadbeef"
+    assert payload["samples"][0]["sample_label"] == "origin_step"
+    assert payload["samples"][0]["matches_expected"] is True
+    assert _extractors_dir_files(workspace) == ["extract_deadbeef.meta.json", "extract_deadbeef.py"]
+
+    persisted: Optional[Extractor] = ExtractorMetadataStore(workspace).load("deadbeef")
+    assert persisted is not None
+    assert persisted.origin_step == 0
+
+    runner: ExtractorRunner = ExtractorRunner(workspace, ScriptExecutor())
+    assert runner.run_existing("deadbeef") == "valor_certo"
+
+
+def test_extractor_create_rejects_already_existing_token_id_without_overwriting(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=0))
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "0",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "token_id already exists, use update"}
+    reloaded: Optional[Extractor] = store.load("deadbeef")
+    assert reloaded is not None
+    assert reloaded.code == WORKING_CODE
+
+
+def test_extractor_create_rejects_non_hex_token_id(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    code_file: Path = _write_code_file(tmp_path, "def extract_t_ABC(response):\n    return 'x'\n")
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "create", "--output", str(output_dir),
+            "--token-id", "ABC", "--code-file", str(code_file),
+            "--agent-type", AgentType.REGEX.value, "--origin-step", "0",
+        ]
+    )
+
+    assert payload["ok"] is False
+    assert "token_id" in payload["error"]
+    assert _extractors_dir_files(workspace) == []
+
+
+def test_extractor_update_without_origin_step_reuses_persisted_origin_step(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(
+        Extractor(
+            token_id="deadbeef", code="def extract_t_deadbeef(response):\n    return 'old'\n",
+            agent_type=AgentType.REGEX, origin_step=0,
+        )
+    )
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "update", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+        ]
+    )
+
+    assert payload["ok"] is True
+    persisted: Optional[Extractor] = store.load("deadbeef")
+    assert persisted is not None
+    assert persisted.origin_step == 0
+    assert persisted.code == WORKING_CODE
+
+
+def test_extractor_update_rejects_nonexistent_token_id(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    code_file: Path = _write_code_file(tmp_path, WORKING_CODE)
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "update", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--code-file", str(code_file),
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "token_id does not exist, use create"}
+
+
+def test_extractor_update_changing_only_captured_value_preserves_other_fields(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    _write_response(workspace, 0, VALID_RESPONSE)
+    store: ExtractorMetadataStore = ExtractorMetadataStore(workspace)
+    store.save(Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=0))
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "update", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--captured-value", "valor_certo",
+        ]
+    )
+
+    assert payload["ok"] is True
+    persisted: Optional[Extractor] = store.load("deadbeef")
+    assert persisted is not None
+    assert persisted.code == WORKING_CODE
+    assert persisted.agent_type == AgentType.REGEX
+    assert persisted.origin_step == 0
+    assert persisted.captured_value == "valor_certo"
