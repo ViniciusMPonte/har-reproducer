@@ -4,13 +4,15 @@ import argparse
 from argparse import ArgumentParser, _SubParsersAction
 
 from har_reproducer.cli.cli_handlers import CliHandlers
+from har_reproducer.cli.extractor_cli_handlers import ExtractorCliHandlers
 from har_reproducer.engines import EngineMode
 
 
 class CliParser:
 
-    def __init__(self, handlers: CliHandlers) -> None:
+    def __init__(self, handlers: CliHandlers, extractor_handlers: ExtractorCliHandlers) -> None:
         self._handlers: CliHandlers = handlers
+        self._extractor_handlers: ExtractorCliHandlers = extractor_handlers
 
     def build(self) -> ArgumentParser:
         parser: ArgumentParser = argparse.ArgumentParser(prog="har-reproducer")
@@ -20,6 +22,7 @@ class CliParser:
         self._build_run_subparser(subparsers)
         self._build_replay_subparser(subparsers)
         self._build_optimize_subparser(subparsers)
+        self._build_extractor_subparser(subparsers)
 
         return parser
 
@@ -105,3 +108,23 @@ class CliParser:
             help="Worst-case request budget before aborting",
         )
         optimize_parser.set_defaults(func=self._handlers.handle_optimize)
+
+    def _build_extractor_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        extractor_parser: ArgumentParser = subparsers.add_parser("extractor")
+        action_subparsers: _SubParsersAction[ArgumentParser] = extractor_parser.add_subparsers(
+            dest="action", required=True
+        )
+
+        self._build_extractor_list_subparser(action_subparsers)
+        self._build_extractor_get_subparser(action_subparsers)
+
+    def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        list_parser: ArgumentParser = action_subparsers.add_parser("list")
+        list_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        list_parser.set_defaults(func=self._extractor_handlers.handle_list)
+
+    def _build_extractor_get_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        get_parser: ArgumentParser = action_subparsers.add_parser("get")
+        get_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        get_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        get_parser.set_defaults(func=self._extractor_handlers.handle_get)
