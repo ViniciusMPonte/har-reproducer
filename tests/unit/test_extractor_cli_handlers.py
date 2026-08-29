@@ -7,6 +7,7 @@ from har_reproducer.models import AgentType, Extractor
 from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore
 from har_reproducer.reproduction.extractor_runner import ExtractorRunner
 from har_reproducer.reproduction.script_executor import ScriptExecutor
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
 from tests.support.cli_invocation_result import CliInvocationResult
 from tests.support.cli_invoker import CliInvoker
 
@@ -424,6 +425,173 @@ def test_extractor_delete_of_totally_nonexistent_token_does_not_raise(tmp_path: 
     )
 
     assert payload["ok"] is True
+
+
+def test_extractor_bind_rejects_nonexistent_token_id_without_touching_curl(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    before: str = workspace.curl_file(0).read_text(encoding="utf-8")
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "bind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "token_id does not exist, use create first"}
+    assert workspace.curl_file(0).read_text(encoding="utf-8") == before
+
+
+def test_extractor_bind_success_writes_placeholder_and_dependency_line_from_extractor_origin_step(
+        tmp_path: Path,
+) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\ncurl 'https://exemplo.com' -H 'X-Token: valor_certo'", encoding="utf-8"
+    )
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3)
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "bind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+
+    assert payload == {"ok": True, "replacements": 1}
+    curl_text: str = workspace.curl_file(0).read_text(encoding="utf-8")
+    assert "{{extractor:deadbeef}}" in curl_text
+    assert "# [Token deadbeef comes from response of step 0003]" in curl_text
+    assert "valor_certo" not in curl_text
+
+
+def test_extractor_bind_rejects_when_value_not_found_in_curl_without_writing(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    before: str = workspace.curl_file(0).read_text(encoding="utf-8")
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=0)
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "bind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "nao_existe_no_curl",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "literal_value not found in curl"}
+    assert workspace.curl_file(0).read_text(encoding="utf-8") == before
+
+
+def test_extractor_unbind_after_bind_restores_literal_and_removes_dependency_line(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\ncurl 'https://exemplo.com' -H 'X-Token: valor_certo'", encoding="utf-8"
+    )
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3)
+    )
+    bind_payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "bind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+    assert bind_payload["ok"] is True
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "unbind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+
+    assert payload == {"ok": True, "replacements": 1}
+    curl_text: str = workspace.curl_file(0).read_text(encoding="utf-8")
+    assert "{{extractor:deadbeef}}" not in curl_text
+    assert "valor_certo" in curl_text
+    assert CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH).parse(curl_text) == {}
+
+
+def test_extractor_unbind_does_not_require_extractor_to_still_exist(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\n"
+        "# [Token deadbeef comes from response of step 0003]\n"
+        "curl 'https://exemplo.com' -H 'X-Token: {{extractor:deadbeef}}'",
+        encoding="utf-8",
+    )
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "unbind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+
+    assert payload == {"ok": True, "replacements": 1}
+    curl_text: str = workspace.curl_file(0).read_text(encoding="utf-8")
+    assert "{{extractor:deadbeef}}" not in curl_text
+    assert "valor_certo" in curl_text
+
+
+def test_extractor_unbind_rejects_when_token_not_bound_to_curl_without_writing(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    before: str = workspace.curl_file(0).read_text(encoding="utf-8")
+
+    payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "unbind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+
+    assert payload == {"ok": False, "error": "token not bound to this curl"}
+    assert workspace.curl_file(0).read_text(encoding="utf-8") == before
+
+
+def test_extractor_bind_unbind_delete_lifecycle_leaves_no_inconsistent_state(tmp_path: Path) -> None:
+    output_dir: Path = _build_workspace_with_curls(tmp_path)
+    workspace: Workspace = Workspace(output_dir)
+    workspace.curl_file(0).write_text(
+        "#!/bin/bash\ncurl 'https://exemplo.com' -H 'X-Token: valor_certo'", encoding="utf-8"
+    )
+    ExtractorMetadataStore(workspace).save(
+        Extractor(token_id="deadbeef", code=WORKING_CODE, agent_type=AgentType.REGEX, origin_step=3)
+    )
+
+    bind_payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "bind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+    assert bind_payload["ok"] is True
+
+    unbind_payload: Dict[str, Any] = _invoke_json(
+        [
+            "extractor", "unbind", "--output", str(output_dir),
+            "--token-id", "deadbeef", "--curl", "req_0000.curl.sh", "--value", "valor_certo",
+        ]
+    )
+    assert unbind_payload["ok"] is True
+
+    delete_payload: Dict[str, Any] = _invoke_json(
+        ["extractor", "delete", "--output", str(output_dir), "--token-id", "deadbeef"]
+    )
+
+    assert delete_payload == {"ok": True, "token_id": "deadbeef"}
+    assert not workspace.extractor_file("deadbeef").exists()
+    assert not workspace.extractor_meta_file("deadbeef").exists()
+    assert "{{extractor:deadbeef}}" not in workspace.curl_file(0).read_text(encoding="utf-8")
 
 
 def test_extractor_update_changing_only_captured_value_preserves_other_fields(tmp_path: Path) -> None:

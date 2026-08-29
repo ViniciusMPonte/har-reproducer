@@ -120,6 +120,8 @@ class CliParser:
         self._build_extractor_create_subparser(action_subparsers)
         self._build_extractor_update_subparser(action_subparsers)
         self._build_extractor_delete_subparser(action_subparsers)
+        self._build_extractor_bind_subparser(action_subparsers)
+        self._build_extractor_unbind_subparser(action_subparsers)
 
     def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
         list_parser: ArgumentParser = action_subparsers.add_parser("list")
@@ -192,3 +194,25 @@ class CliParser:
             help="Delete even if still referenced by a .curl.sh",
         )
         delete_parser.set_defaults(func=self._extractor_handlers.handle_delete)
+
+    def _build_extractor_bind_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        bind_parser: ArgumentParser = action_subparsers.add_parser("bind")
+        bind_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        bind_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        bind_parser.add_argument(
+            "--curl", required=True, help="Curl file name inside the workspace, e.g. req_0006.curl.sh"
+        )
+        bind_parser.add_argument("--value", required=True, help="Literal value to replace by the extractor placeholder")
+        bind_parser.set_defaults(func=self._extractor_handlers.handle_bind)
+
+    def _build_extractor_unbind_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        unbind_parser: ArgumentParser = action_subparsers.add_parser("unbind")
+        unbind_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        unbind_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        unbind_parser.add_argument(
+            "--curl", required=True, help="Curl file name inside the workspace, e.g. req_0006.curl.sh"
+        )
+        unbind_parser.add_argument(
+            "--value", required=True, help="Literal value to restore in place of the extractor placeholder"
+        )
+        unbind_parser.set_defaults(func=self._extractor_handlers.handle_unbind)

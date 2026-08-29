@@ -6,7 +6,13 @@ from typing import Any, Callable, ClassVar, Dict, List, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import AgentType, Extractor, ExtractorSampleResult
-from har_reproducer.reproduction import ExtractorMetadataStore, ExtractorValidator, ScriptExecutor
+from har_reproducer.replay.curl_token_comment import CurlTokenComment
+from har_reproducer.reproduction import (
+    ExtractorCurlBinder,
+    ExtractorMetadataStore,
+    ExtractorValidator,
+    ScriptExecutor,
+)
 from har_reproducer.session.session_store import SessionStore
 from har_reproducer.templates import ExtractorTemplate, IdentifierSanitizer
 
@@ -28,6 +34,12 @@ class ExtractorCliHandlers:
 
     def handle_delete(self, args: Namespace) -> bool:
         return self._run_safely(lambda: self._delete(args))
+
+    def handle_bind(self, args: Namespace) -> bool:
+        return self._run_safely(lambda: self._bind(args))
+
+    def handle_unbind(self, args: Namespace) -> bool:
+        return self._run_safely(lambda: self._unbind(args))
 
     def _list(self, args: Namespace) -> Dict[str, Any]:
         workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
@@ -70,6 +82,38 @@ class ExtractorCliHandlers:
         workspace.extractor_file(args.token_id).unlink(missing_ok=True)
         workspace.extractor_meta_file(args.token_id).unlink(missing_ok=True)
         return {"ok": True, "token_id": args.token_id}
+
+    def _bind(self, args: Namespace) -> Dict[str, Any]:
+        workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
+        extractor: Optional[Extractor] = ExtractorMetadataStore(workspace).load(args.token_id)
+        if extractor is None:
+            return {"ok": False, "error": "token_id does not exist, use create first"}
+
+        curl_file: Path = workspace.curls / args.curl
+        curl_text: str = curl_file.read_text(encoding="utf-8")
+        new_curl_text, replacements = self._curl_binder().bind(
+            curl_text, args.token_id, extractor.origin_step, args.value
+        )
+        if replacements == 0:
+            return {"ok": False, "error": "literal_value not found in curl"}
+
+        curl_file.write_text(new_curl_text, encoding="utf-8")
+        return {"ok": True, "replacements": replacements}
+
+    def _unbind(self, args: Namespace) -> Dict[str, Any]:
+        workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
+        curl_file: Path = workspace.curls / args.curl
+        curl_text: str = curl_file.read_text(encoding="utf-8")
+        new_curl_text, replacements = self._curl_binder().unbind(curl_text, args.token_id, args.value)
+        if replacements == 0:
+            return {"ok": False, "error": "token not bound to this curl"}
+
+        curl_file.write_text(new_curl_text, encoding="utf-8")
+        return {"ok": True, "replacements": replacements}
+
+    @staticmethod
+    def _curl_binder() -> ExtractorCurlBinder:
+        return ExtractorCurlBinder(CurlTokenComment(step_index_width=Workspace.STEP_INDEX_WIDTH))
 
     def _create_or_update(self, args: Namespace, is_update: bool) -> Dict[str, Any]:
         workspace: Workspace = self._prepare_workspace(Path(args.output), require_curls=False)
