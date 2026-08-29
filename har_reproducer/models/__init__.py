@@ -8,6 +8,7 @@ from har_reproducer.models.criteria import (
     UrlMatchCriterion,
 )
 from har_reproducer.models.execution import ScriptExecutionResult
+from har_reproducer.models.extractor_sample_result import ExtractorSampleResult
 from har_reproducer.models.http import CookieAttributes, Step, StepRequest, StepResponse
 from har_reproducer.models.session import (
     AgentType,
@@ -25,6 +26,7 @@ __all__ = [
     "CookieAttributes",
     "DynamicToken",
     "Extractor",
+    "ExtractorSampleResult",
     "HtmlElementPresentCriterion",
     "LLMSettings",
     "OriginContainer",
