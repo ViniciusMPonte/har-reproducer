@@ -131,6 +131,29 @@ O `optimize` parte do schedule que `replay --mode smart --from --to` calcularia 
 
 ⚠️ Cada requisição vai contra o servidor real (o mesmo risco de efeito colateral que já existe em `run`/`replay`) e a busca pode reexecutar o mesmo passo várias vezes — não é recomendado num fluxo com efeitos colaterais não-idempotentes (ex.: criar um recurso novo a cada chamada). O resultado é um mínimo local (nenhum passo isolado — âncora ou não — pode ser removido sem quebrar o alvo), exceto o piso `--from` e o próprio alvo (`--to`), sempre mantidos por serem os limites explícitos da busca. Ainda não é necessariamente o menor subconjunto teoricamente possível: a busca é gulosa (testa remoções uma a uma, na ordem do alvo para o início) e não exaustiva sobre combinações — duas âncoras que só são dispensáveis juntas podem sobreviver ambas.
 
+### `extractor` — CRUD de extratores de um workspace
+
+Requer um workspace já criado por um `run` anterior.
+
+```bash
+uv run python -m har_reproducer.main extractor <ação> --output DIR [flags da ação]
+```
+
+| Ação | Flags | Efeito |
+|---|---|---|
+| `list` | `--output` | Lista todos os extratores do workspace (`extractors/`), cada um anotado com os `.curl.sh` que o referenciam. |
+| `get` | `--output --token-id` | Mostra um extrator específico + a mesma anotação de curls vinculados. Recusa (`ok: false`) se o `token_id` não existir. |
+| `create` | `--output --token-id --code-file --agent-type --origin-step [--captured-value] [--verified]` | Valida o `code` contra a resposta real de `--origin-step` e só então persiste `.py` + `.meta.json`. Recusa se `token_id` já existir (usar `update`). |
+| `update` | `--output --token-id [--code-file] [--agent-type] [--origin-step] [--captured-value] [--verified]` | Mesma validação/persistência de `create`, mas exige que o `token_id` já exista; flags omitidas mantêm o valor atual. |
+| `delete` | `--output --token-id [--force]` | Remove `.py` + `.meta.json`. Recusa se algum `.curl.sh` ainda referencia o token, a menos que `--force`. |
+| `bind` | `--output --token-id --curl req_NNNN.curl.sh --value` | Substitui toda ocorrência exata de `--value` no corpo do curl indicado pelo placeholder `{{extractor:<token_id>}}` e grava a linha de dependência do token (o `origin_step` usado é sempre o do extrator já persistido, nunca uma flag). |
+| `unbind` | `--output --token-id --curl req_NNNN.curl.sh --value` | Desfaz o `bind`: troca o placeholder pelo literal informado em `--value` e remove a linha de dependência do token. |
+| `test` | `--output [--token-id \| --code-file] --sample res_0003.json [--sample ...] [--expect res_NNNN.json=valor ...]` | Roda um `code` (do extrator já persistido, ou de `--code-file`) contra as amostras indicadas (`real_responses/`/`original_responses/`, ou path absoluto), sem persistir nada. |
+
+> A saída de toda `extractor <ação>` é sempre um único objeto JSON em stdout (`{"ok": bool, ...}`) — diferente do texto solto de `run`/`replay`/`optimize`. O comando é desenhado para consumo por um agente de IA, não para leitura humana direta.
+
+`extractor` existe para corrigir pontualmente um extrator gerado incorretamente, ausente, ou inútil pela descoberta automática do `run` — sem precisar rodar `run` de novo (potencialmente contra o servidor real) e torcer para a descoberta acertar dessa vez.
+
 ## Configuração (`config.json`)
 
 Arquivo JSON passado via `--config`, com todos os campos opcionais:

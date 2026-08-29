@@ -2,6 +2,7 @@ from har_reproducer.reproduction.cookie_jar_curl_override import CookieJarCurlOv
 from har_reproducer.reproduction.curl_http_transport import CurlHttpTransport
 from har_reproducer.reproduction.extractor_metadata_store import ExtractorMetadataStore, SilentExtractorMetadataStore
 from har_reproducer.reproduction.extractor_runner import ExtractorRunner
+from har_reproducer.reproduction.extractor_validator import ExtractorValidator
 from har_reproducer.reproduction.mitm_env import MitmEnv
 from har_reproducer.reproduction.mitm_proxy_orchestrator import MitmProxyOrchestrator
 from har_reproducer.reproduction.request_url_scope import RequestUrlScope
@@ -10,13 +11,16 @@ from har_reproducer.reproduction.sleeper import Sleeper
 from har_reproducer.reproduction.step_retry_policy import StepRetryPolicy
 from har_reproducer.reproduction.step_skip_evaluator import StepSkipEvaluator
 from har_reproducer.reproduction.curl_generator import CurlGenerator
+from har_reproducer.reproduction.extractor_curl_binder import ExtractorCurlBinder
 
 __all__ = [
     "CookieJarCurlOverride",
     "CurlGenerator",
     "CurlHttpTransport",
+    "ExtractorCurlBinder",
     "ExtractorMetadataStore",
     "ExtractorRunner",
+    "ExtractorValidator",
     "MitmEnv",
     "MitmProxyOrchestrator",
     "RequestUrlScope",

@@ -4,13 +4,15 @@ import argparse
 from argparse import ArgumentParser, _SubParsersAction
 
 from har_reproducer.cli.cli_handlers import CliHandlers
+from har_reproducer.cli.extractor_cli_handlers import ExtractorCliHandlers
 from har_reproducer.engines import EngineMode
 
 
 class CliParser:
 
-    def __init__(self, handlers: CliHandlers) -> None:
+    def __init__(self, handlers: CliHandlers, extractor_handlers: ExtractorCliHandlers) -> None:
         self._handlers: CliHandlers = handlers
+        self._extractor_handlers: ExtractorCliHandlers = extractor_handlers
 
     def build(self) -> ArgumentParser:
         parser: ArgumentParser = argparse.ArgumentParser(prog="har-reproducer")
@@ -20,6 +22,7 @@ class CliParser:
         self._build_run_subparser(subparsers)
         self._build_replay_subparser(subparsers)
         self._build_optimize_subparser(subparsers)
+        self._build_extractor_subparser(subparsers)
 
         return parser
 
@@ -105,3 +108,135 @@ class CliParser:
             help="Worst-case request budget before aborting",
         )
         optimize_parser.set_defaults(func=self._handlers.handle_optimize)
+
+    def _build_extractor_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        extractor_parser: ArgumentParser = subparsers.add_parser("extractor")
+        action_subparsers: _SubParsersAction[ArgumentParser] = extractor_parser.add_subparsers(
+            dest="action", required=True
+        )
+
+        self._build_extractor_list_subparser(action_subparsers)
+        self._build_extractor_get_subparser(action_subparsers)
+        self._build_extractor_create_subparser(action_subparsers)
+        self._build_extractor_update_subparser(action_subparsers)
+        self._build_extractor_delete_subparser(action_subparsers)
+        self._build_extractor_bind_subparser(action_subparsers)
+        self._build_extractor_unbind_subparser(action_subparsers)
+        self._build_extractor_test_subparser(action_subparsers)
+
+    def _build_extractor_list_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        list_parser: ArgumentParser = action_subparsers.add_parser("list")
+        list_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        list_parser.set_defaults(func=self._extractor_handlers.handle_list)
+
+    def _build_extractor_get_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        get_parser: ArgumentParser = action_subparsers.add_parser("get")
+        get_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        get_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        get_parser.set_defaults(func=self._extractor_handlers.handle_get)
+
+    def _build_extractor_create_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        create_parser: ArgumentParser = action_subparsers.add_parser("create")
+        create_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        create_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        create_parser.add_argument(
+            "--code-file", dest="code_file", required=True, help="Path to a file with the extractor code"
+        )
+        create_parser.add_argument(
+            "--agent-type",
+            dest="agent_type",
+            required=True,
+            help="AgentType value describing how the extractor was produced",
+        )
+        create_parser.add_argument(
+            "--origin-step", dest="origin_step", type=int, required=True, help="Step index the response comes from"
+        )
+        create_parser.add_argument(
+            "--captured-value", dest="captured_value", default=None, help="Value expected from the origin_step sample"
+        )
+        create_parser.add_argument(
+            "--verified", dest="verified", action="store_true", default=None, help="Mark the extractor as verified"
+        )
+        create_parser.set_defaults(func=self._extractor_handlers.handle_create)
+
+    def _build_extractor_update_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        update_parser: ArgumentParser = action_subparsers.add_parser("update")
+        update_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        update_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        update_parser.add_argument(
+            "--code-file", dest="code_file", default=None, help="Path to a file with the extractor code"
+        )
+        update_parser.add_argument(
+            "--agent-type",
+            dest="agent_type",
+            default=None,
+            help="AgentType value describing how the extractor was produced",
+        )
+        update_parser.add_argument(
+            "--origin-step", dest="origin_step", type=int, default=None, help="Step index the response comes from"
+        )
+        update_parser.add_argument(
+            "--captured-value", dest="captured_value", default=None, help="Value expected from the origin_step sample"
+        )
+        update_parser.add_argument(
+            "--verified", dest="verified", action="store_true", default=None, help="Mark the extractor as verified"
+        )
+        update_parser.set_defaults(func=self._extractor_handlers.handle_update)
+
+    def _build_extractor_delete_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        delete_parser: ArgumentParser = action_subparsers.add_parser("delete")
+        delete_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        delete_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        delete_parser.add_argument(
+            "--force",
+            dest="force",
+            action="store_true",
+            default=False,
+            help="Delete even if still referenced by a .curl.sh",
+        )
+        delete_parser.set_defaults(func=self._extractor_handlers.handle_delete)
+
+    def _build_extractor_bind_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        bind_parser: ArgumentParser = action_subparsers.add_parser("bind")
+        bind_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        bind_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        bind_parser.add_argument(
+            "--curl", required=True, help="Curl file name inside the workspace, e.g. req_0006.curl.sh"
+        )
+        bind_parser.add_argument("--value", required=True, help="Literal value to replace by the extractor placeholder")
+        bind_parser.set_defaults(func=self._extractor_handlers.handle_bind)
+
+    def _build_extractor_unbind_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        unbind_parser: ArgumentParser = action_subparsers.add_parser("unbind")
+        unbind_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        unbind_parser.add_argument("--token-id", dest="token_id", required=True, help="Extractor token_id")
+        unbind_parser.add_argument(
+            "--curl", required=True, help="Curl file name inside the workspace, e.g. req_0006.curl.sh"
+        )
+        unbind_parser.add_argument(
+            "--value", required=True, help="Literal value to restore in place of the extractor placeholder"
+        )
+        unbind_parser.set_defaults(func=self._extractor_handlers.handle_unbind)
+
+    def _build_extractor_test_subparser(self, action_subparsers: _SubParsersAction[ArgumentParser]) -> None:
+        test_parser: ArgumentParser = action_subparsers.add_parser("test")
+        test_parser.add_argument("--output", required=True, help="Path to an existing workspace directory")
+        test_parser.add_argument("--token-id", dest="token_id", default=None, help="Extractor token_id")
+        test_parser.add_argument(
+            "--code-file", dest="code_file", default=None, help="Path to a file with the extractor code"
+        )
+        test_parser.add_argument(
+            "--sample",
+            dest="sample",
+            action="append",
+            required=True,
+            help="Path to a sample response JSON, relative to real_responses/original_responses or absolute",
+        )
+        test_parser.add_argument(
+            "--expect",
+            dest="expect",
+            action="append",
+            default=None,
+            help="Expected value for a sample, format ARQ=valor",
+        )
+        test_parser.set_defaults(func=self._extractor_handlers.handle_test)

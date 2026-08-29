@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from har_reproducer.fs_io import Workspace
 from har_reproducer.models import Extractor
@@ -8,6 +8,15 @@ from har_reproducer.models import Extractor
 class ExtractorMetadataStore:
     def __init__(self, workspace: Workspace) -> None:
         self.workspace: Workspace = workspace
+
+    def list_all(self) -> List[Extractor]:
+        extractors: List[Extractor] = []
+        for meta_file in sorted(self.workspace.extractors.glob("extract_*.meta.json")):
+            token_id: str = meta_file.stem.removeprefix("extract_").removesuffix(".meta")
+            extractor: Optional[Extractor] = self.load(token_id)
+            if extractor is not None:
+                extractors.append(extractor)
+        return extractors
 
     def load(self, token_id: str) -> Optional[Extractor]:
         meta_file: Path = self.workspace.extractor_meta_file(token_id)
