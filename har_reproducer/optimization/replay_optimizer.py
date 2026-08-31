@@ -79,7 +79,10 @@ class ReplayOptimizer:
         for anchor in reversed(removable):
             trial: List[int] = [a for a in working if a != anchor]
             trial_final_list: List[int] = sorted({from_index, to_index, *trial, *kept})
-            if self._confirm(trial_final_list, to_index, success_criteria):
+            if self._confirm(
+                    trial_final_list, to_index, success_criteria,
+                    restrict_backbone_feed_to=set(trial_final_list),
+            ):
                 working = trial
         return working
 
