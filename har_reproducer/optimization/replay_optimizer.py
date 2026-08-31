@@ -79,12 +79,18 @@ class ReplayOptimizer:
         for anchor in reversed(removable):
             trial: List[int] = [a for a in working if a != anchor]
             trial_final_list: List[int] = sorted({from_index, to_index, *trial, *kept})
-            if self._confirm(trial_final_list, to_index, success_criteria):
+            if self._confirm(
+                    trial_final_list, to_index, success_criteria,
+                    restrict_backbone_feed_to=set(trial_final_list),
+            ):
                 working = trial
         return working
 
-    def _confirm(self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion]) -> bool:
-        results: List[Tuple[int, StepResponse]] = self._execute(final_list, set(final_list))
+    def _confirm(
+            self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion],
+            restrict_backbone_feed_to: Optional[Set[int]] = None,
+    ) -> bool:
+        results: List[Tuple[int, StepResponse]] = self._execute(final_list, set(final_list), restrict_backbone_feed_to)
         target_response: StepResponse = next(response for index, response in results if index == to_index)
         return Validator.validate(target_response, success_criteria)
 
@@ -99,9 +105,12 @@ class ReplayOptimizer:
         boundary: int = anchors[-2] if len(anchors) >= 2 else from_index
         return [i for i in self.schedule_executor.existing_step_indexes() if from_index <= i <= boundary]
 
-    def _execute(self, ordered_indexes: List[int], schedule: Set[int]) -> List[Tuple[int, StepResponse]]:
+    def _execute(
+            self, ordered_indexes: List[int], schedule: Set[int],
+            restrict_backbone_feed_to: Optional[Set[int]] = None,
+    ) -> List[Tuple[int, StepResponse]]:
         self.cookie_jar.reset()
-        self._feed_cookie_jar_from_backbone_cache()
+        self._feed_cookie_jar_from_backbone_cache(restrict_backbone_feed_to)
         refreshes: int = 0
         results: List[Tuple[int, StepResponse]] = self._execute_raw(ordered_indexes, schedule)
         while self._needs_reactive_refresh(results) and refreshes < self.MAX_REACTIVE_REFRESHES:
@@ -112,12 +121,14 @@ class ReplayOptimizer:
             )
             self._execute_raw(self.backbone, set(self.backbone), force_refresh=True)
             self.cookie_jar.reset()
-            self._feed_cookie_jar_from_backbone_cache()
+            self._feed_cookie_jar_from_backbone_cache(restrict_backbone_feed_to)
             results = self._execute_raw(ordered_indexes, schedule)
         return results
 
-    def _feed_cookie_jar_from_backbone_cache(self) -> None:
+    def _feed_cookie_jar_from_backbone_cache(self, restrict_to: Optional[Set[int]] = None) -> None:
         for index in sorted(self.backbone):
+            if restrict_to is not None and index not in restrict_to:
+                continue
             response: Optional[StepResponse] = self._backbone_response_cache.get(index)
             if response is None:
                 continue
