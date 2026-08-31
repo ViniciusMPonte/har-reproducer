@@ -112,12 +112,12 @@ def _confirm(
   reativo dentro de `_execute`").
 
 **Critérios de aceite:**
-- [ ] `uv run pytest -q tests/unit/test_replay_optimizer.py -k does_not_remove_an_anchor` continua falhando (red preservado) — o motivo da falha é o mesmo de antes desta task: `reduced == []` em vez de `[50]` (a assinatura mudou, mas nenhum chamador ainda usa o filtro).
-- [ ] `optimizer._feed_cookie_jar_from_backbone_cache()` chamado sem argumento continua populando o jar com todo `self.backbone` cacheado — comportamento idêntico ao atual (não-regressão: `test_feed_cookie_jar_from_backbone_cache_populates_jar_for_cached_backbone_indexes` e `test_feed_cookie_jar_from_backbone_cache_skips_indexes_without_cached_response` continuam passando sem alteração).
-- [ ] `optimizer._execute([5], {5})` chamado sem o novo parâmetro continua alimentando o jar com o backbone inteiro antes de chamar `execute_schedule` — não-regressão: `test_execute_feeds_jar_from_backbone_cache_before_calling_execute_raw` continua passando.
-- [ ] Refresh reativo sem o novo parâmetro continua repovoando o jar a partir do backbone recém-atualizado depois da reexecução forçada — não-regressão: `test_execute_reactive_refresh_refeeds_jar_from_newly_refreshed_backbone_before_final_retry` continua passando.
-- [ ] `uv run pytest -q tests/unit/test_replay_optimizer.py` roda com a mesma contagem de falhas de antes desta task (1 falha — só o teste vermelho de `_reduce_anchors`; nenhuma das ~43 asserções restantes regride).
-- [ ] `python -m py_compile har_reproducer/optimization/replay_optimizer.py` sem erros.
+- [x] `uv run pytest -q tests/unit/test_replay_optimizer.py -k does_not_remove_an_anchor` continua falhando (red preservado) — o motivo da falha é o mesmo de antes desta task: `reduced == []` em vez de `[50]` (a assinatura mudou, mas nenhum chamador ainda usa o filtro).
+- [x] `optimizer._feed_cookie_jar_from_backbone_cache()` chamado sem argumento continua populando o jar com todo `self.backbone` cacheado — comportamento idêntico ao atual (não-regressão: `test_feed_cookie_jar_from_backbone_cache_populates_jar_for_cached_backbone_indexes` e `test_feed_cookie_jar_from_backbone_cache_skips_indexes_without_cached_response` continuam passando sem alteração).
+- [x] `optimizer._execute([5], {5})` chamado sem o novo parâmetro continua alimentando o jar com o backbone inteiro antes de chamar `execute_schedule` — não-regressão: `test_execute_feeds_jar_from_backbone_cache_before_calling_execute_raw` continua passando.
+- [x] Refresh reativo sem o novo parâmetro continua repovoando o jar a partir do backbone recém-atualizado depois da reexecução forçada — não-regressão: `test_execute_reactive_refresh_refeeds_jar_from_newly_refreshed_backbone_before_final_retry` continua passando.
+- [x] `uv run pytest -q tests/unit/test_replay_optimizer.py` roda com a mesma contagem de falhas de antes desta task (1 falha — só o teste vermelho de `_reduce_anchors`; nenhuma das ~43 asserções restantes regride).
+- [x] `python -m py_compile har_reproducer/optimization/replay_optimizer.py` sem erros.
 
 ## [T02] — `ReplayOptimizer._reduce_anchors`: restringe o feed do jar ao `trial_final_list` sendo testado, fechando o vazamento do backbone cache
 
@@ -189,10 +189,10 @@ def _reduce_anchors(
   comportamento "alimenta tudo por default" de que essas duas fases dependem.
 
 **Critérios de aceite:**
-- [ ] `optimizer._reduce_anchors([0, 50, 100], 0, 100, [], SUCCESS_CRITERIA) == [50]` no cenário do teste `test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuinely_needs` (`tests/unit/test_replay_optimizer.py:469-499`) — `uv run pytest -q tests/unit/test_replay_optimizer.py -k does_not_remove_an_anchor` passa (green).
-- [ ] Âncora genuinamente desnecessária continua sendo removida: `test_reduce_anchors_removes_interior_anchor_when_target_alone_still_passes` continua passando (`optimizer.backbone == []` nesse teste, então o filtro não altera nada ali — spec seção 5).
-- [ ] `test_reduce_anchors_keeps_interior_anchor_when_target_alone_fails` e `test_reduce_anchors_with_no_interior_anchor_makes_no_extra_call` continuam passando sem alteração.
-- [ ] `test_optimize_end_to_end_reduces_interior_anchor_not_needed_by_target` e `test_optimize_end_to_end_executes_backbone_index_only_once_across_reduce_and_confirm` continuam passando — o fluxo ponta a ponta de `optimize()` não regride.
-- [ ] `uv run pytest -q tests/unit/test_replay_optimizer.py` termina com 0 falhas (as ~43 asserções que já passavam antes de T01 continuam passando, mais o teste antes vermelho agora verde — total do arquivo, sem nenhum `-k`).
-- [ ] `uv run pytest -q` (suíte completa do repositório, sem filtro de arquivo) não introduz nenhuma falha nova em relação ao estado da branch antes desta etapa — nenhum teste fora de `tests/unit/test_replay_optimizer.py` referencia `_reduce_anchors`/`_feed_cookie_jar_from_backbone_cache`/`_execute`/`_confirm` de `ReplayOptimizer` com uso posicional que quebraria com o novo parâmetro opcional (`grep -rn "_reduce_anchors\|_feed_cookie_jar_from_backbone_cache\|optimizer\._execute\|optimizer\._confirm" tests/` para confirmar o raio de impacto antes de rodar).
-- [ ] `python -m py_compile har_reproducer/optimization/replay_optimizer.py` sem erros.
+- [x] `optimizer._reduce_anchors([0, 50, 100], 0, 100, [], SUCCESS_CRITERIA) == [50]` no cenário do teste `test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuinely_needs` (`tests/unit/test_replay_optimizer.py:469-499`) — `uv run pytest -q tests/unit/test_replay_optimizer.py -k does_not_remove_an_anchor` passa (green).
+- [x] Âncora genuinamente desnecessária continua sendo removida: `test_reduce_anchors_removes_interior_anchor_when_target_alone_still_passes` continua passando (`optimizer.backbone == []` nesse teste, então o filtro não altera nada ali — spec seção 5).
+- [x] `test_reduce_anchors_keeps_interior_anchor_when_target_alone_fails` e `test_reduce_anchors_with_no_interior_anchor_makes_no_extra_call` continuam passando sem alteração.
+- [x] `test_optimize_end_to_end_reduces_interior_anchor_not_needed_by_target` e `test_optimize_end_to_end_executes_backbone_index_only_once_across_reduce_and_confirm` continuam passando — o fluxo ponta a ponta de `optimize()` não regride.
+- [x] `uv run pytest -q tests/unit/test_replay_optimizer.py` termina com 0 falhas (as ~43 asserções que já passavam antes de T01 continuam passando, mais o teste antes vermelho agora verde — total do arquivo, sem nenhum `-k`).
+- [x] `uv run pytest -q` (suíte completa do repositório, sem filtro de arquivo) não introduz nenhuma falha nova em relação ao estado da branch antes desta etapa — nenhum teste fora de `tests/unit/test_replay_optimizer.py` referencia `_reduce_anchors`/`_feed_cookie_jar_from_backbone_cache`/`_execute`/`_confirm` de `ReplayOptimizer` com uso posicional que quebraria com o novo parâmetro opcional (`grep -rn "_reduce_anchors\|_feed_cookie_jar_from_backbone_cache\|optimizer\._execute\|optimizer\._confirm" tests/` para confirmar o raio de impacto antes de rodar).
+- [x] `python -m py_compile har_reproducer/optimization/replay_optimizer.py` sem erros.
