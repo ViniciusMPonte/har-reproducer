@@ -4,6 +4,7 @@
     "Content-Type": "application/json"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "{\"token\": \"har-token-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}",
   "body_mime": "application/json",
   "redirect_url": null,

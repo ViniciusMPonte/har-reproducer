@@ -4,6 +4,7 @@
     "Content-Type": "text/html"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "<html><body><div id=\"marker\">pronto</div></body></html>",
   "body_mime": "text/html",
   "redirect_url": "http://127.0.0.1:<PORT>/done?ok=1",

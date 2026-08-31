@@ -7,6 +7,7 @@
     "Content-Length": "12"
   },
   "cookies": {},
+  "cookie_attributes": {},
   "body": "{\"ok\": true}",
   "body_mime": "application/json",
   "redirect_url": null,
