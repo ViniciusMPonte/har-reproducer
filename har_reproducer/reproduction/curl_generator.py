@@ -39,6 +39,8 @@ class CurlGenerator:
     def _header_parts(request: StepRequest) -> List[str]:
         parts: List[str] = []
         for key, value in request.headers.items():
+            if key.lower() == "cookie" and request.cookies:
+                continue
             quoted_header: str = shlex.quote(f"{key}: {value}")
             parts.append(f"-H {quoted_header}")
         return parts

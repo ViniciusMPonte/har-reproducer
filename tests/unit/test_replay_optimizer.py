@@ -438,6 +438,67 @@ def test_reduce_anchors_keeps_interior_anchor_when_target_alone_fails(tmp_path: 
     assert len(executor.calls) == 1
 
 
+class _CookieGatedScheduleExecutor(FakeScheduleExecutor):
+    """Simula um servidor real: o passo `gate_index` só responde 200 se o cookie
+    `required_cookie` já estiver no jar no momento da chamada — exatamente o tipo de
+    dependência que uma âncora de login estabelece (ex.: o step 92 no portal Unimed)."""
+
+    def __init__(
+            self, cookie_jar: CookieJar, gate_index: int, required_cookie: str,
+            *args: object, **kwargs: object,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.cookie_jar: CookieJar = cookie_jar
+        self.gate_index: int = gate_index
+        self.required_cookie: str = required_cookie
+
+    def execute_schedule(
+            self, ordered_indexes: List[int], schedule: Set[int], annotate: bool = True,
+    ) -> List[Tuple[int, StepResponse]]:
+        self.calls.append(RecordedExecuteScheduleCall(list(ordered_indexes), set(schedule), annotate))
+        results: List[Tuple[int, StepResponse]] = []
+        for index in ordered_indexes:
+            if index == self.gate_index:
+                has_cookie: bool = self.required_cookie in self.cookie_jar.current("exemplo.com", 443, "/")
+                results.append((index, _ok(200 if has_cookie else 401)))
+            else:
+                results.append((index, self.default_response))
+        return results
+
+
+def test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuinely_needs(
+        tmp_path: Path,
+) -> None:
+    """Reproduz o achado da investigação no portal Unimed (docs/20260829-2): uma âncora
+    intermediária (step 50, análogo ao login) é a única fonte de um cookie ('auth') sem
+    o qual o alvo (step 100) genuinamente falha — mas `_reduce_anchors` a remove mesmo
+    assim, porque `_execute`/`_feed_cookie_jar_from_backbone_cache` sempre alimenta o
+    jar com TODO `optimizer.backbone`, ignorando qual schedule está sendo testado no
+    momento. O `.txt` exportado por `optimize` (sem o step 50) não reproduz o sucesso se
+    replayado depois, sozinho, num processo novo — o jar desse processo novo nunca
+    aprenderia o cookie 'auth', já que o step 50 nunca rodaria.
+
+    Hoje este teste FALHA (reduced == [], não [50]) — é o teste vermelho para o fix."""
+    _write_request_file(tmp_path, 0, url="https://exemplo.com/login")
+    _write_request_file(tmp_path, 50, url="https://exemplo.com/login")
+    jar: CookieJar = CookieJar()
+    executor: _CookieGatedScheduleExecutor = _CookieGatedScheduleExecutor(
+        jar, gate_index=100, required_cookie="auth",
+        smart_schedule=([0, 50, 100], {0, 50, 100}), existing_indexes=[0, 50, 100],
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor, cookie_jar=jar)
+    optimizer.backbone = [0, 50]
+    optimizer._backbone_response_cache[50] = StepResponse(status_code=200, cookies={"auth": "granted"})
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 50, 100], 0, 100, [], SUCCESS_CRITERIA)
+
+    assert reduced == [50], (
+        f"a âncora 50 foi removida ({reduced!r}) mesmo sendo a única fonte do cookie "
+        f"'auth' que o alvo exige — _feed_cookie_jar_from_backbone_cache vazou o cookie "
+        f"do backbone para o teste de remoção, mascarando a dependência real."
+    )
+
+
 def test_reduce_anchors_with_no_interior_anchor_makes_no_extra_call(tmp_path: Path) -> None:
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
         smart_schedule=([0, 9], {0, 9}),

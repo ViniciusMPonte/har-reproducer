@@ -82,6 +82,31 @@ def test_generate_omits_cookie_flag_when_no_cookies() -> None:
     assert "--cookie" not in output
 
 
+def test_generate_omits_literal_cookie_header_when_cookies_are_present() -> None:
+    generator: CurlGenerator = _generator(_session_store({}))
+    request: StepRequest = StepRequest(
+        url="https://x", method="GET",
+        headers={"Cookie": "JSESSIONID=stale"}, cookies={"JSESSIONID": "stale"},
+    )
+
+    output: str = generator.generate(request, [])
+
+    assert "-H 'Cookie" not in output
+    assert output.count("--cookie") == 1
+
+
+def test_generate_keeps_literal_cookie_header_when_no_structured_cookies() -> None:
+    generator: CurlGenerator = _generator(_session_store({}))
+    request: StepRequest = StepRequest(
+        url="https://x", method="GET", headers={"Cookie": "SERVERID=ms1"},
+    )
+
+    output: str = generator.generate(request, [])
+
+    assert "-H 'Cookie: SERVERID=ms1'" in output
+    assert "--cookie" not in output
+
+
 def test_generate_includes_body_flag_with_payload() -> None:
     generator: CurlGenerator = _generator(_session_store({}))
     request: StepRequest = StepRequest(url="https://x", method="POST", body="payload")
