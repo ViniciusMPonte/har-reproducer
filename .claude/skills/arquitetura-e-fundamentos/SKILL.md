@@ -156,11 +156,19 @@ compartilhado pelos três modos.
 
 ⚠️ `ReplayOptimizer` é o único ponto que precisa resetar e realimentar o jar manualmente
 (`_feed_cookie_jar_from_backbone_cache`), porque o mesmo `schedule_executor`/jar atravessa todas
-as tentativas de uma busca — sem isso, cookies de uma tentativa vazariam pra próxima e
-mascarariam se um step removido do schedule era de fato necessário. A alimentação a partir do
-backbone cacheado precisa acontecer **antes** de qualquer tráfego novo da tentativa, não depois —
-inverter essa ordem faz a feature virar no-op silencioso (achado de revisão adversarial da spec
-original).
+as tentativas de uma busca — sem isso, cookies de uma tentativa vazariam pra próxima. A
+alimentação a partir do backbone cacheado precisa acontecer **antes** de qualquer tráfego novo da
+tentativa, não depois — inverter essa ordem faz a feature virar no-op silencioso.
+
+⚠️ `_feed_cookie_jar_from_backbone_cache`/`_execute`/`_confirm` aceitam um filtro opcional
+(`restrict_to`/`restrict_backbone_feed_to`, default `None` = alimenta o backbone inteiro) —
+usado só por `_reduce_anchors`, restringindo o feed ao `trial_final_list` que está sendo testado
+naquela chamada. É indispensável ali porque `_reduce_anchors` é o único caso em que o índice
+sendo testado para remoção é, ele mesmo, membro do backbone: sem o filtro, o cookie que só esse
+índice estabelece já estaria no jar antes do teste rodar, mascarando a dependência e fazendo uma
+âncora indispensável ser removida do `.txt` exportado por engano. `_run_phase1` e
+`_attempt`/`_resolve_range` continuam chamando sem o filtro (backbone é pré-requisito fixo
+nessas duas fases, nunca candidato a ausência) — não generalizar o filtro pra elas.
 
 ⚠️ Dívida técnica aceita conscientemente, replicando limitações do próprio `stickycookie` do
 mitmproxy (usado como referência de implementação): sem regra de precedência determinística entre
