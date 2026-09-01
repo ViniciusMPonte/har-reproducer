@@ -56,6 +56,13 @@ Antes de rodar qualquer comando: seguir
    editar `extractors/`/`config.json` livremente durante diagnóstico (ver
    Passo 3), com rollback e branches por hipótese disponíveis.
 
+Antes do primeiro `run`, vale ler
+**[references/workspace-structure.md](references/workspace-structure.md)** —
+o mapa do que cada pasta de `output/` (`curls/`, `extractors/`,
+`real_responses/`, `original_responses/`, `replays/`, etc.) vai conter depois
+que os comandos rodarem. Os textos dos passos seguintes citam essas pastas
+assumindo que esse mapa já é conhecido.
+
 ## Passo 1 — descoberta inicial (`run`)
 
 Seguir **[references/decision-flow.md](references/decision-flow.md)** seção 1–2
@@ -145,6 +152,7 @@ seção.
 | Arquivo | Cobre |
 |---|---|
 | [workspace-setup.md](references/workspace-setup.md) | Organização de pastas por HAR, convenção de nome, workspace como repo git |
+| [workspace-structure.md](references/workspace-structure.md) | O que tem dentro de `output/` — cada subpasta gerada por `run`/`replay`/`optimize`/`extractor` e para que serve |
 | [decision-flow.md](references/decision-flow.md) | Qual comando/modo escolher em cada etapa (`parse`/`run`/`replay`/`optimize`) |
 | [guardrails.md](references/guardrails.md) | Limites de segurança, quando parar e perguntar, risco por comando |
 | [diagnostics.md](references/diagnostics.md) | Categorias de causa de divergência, onde procurar evidência, o que pode/não pode corrigir |
