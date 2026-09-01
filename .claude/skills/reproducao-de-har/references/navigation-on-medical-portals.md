@@ -14,7 +14,12 @@
 - **Step 0 e o passo de login não são protegidos de graça pelo `optimize`, e removê-los sem perceber é o falso positivo mais perigoso deste padrão de fluxo.** `optimize` só mantém automaticamente o piso (`--from`, padrão `0`) e o alvo (`--to`) — qualquer outro passo, incluindo o de login, só sobrevive à busca se o resolver identificar que o alvo depende dele via algum token dinâmico. Se o token de acesso parecer "fixo" na amostra capturada (não mudou entre as respostas que o pipeline viu, ou a resolução caiu no fallback do `captured_value`), o login deixa de ser reconhecido como origem de qualquer coisa e vira só mais um candidato removível — mesmo que na realidade a sessão seja obrigatória e o valor só pareça estático porque a amostra é pequena. "Pareceu fixo neste HAR" nunca é prova de que é fixo de verdade (mesma advertência de `analysis-strategies.md` contra generalizar de uma gravação só, e o mesmo tipo de confirmação que `extractor-crud-strategies.md` exige antes de aceitar um extrator como "inútil").
   - **Depois de qualquer `optimize` sobre um fluxo de login, conferir se o `.txt` de saída inclui o índice do primeiro passo (tipicamente `0`) e o índice do passo de autenticação.** Se algum sumiu, tratar como sinal de falso positivo — não como confirmação de que era dispensável — e investigar por que o resolver não reconheceu a dependência antes de aceitar o schedule.
   - **Step 0 carrega uma segunda função que nenhum token consumido reflete**: é a checagem implícita de que o portal está no ar antes de qualquer outra coisa. Um schedule minimizado sem ele não detecta "o site caiu inteiro" — só teria como sintoma o próprio passo de login falhando, sem isolar se a causa foi o portal fora do ar ou uma sessão mal resolvida.
-  - Se precisar garantir os dois por fora do que a busca decide: rodar `optimize --from <índice do login>` protege o login e tudo abaixo dele como piso; devolver o step 0 manualmente e revalidar com `replay --mode list --steps-file` antes de aceitar o resultado.
+  - **Forma recomendada de garantir os dois sem sacrificar `--from`:** declarar o
+    índice do step 0 e do login num `.txt` (um índice por linha) e passar via
+    `optimize --required-steps-file <arquivo>` — o `ReplayOptimizer` nunca tenta
+    remover esses índices, independente do que o resolver de tokens concluir
+    sozinho. Preferível a `--from <índice do login>`, que descarta tudo antes do
+    login (inclusive o próprio step 0).
 
 ## Fluxo de valores pagos
 
