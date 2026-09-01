@@ -110,7 +110,7 @@ def test_run_dry_skip_rules_methods(
     assert '"status_code": 200' in original_response
     assert '{\\"id\\": 4242, \\"ok\\": true}' in original_response
 
-    real_request: str = (output_dir / "real_requests" / "req_0003.json").read_text(encoding="utf-8")
+    real_request: str = (output_dir / "original_requests" / "req_0003.json").read_text(encoding="utf-8")
     assert '"is_skippable": true' in real_request
 
     golden_workspace_factory.create(output_dir).assert_matches(golden_dir / "run_dry_skip_rules_methods")
