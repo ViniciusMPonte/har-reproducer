@@ -79,17 +79,18 @@ class ReplayOptimizer:
             success_criteria: List[SuccessCriterion],
             required: Set[int] = set(),
     ) -> List[int]:
-        removable: List[int] = [anchor for anchor in anchors if anchor not in (from_index, to_index)]
+        forced: List[int] = [a for a in anchors if a not in (from_index, to_index) and a in required]
+        removable: List[int] = [a for a in anchors if a not in (from_index, to_index) and a not in required]
         working: List[int] = list(removable)
         for anchor in reversed(removable):
             trial: List[int] = [a for a in working if a != anchor]
-            trial_final_list: List[int] = sorted({from_index, to_index, *trial, *kept})
+            trial_final_list: List[int] = sorted({from_index, to_index, *forced, *trial, *kept})
             if self._confirm(
                     trial_final_list, to_index, success_criteria,
                     restrict_backbone_feed_to=set(trial_final_list),
             ):
                 working = trial
-        return working
+        return forced + working
 
     def _confirm(
             self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion],

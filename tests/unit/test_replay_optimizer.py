@@ -599,6 +599,75 @@ def test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuin
     )
 
 
+def test_reduce_anchors_with_empty_required_set_matches_default_behavior(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 153, 233], 0, 233, [], SUCCESS_CRITERIA, required=set())
+
+    assert reduced == []
+    assert len(executor.calls) == 1
+    assert executor.calls[0].ordered_indexes == [0, 233]
+
+
+def test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuinely_needs_even_without_required(
+        tmp_path: Path,
+) -> None:
+    _write_request_file(tmp_path, 0, url="https://exemplo.com/login")
+    _write_request_file(tmp_path, 50, url="https://exemplo.com/login")
+    jar: CookieJar = CookieJar()
+    executor: _CookieGatedScheduleExecutor = _CookieGatedScheduleExecutor(
+        jar, gate_index=100, required_cookie="auth",
+        smart_schedule=([0, 50, 100], {0, 50, 100}), existing_indexes=[0, 50, 100],
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor, cookie_jar=jar)
+    optimizer.backbone = [0, 50]
+    optimizer._backbone_response_cache[50] = StepResponse(status_code=200, cookies={"auth": "granted"})
+
+    reduced: List[int] = optimizer._reduce_anchors([0, 50, 100], 0, 100, [], SUCCESS_CRITERIA, required=set())
+
+    assert reduced == [50], (
+        f"a âncora 50 foi removida ({reduced!r}) mesmo sem estar em `required` — o mecanismo "
+        f"existente de detecção de dependência real (sem uso de `required`) deveria continuar mantendo-a."
+    )
+
+
+def test_reduce_anchors_keeps_a_required_anchor_that_the_search_would_otherwise_remove(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    reduced: List[int] = optimizer._reduce_anchors(
+        [0, 153, 233], 0, 233, [], SUCCESS_CRITERIA, required={153},
+    )
+
+    assert reduced == [153]
+    assert len(executor.calls) == 0
+
+
+def test_reduce_anchors_ignores_redundant_from_and_to_index_in_required(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([0, 153, 233], {0, 153, 233}),
+        existing_indexes=[0, 153, 233],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    reduced: List[int] = optimizer._reduce_anchors(
+        [0, 153, 233], 0, 233, [], SUCCESS_CRITERIA, required={0, 153, 233},
+    )
+
+    assert reduced == [153]
+    assert len(executor.calls) == 0
+
+
 def test_reduce_anchors_with_no_interior_anchor_makes_no_extra_call(tmp_path: Path) -> None:
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
         smart_schedule=([0, 9], {0, 9}),
