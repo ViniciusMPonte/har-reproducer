@@ -7,9 +7,9 @@ from tests.real.support.real_capture import RealCapture
 
 
 def _write_step_request(base_dir: Path, index: int, request: StepRequest) -> None:
-    real_requests_dir: Path = base_dir / "real_requests"
-    real_requests_dir.mkdir(parents=True, exist_ok=True)
-    path: Path = real_requests_dir / f"req_{index:04d}.json"
+    original_requests_dir: Path = base_dir / "original_requests"
+    original_requests_dir.mkdir(parents=True, exist_ok=True)
+    path: Path = original_requests_dir / f"req_{index:04d}.json"
     path.write_text(request.model_dump_json(indent=2), encoding="utf-8")
 
 
