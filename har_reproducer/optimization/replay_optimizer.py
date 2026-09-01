@@ -43,18 +43,22 @@ class ReplayOptimizer:
             to_index: int,
             success_criteria: List[SuccessCriterion],
             output_path: Optional[Path] = None,
+            required_steps: Optional[Set[int]] = None,
     ) -> Optional[List[int]]:
+        required: Set[int] = set(required_steps) if required_steps else set()
         anchors: List[int]
         backbone: List[int]
         anchors, backbone = self._run_phase1(from_index, to_index)
 
         try:
-            kept: List[int] = self._run_phase2(from_index, to_index, anchors, backbone, success_criteria)
+            kept: List[int] = self._run_phase2(from_index, to_index, anchors, backbone, success_criteria, required)
         except ReplayOptimizerAborted as aborted:
             print(f"ReplayOptimizer: aborted — {aborted.reason}")
             return None
 
-        reduced_anchors: List[int] = self._reduce_anchors(anchors, from_index, to_index, kept, success_criteria)
+        reduced_anchors: List[int] = self._reduce_anchors(
+            anchors, from_index, to_index, kept, success_criteria, required
+        )
         final_list: List[int] = sorted({from_index, to_index, *reduced_anchors, *kept})
         if not self._confirm(final_list, to_index, success_criteria):
             print("ReplayOptimizer: aborted — final confirmation failed after all ranges passed individually.")
@@ -73,18 +77,20 @@ class ReplayOptimizer:
             to_index: int,
             kept: List[int],
             success_criteria: List[SuccessCriterion],
+            required: Set[int] = set(),
     ) -> List[int]:
-        removable: List[int] = [anchor for anchor in anchors if anchor not in (from_index, to_index)]
+        forced: List[int] = [a for a in anchors if a not in (from_index, to_index) and a in required]
+        removable: List[int] = [a for a in anchors if a not in (from_index, to_index) and a not in required]
         working: List[int] = list(removable)
         for anchor in reversed(removable):
             trial: List[int] = [a for a in working if a != anchor]
-            trial_final_list: List[int] = sorted({from_index, to_index, *trial, *kept})
+            trial_final_list: List[int] = sorted({from_index, to_index, *forced, *trial, *kept})
             if self._confirm(
                     trial_final_list, to_index, success_criteria,
                     restrict_backbone_feed_to=set(trial_final_list),
             ):
                 working = trial
-        return working
+        return forced + working
 
     def _confirm(
             self, final_list: List[int], to_index: int, success_criteria: List[SuccessCriterion],
@@ -175,10 +181,11 @@ class ReplayOptimizer:
             anchors: List[int],
             backbone: List[int],
             success_criteria: List[SuccessCriterion],
+            required: Set[int] = set(),
     ) -> List[int]:
         kept: List[int] = []
         for left, right in self._ranges_target_to_from(from_index, anchors):
-            kept += self._resolve_range(left, right, to_index, backbone, kept, success_criteria)
+            kept += self._resolve_range(left, right, to_index, backbone, kept, success_criteria, required)
         return kept
 
     def _resolve_range(
@@ -189,22 +196,26 @@ class ReplayOptimizer:
             backbone: List[int],
             kept_so_far: List[int],
             success_criteria: List[SuccessCriterion],
+            required: Set[int] = set(),
     ) -> List[int]:
-        if self._attempt(left, right, [], backbone, kept_so_far, to_index, success_criteria):
-            return []
+        candidates_all: List[int] = self._candidates_between(left, right)
+        forced: List[int] = [c for c in candidates_all if c in required]
+        if self._attempt(left, right, forced, backbone, kept_so_far, to_index, success_criteria):
+            return forced
 
-        candidates: List[int] = self._candidates_between(left, right)
-        if not candidates or not self._attempt(left, right, candidates, backbone, kept_so_far, to_index, success_criteria):
+        optional: List[int] = [c for c in candidates_all if c not in required]
+        if not optional or not self._attempt(
+                left, right, candidates_all, backbone, kept_so_far, to_index, success_criteria):
             raise ReplayOptimizerAborted(
                 f"ReplayOptimizer: faixa ({left}, {right}) falhou mesmo com todos os candidatos incluídos."
             )
 
-        working: List[int] = list(candidates)
-        for candidate in reversed(candidates):
-            trial: List[int] = [c for c in working if c != candidate]
+        working: List[int] = list(optional)
+        for candidate in reversed(optional):
+            trial: List[int] = forced + [c for c in working if c != candidate]
             if self._attempt(left, right, trial, backbone, kept_so_far, to_index, success_criteria):
-                working = trial
-        return working
+                working = [c for c in working if c != candidate]
+        return forced + working
 
     def _attempt(
             self,

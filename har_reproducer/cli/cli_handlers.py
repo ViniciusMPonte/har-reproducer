@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 
 from har_reproducer.config import ProjectConfigLoader
 from har_reproducer.engines import Engine, EngineFactory, EngineMode
-from har_reproducer.fs_io import HARParser, Workspace
+from har_reproducer.fs_io import HARParser, Workspace, parse_step_index_file
 from har_reproducer.models import ProjectConfig, SuccessCriterion
 from har_reproducer.optimization import ReplayOptimizer
 from har_reproducer.replay.curl_token_comment import CurlTokenComment
@@ -158,7 +158,9 @@ class CliHandlers:
             cookie_jar, cookie_jar_curl_override,
             metadata_store_factory=SilentExtractorMetadataStore,
         )
+        required_steps: Set[int] = self._load_required_steps(args.required_steps_file)
         self._validate_optimize_from_index(runner, args.from_index)
+        self._validate_required_steps(runner, required_steps, args.from_index, args.to_index)
 
         optimizer: ReplayOptimizer = ReplayOptimizer(
             schedule_executor=runner,
@@ -171,7 +173,8 @@ class CliHandlers:
 
         result: Optional[List[int]] = orchestrator.run(
             lambda: optimizer.optimize(
-                workspace, run_id, args.from_index, args.to_index, success_criteria, output_path
+                workspace, run_id, args.from_index, args.to_index, success_criteria, output_path,
+                required_steps=required_steps,
             )
         )
         self._print_optimize_result(result, output_path or workspace.optimized_steps_file(run_id))
@@ -198,6 +201,38 @@ class CliHandlers:
             raise ValueError(
                 f"ReplayOptimizer: step(s) [{from_index}] não existem no workspace (nenhum curl file em disco) — "
                 f"provavelmente foram pulados por skip_rules ou estão fora do intervalo de steps existentes."
+            )
+
+    @staticmethod
+    def _load_required_steps(required_steps_file: Optional[str]) -> Set[int]:
+        if not required_steps_file:
+            return set()
+        path: Path = Path(required_steps_file)
+        try:
+            return set(parse_step_index_file(path))
+        except (FileNotFoundError, ValueError) as error:
+            raise ValueError(f"--required-steps-file {path}: {error}") from error
+
+    @staticmethod
+    def _validate_required_steps(
+            runner: ReplayRunner, required_steps: Set[int], from_index: int, to_index: int,
+    ) -> None:
+        existing: Set[int] = set(runner.existing_step_indexes())
+        missing: List[int] = sorted(required_steps - existing)
+        if missing:
+            raise ValueError(
+                f"ReplayOptimizer: step(s) obrigatório(s) {missing} não existem no workspace "
+                f"(nenhum curl file em disco) — provavelmente foram pulados por skip_rules ou "
+                f"estão fora do intervalo de steps existentes."
+            )
+        out_of_range: List[int] = sorted(
+            index for index in required_steps if index < from_index or index > to_index
+        )
+        if out_of_range:
+            raise ValueError(
+                f"ReplayOptimizer: step(s) obrigatório(s) {out_of_range} estão fora do intervalo "
+                f"[--from {from_index}, --to {to_index}] — remova-os de --required-steps-file ou ajuste "
+                f"--from/--to."
             )
 
     @staticmethod

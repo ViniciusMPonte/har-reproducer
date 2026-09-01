@@ -4,7 +4,7 @@ from re import Match, Pattern
 from typing import ClassVar, Dict, Iterable, List, Optional, Set, Tuple
 
 from har_reproducer.contracts import HttpTransport
-from har_reproducer.fs_io import Workspace
+from har_reproducer.fs_io import Workspace, parse_step_index_file
 from har_reproducer.models import StepResponse
 from har_reproducer.replay.curl_token_comment import CurlTokenComment, ReplayStatusPhrase
 from har_reproducer.replay.replay_result_comparator import ReplayResultComparator
@@ -196,8 +196,7 @@ class ReplayRunner:
 
     def _schedule_list(self, steps_file: Path) -> Tuple[List[int], Set[int]]:
         existing_set: Set[int] = set(self.existing_step_indexes())
-        lines: List[str] = steps_file.read_text(encoding="utf-8").splitlines()
-        ordered_indexes: List[int] = [int(line.strip()) for line in lines if line.strip()]
+        ordered_indexes: List[int] = parse_step_index_file(steps_file)
         self._require_all_existing(ordered_indexes, existing_set)
         return ordered_indexes, set(ordered_indexes)
 
