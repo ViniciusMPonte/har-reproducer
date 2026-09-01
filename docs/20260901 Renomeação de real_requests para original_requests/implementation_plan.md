@@ -4,11 +4,15 @@
 > task posterior). Cada task é autocontida — não deveria ser necessário reabrir a
 > spec pra executar uma task isolada.
 
-**Assunção herdada da spec (seção 6, não respondida explicitamente):** este plano
-assume que não há workspace real nem captura local (`tests/real/captures/`) a
-migrar manualmente. Se algum existir, a migração (`git mv real_requests
-original_requests` dentro do `output/` daquele workspace, ou da pasta da captura)
-fica fora deste plano — nenhuma task abaixo cobre isso.
+**Atualização da assunção herdada da spec (seção 6):** o plano originalmente
+assumia que não havia workspace real nem captura local a migrar. Isso se provou
+falso durante a implementação da T02 — existe captura local em
+`tests/real/captures/autorizador.unimedriopreto.com.br__20260824/` (não
+versionada). Usuário confirmou: renomear essa pasta local manualmente
+(`real_requests/` → `original_requests/`, fora de qualquer commit) faz parte da
+T02 (ver critério de aceite atualizado ali). Nenhum workspace real (fora de
+`tests/`) foi mencionado — se algum existir, a mesma migração manual se aplica,
+mas não foi confirmada nem coberta aqui.
 
 ⚠️ **Estado transiente esperado entre T01 e T03:** depois de T01 (código de
 produção renomeado), a comparação de árvore golden dentro de
@@ -63,9 +67,8 @@ real_request: str = (output_dir / "real_requests" / "req_0003.json").read_text(e
 - [ ] `WorkspaceDir.ORIGINAL_REQUESTS.value == "original_requests"`; `WorkspaceDir` não tem mais nenhum membro `REAL_REQUESTS`.
 - [ ] `Workspace(tmp_path).original_requests == tmp_path / "original_requests"` (pasta física criada nesse caminho).
 - [ ] `Workspace(tmp_path).request_file(3) == tmp_path / "original_requests" / "req_0003.json"`.
-- [ ] `uv run pytest tests/test_cli_run.py` passa 100% (inclui `test_run_dry_skip_rules_methods`, que lê o path literal).
+- [ ] `uv run pytest tests/test_cli_run.py` — todas as asserções que **não** são a comparação final de árvore golden (`assert_matches`) passam, inclusive a que lê `output_dir / "original_requests" / "req_0003.json"`. **Falha esperada e aceitável nesta task:** a linha `assert_matches(golden_dir / ...)` de `test_run_dry_default`, `test_run_dry_reset_removes_litter` e `test_run_dry_skip_rules_methods` — ver nota de estado transiente no topo do plano; só fica verde depois de T03. Não é um critério desta task rodar 100% verde.
 - [ ] Garantia de não-regressão: `uv run pytest tests/unit` continua 100% verde — nenhum teste unitário referencia `real_requests`/`REAL_REQUESTS` diretamente (todos usam `request_file()`), então nenhum deveria quebrar.
-- [ ] Cenários golden **não** precisam passar ainda nesta task (ver nota de estado transiente acima) — só rodar `tests/test_cli_run.py`, `tests/unit`, não a suíte golden inteira.
 
 ## T02 — `RealCapture`/`CaptureImporter`: renomear `real_requests` para `original_requests`
 
@@ -105,7 +108,7 @@ real_requests_dir: Path = base_dir / "real_requests"
 - [ ] `RealCapture(tmp_path).original_requests_dir == tmp_path / "original_requests"` — não existe mais `real_requests_dir` na classe.
 - [ ] `CaptureImporter.SUBDIRECTORIES == ("original_requests", "real_responses", "original_responses")`.
 - [ ] `uv run pytest tests/real/support/test_real_capture.py` passa 100%.
-- [ ] Garantia de não-regressão: `uv run pytest -m real_capture` continua se comportando igual a antes desta task (sem captura local em `tests/real/captures/`, tudo `SKIPPED`; migração de captura já existente está fora do escopo, ver nota de assunção no topo deste plano).
+- [ ] Garantia de não-regressão: `uv run pytest -m real_capture` continua se comportando igual a antes desta task. **Atualização (a assunção do topo do plano estava errada neste ambiente):** existe captura local em `tests/real/captures/autorizador.unimedriopreto.com.br__20260824/` — antes desta task, `-m real_capture` roda de verdade contra ela (não é `SKIPPED`). Renomear manualmente `real_requests/` → `original_requests/` **dentro dessa pasta local** (não versionada, fora de qualquer commit) faz parte desta task antes de rodar o critério — confirmado com o usuário. Sem esse passo, `test_login_session_cookie_is_resolved_against_the_real_capture` quebra com `FileNotFoundError`.
 
 ## T03 — Regenerar a árvore golden com o novo nome de pasta
 
