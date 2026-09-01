@@ -64,11 +64,11 @@ real_request: str = (output_dir / "real_requests" / "req_0003.json").read_text(e
 - [⚠️] Nenhum outro arquivo de `har_reproducer/` acessa o atributo/enum antigo diretamente (confirmado por busca antes desta task — só `request_file()` é usado externamente); se a implementação encontrar outro ponto, ele entra nesta mesma task, não numa task nova.
 
 **Critérios de aceite:**
-- [ ] `WorkspaceDir.ORIGINAL_REQUESTS.value == "original_requests"`; `WorkspaceDir` não tem mais nenhum membro `REAL_REQUESTS`.
-- [ ] `Workspace(tmp_path).original_requests == tmp_path / "original_requests"` (pasta física criada nesse caminho).
-- [ ] `Workspace(tmp_path).request_file(3) == tmp_path / "original_requests" / "req_0003.json"`.
-- [ ] `uv run pytest tests/test_cli_run.py` — todas as asserções que **não** são a comparação final de árvore golden (`assert_matches`) passam, inclusive a que lê `output_dir / "original_requests" / "req_0003.json"`. **Falha esperada e aceitável nesta task:** a linha `assert_matches(golden_dir / ...)` de `test_run_dry_default`, `test_run_dry_reset_removes_litter` e `test_run_dry_skip_rules_methods` — ver nota de estado transiente no topo do plano; só fica verde depois de T03. Não é um critério desta task rodar 100% verde.
-- [ ] Garantia de não-regressão: `uv run pytest tests/unit` continua 100% verde — nenhum teste unitário referencia `real_requests`/`REAL_REQUESTS` diretamente (todos usam `request_file()`), então nenhum deveria quebrar.
+- [x] `WorkspaceDir.ORIGINAL_REQUESTS.value == "original_requests"`; `WorkspaceDir` não tem mais nenhum membro `REAL_REQUESTS`.
+- [x] `Workspace(tmp_path).original_requests == tmp_path / "original_requests"` (pasta física criada nesse caminho).
+- [x] `Workspace(tmp_path).request_file(3) == tmp_path / "original_requests" / "req_0003.json"`.
+- [x] `uv run pytest tests/test_cli_run.py` — todas as asserções que **não** são a comparação final de árvore golden (`assert_matches`) passam, inclusive a que lê `output_dir / "original_requests" / "req_0003.json"`. **Falha esperada e aceitável nesta task:** a linha `assert_matches(golden_dir / ...)` de `test_run_dry_default`, `test_run_dry_reset_removes_litter` e `test_run_dry_skip_rules_methods` — ver nota de estado transiente no topo do plano; só fica verde depois de T03. Não é um critério desta task rodar 100% verde.
+- [x] Garantia de não-regressão: `uv run pytest tests/unit` continua 100% verde — nenhum teste unitário referencia `real_requests`/`REAL_REQUESTS` diretamente (todos usam `request_file()`), então nenhum deveria quebrar.
 
 ## T02 — `RealCapture`/`CaptureImporter`: renomear `real_requests` para `original_requests`
 
@@ -105,10 +105,10 @@ real_requests_dir: Path = base_dir / "real_requests"
 - `tests/real/support/test_real_capture.py` usa `original_requests_dir` no helper `_write_step_request` — o comportamento testado (reconstrução de `StepRequest`, propagação de `FileNotFoundError`) não muda, só o nome da pasta usada para escrever a amostra.
 
 **Critérios de aceite:**
-- [ ] `RealCapture(tmp_path).original_requests_dir == tmp_path / "original_requests"` — não existe mais `real_requests_dir` na classe.
-- [ ] `CaptureImporter.SUBDIRECTORIES == ("original_requests", "real_responses", "original_responses")`.
-- [ ] `uv run pytest tests/real/support/test_real_capture.py` passa 100%.
-- [ ] Garantia de não-regressão: `uv run pytest -m real_capture` continua se comportando igual a antes desta task. **Atualização (a assunção do topo do plano estava errada neste ambiente):** existe captura local em `tests/real/captures/autorizador.unimedriopreto.com.br__20260824/` — antes desta task, `-m real_capture` roda de verdade contra ela (não é `SKIPPED`). Renomear manualmente `real_requests/` → `original_requests/` **dentro dessa pasta local** (não versionada, fora de qualquer commit) faz parte desta task antes de rodar o critério — confirmado com o usuário. Sem esse passo, `test_login_session_cookie_is_resolved_against_the_real_capture` quebra com `FileNotFoundError`.
+- [x] `RealCapture(tmp_path).original_requests_dir == tmp_path / "original_requests"` — não existe mais `real_requests_dir` na classe.
+- [x] `CaptureImporter.SUBDIRECTORIES == ("original_requests", "real_responses", "original_responses")`.
+- [x] `uv run pytest tests/real/support/test_real_capture.py` passa 100%.
+- [x] Garantia de não-regressão: `uv run pytest -m real_capture` continua se comportando igual a antes desta task. **Atualização (a assunção do topo do plano estava errada neste ambiente):** existe captura local em `tests/real/captures/autorizador.unimedriopreto.com.br__20260824/` — antes desta task, `-m real_capture` roda de verdade contra ela (não é `SKIPPED`). Renomear manualmente `real_requests/` → `original_requests/` **dentro dessa pasta local** (não versionada, fora de qualquer commit) faz parte desta task antes de rodar o critério — confirmado com o usuário. Sem esse passo, `test_login_session_cookie_is_resolved_against_the_real_capture` quebra com `FileNotFoundError`.
 
 ## T03 — Regenerar a árvore golden com o novo nome de pasta
 
@@ -138,9 +138,9 @@ uv run pytest --runslow            # sem a env var — suíte inteira precisa pa
 ```
 
 **Critérios de aceite:**
-- [ ] `git diff --stat tests/golden/` mostra, para cada uma das 25 pastas, só a renomeação `real_requests/...` → `original_requests/...` — nenhum outro arquivo criado, removido ou com conteúdo alterado.
-- [ ] `uv run pytest --runslow` (sem `HAR_REPRODUCER_UPDATE_GOLDEN`) passa 100% depois da regravação.
-- [ ] Garantia de não-regressão: `uv run pytest` (suíte padrão, sem `--runslow`) também passa 100%.
+- [x] `git diff --stat tests/golden/` mostra, para cada uma das 25 pastas, só a renomeação `real_requests/...` → `original_requests/...` — nenhum outro arquivo criado, removido ou com conteúdo alterado.
+- [x] `uv run pytest --runslow` (sem `HAR_REPRODUCER_UPDATE_GOLDEN`) passa 100% depois da regravação.
+- [x] Garantia de não-regressão: `uv run pytest` (suíte padrão, sem `--runslow`) também passa 100%.
 
 ## T04 — `README.md`: atualizar as menções a `real_requests`
 
@@ -169,8 +169,8 @@ descrição "requests tal como no HAR" já estava correta, só o nome da pasta
 estava errado).
 
 **Critérios de aceite:**
-- [ ] `grep -n "real_requests" README.md` não retorna nenhuma linha.
-- [ ] As três frases (seção `run`, seção `tests/real/`, exemplo de `CaptureImporter`) usam `original_requests/` e continuam gramaticalmente corretas (conferir manualmente, não é só um replace mecânico de substring — “`real_requests/`/`real_responses/`/`original_responses/`” tem barras entre nomes, cuidado para não quebrar a lista).
+- [x] `grep -n "real_requests" README.md` não retorna nenhuma linha.
+- [x] As três frases (seção `run`, seção `tests/real/`, exemplo de `CaptureImporter`) usam `original_requests/` e continuam gramaticalmente corretas (conferir manualmente, não é só um replace mecânico de substring — “`real_requests/`/`real_responses/`/`original_responses/`” tem barras entre nomes, cuidado para não quebrar a lista).
 
 ## T05 — `reproducao-de-har`: atualizar `workspace-structure.md`
 
@@ -198,6 +198,6 @@ Só o nome da pasta muda — a descrição da coluna "Conteúdo" já estava corr
 (é exatamente por isso que o nome antigo era enganoso).
 
 **Critérios de aceite:**
-- [ ] `grep -rn "real_requests" .claude/skills/reproducao-de-har/` não retorna nenhuma linha.
-- [ ] A tabela em `workspace-structure.md` lista `original_requests/` no lugar de `real_requests/`, com o resto da linha inalterado.
-- [ ] Nenhuma outra seção do arquivo (ex.: "Como usar essa tabela nas outras etapas da skill") precisa de ajuste — conferir que nenhuma delas cita `real_requests` por fora da tabela (não deveria, mas vale conferir antes de fechar a task).
+- [x] `grep -rn "real_requests" .claude/skills/reproducao-de-har/` não retorna nenhuma linha.
+- [x] A tabela em `workspace-structure.md` lista `original_requests/` no lugar de `real_requests/`, com o resto da linha inalterado.
+- [x] Nenhuma outra seção do arquivo (ex.: "Como usar essa tabela nas outras etapas da skill") precisa de ajuste — conferir que nenhuma delas cita `real_requests` por fora da tabela (não deveria, mas vale conferir antes de fechar a task).
