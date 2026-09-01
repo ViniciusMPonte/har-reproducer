@@ -1,8 +1,12 @@
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import pytest
 
+from har_reproducer.cli import CliHandlers, CliParser, ExtractorCliHandlers
+from har_reproducer.engines import EngineFactory
+from har_reproducer.fs_io import HARParser
 from tests.support.cli_invocation_result import CliInvocationResult
 from tests.support.cli_invoker import CliInvoker
 from tests.support.replay_scenario import ReplayScenario
@@ -11,6 +15,31 @@ from tests.test_cli_replay import (
     main_workspace,
     network_session_dir,
 )
+
+
+def _build_optimize_parser() -> ArgumentParser:
+    handlers: CliHandlers = CliHandlers(engine_factory=EngineFactory, har_parser=HARParser)
+    extractor_handlers: ExtractorCliHandlers = ExtractorCliHandlers()
+    return CliParser(handlers, extractor_handlers).build()
+
+
+def test_optimize_parses_required_steps_file_flag() -> None:
+    parser: ArgumentParser = _build_optimize_parser()
+
+    args: Namespace = parser.parse_args([
+        "optimize", "--output", "X", "--to", "5", "--required-steps-file", "path.txt",
+    ])
+
+    assert args.required_steps_file == "path.txt"
+
+
+def test_optimize_defaults_required_steps_file_to_none() -> None:
+    parser: ArgumentParser = _build_optimize_parser()
+
+    args: Namespace = parser.parse_args(["optimize", "--output", "X", "--to", "5"])
+
+    optional_required_steps_file: Optional[str] = args.required_steps_file
+    assert optional_required_steps_file is None
 
 
 def test_optimize_requires_success_criteria(cli_invoker: CliInvoker, tmp_path: Path) -> None:

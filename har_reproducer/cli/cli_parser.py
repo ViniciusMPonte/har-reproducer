@@ -107,6 +107,12 @@ class CliParser:
             default=500,
             help="Worst-case request budget before aborting",
         )
+        optimize_parser.add_argument(
+            "--required-steps-file",
+            dest="required_steps_file",
+            default=None,
+            help="Path to a txt file with one required step index per line — never removed by the search",
+        )
         optimize_parser.set_defaults(func=self._handlers.handle_optimize)
 
     def _build_extractor_subparser(self, subparsers: _SubParsersAction[ArgumentParser]) -> None:
