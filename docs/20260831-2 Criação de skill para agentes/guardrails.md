@@ -13,15 +13,20 @@ via CLI deve respeitar. Objetivo: evitar que o agente cause dano fora do chat
 | `run --mode main` | **Sim** | Executa cada passo do fluxo de verdade, via curl real |
 | `replay` (qualquer modo) | **Sim** | Reexecuta curls salvos contra o servidor real |
 | `optimize` | **Sim, repetidamente** | Pode reexecutar o mesmo passo várias vezes durante a busca |
+| `extractor list`/`get`/`test` | Não | Nenhum — só lê o workspace local (`test` roda o `code` contra amostras já em disco, sem rede) |
+| `extractor create`/`update`/`delete`/`bind`/`unbind` | Não | Não fala com o portal, mas **edita artefatos persistidos** (`.py`/`.meta.json`/`.curl.sh`) que `replay`/`optimize` vão usar depois — um erro aqui não afeta o servidor real, mas pode fazer a próxima reprodução falhar ou (pior) "passar" com um valor errado. Mitigado pelo versionamento do workspace (ver diagnóstico) e pela validação que o próprio comando já faz antes de persistir — mas ainda é uma escrita, não uma leitura, e vale conferir o resultado (`extractor get` depois) antes de seguir |
 
-Regra geral: **`parse` são sempre seguros de rodar sem pedir confirmação, e
-`run --mode dry` é seguro em relação ao portal alvo** (mas ver seção 5 sobre o
-fallback de LLM). Isso não significa que `dry` seja necessariamente "melhor"
-ou preferível a `main` — são modos com propósitos diferentes (análise offline
-vs. execução real); a escolha entre eles depende do que o agente precisa
-validar, não de qual é "mais seguro". Qualquer coisa que dispare `--mode
-main`, `replay` ou `optimize` é uma ação com efeito no mundo real e deve ser
-tratada com cautela.
+Regra geral: **`parse`, e as ações de leitura/teste de `extractor`
+(`list`/`get`/`test`), são sempre seguros de rodar sem pedir confirmação; as
+ações de escrita de `extractor` (`create`/`update`/`delete`/`bind`/`unbind`)
+não têm risco de rede mas merecem a mesma atenção de "confira o efeito"
+que qualquer escrita merece; e `run --mode dry` é seguro em relação ao
+portal alvo** (mas ver seção 5 sobre o fallback de LLM). Isso não significa
+que `dry` seja necessariamente "melhor" ou preferível a `main` — são modos
+com propósitos diferentes (análise offline vs. execução real); a escolha
+entre eles depende do que o agente precisa validar, não de qual é "mais
+seguro". Qualquer coisa que dispare `--mode main`, `replay` ou `optimize` é
+uma ação com efeito no mundo real e deve ser tratada com cautela.
 
 ## 2. Efeitos colaterais não-idempotentes
 
@@ -85,10 +90,11 @@ onde um token aparece na resposta). Isso é esperado, mas tem limite:
   risco maior que um endpoint de leitura pública) e qualquer orientação
   explícita já dada pelo usuário sobre aquele fluxo. Na dúvida ou na ausência
   de contexto suficiente para decidir, o agente deve preferir parar cedo e
-  perguntar ao usuário em vez de arriscar repetir o efeito colateral.
-  *(Nota: este projeto será usado para automação de portais médicos — a
-  skill final deve trazer esse contexto de domínio explicitamente, para que
-  o agente já entre calibrado para tratar esses fluxos como área de risco.)*
+  perguntar ao usuário em vez de arriscar repetir o efeito colateral. Este
+  projeto será usado para automação de portais médicos — ver
+  `navigation-on-medical-portals.md` para os padrões de fluxo (login, valores
+  pagos, analítico) e os requisitos de cada um que mais frequentemente geram
+  esse tipo de efeito colateral ou risco de sessão.
 
 ## 5. Dados sensíveis (tokens, cookies, sessões)
 
@@ -109,7 +115,7 @@ sozinho, quando:
 
 - For a primeira execução de `--mode main` sobre um HAR novo.
 - O comando a rodar for `optimize`.
-- Uma divergência persistir após uma tentativa de correção (ver diagnóstico,
-  texto futuro) — não insistir indefinidamente sozinho.
+- Uma divergência persistir após uma tentativa de correção (ver
+  `diagnostics.md`) — não insistir indefinidamente sozinho.
 - O alvo do fluxo parecer ser um ambiente de produção real (não um ambiente
   de teste/sandbox) e a ação puder ter efeito colateral.

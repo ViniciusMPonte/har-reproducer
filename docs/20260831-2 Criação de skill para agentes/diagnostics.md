@@ -78,13 +78,16 @@ está:
 ## 5. O que o agente pode corrigir
 
 - **`extractors/` de um workspace** (saída gerada, não código do projeto):
-  o agente pode melhorar a qualidade de um extrator existente que já
-  resolve o token certo na maioria dos casos mas falha em variações —
-  **sem** mudar o índice de resposta de referência usado, **sem** trocar o
-  tipo de extrator (ex: regex → CSS), e **sem** mudar o valor do
-  placeholder (usado no nome do arquivo do extrator e no placeholder dos
-  curls). Fora desses limites, é uma mudança estrutural — não uma melhoria
-  de qualidade — e deve ser reportada, não feita.
+  o agente corrige um extrator existente **através do comando `extractor`**
+  (`update`/`bind`/`unbind`/`delete`+`create`, conforme o padrão do
+  problema — ver texto dedicado `extractor-crud-strategies.md` para os três
+  padrões típicos e a sequência de ações de cada um), nunca editando
+  `.py`/`.meta.json` diretamente à mão. O comando já impõe as mesmas
+  garantias que valeriam numa edição manual — validar o `code` contra uma
+  resposta real antes de persistir, recusar `delete` de um token ainda
+  referenciado por algum curl a menos que `--force` — então usá-lo em vez de
+  tocar os arquivos por fora é estritamente mais seguro, não só mais
+  conveniente.
 - **`config.json` do workspace**: o agente mantém um `config.json` dentro
   do próprio workspace (`<output>/config.json`), separado de qualquer
   config compartilhado do projeto — usado principalmente para afinar
@@ -98,9 +101,11 @@ mudança não resolver, o agente reverte.
 
 - **Alterar o código-fonte do projeto** (`har_reproducer/`, o pacote em si).
   Isso vale mesmo que o agente tenha certeza da causa e da correção.
-- Ainda não existe uma ferramenta de CRUD para editar extratores de forma
-  segura/estruturada — até que exista, qualquer correção de extrator é
-  manual e dentro dos limites da seção 5.
+- **Editar `.py`/`.meta.json` de um extrator diretamente no sistema de
+  arquivos.** O comando `extractor` existe justamente para isso (seção 5) —
+  editar por fora abre mão da validação que o comando já faz antes de
+  persistir, e é a única razão pela qual essa restrição existe (não é um
+  limite de permissão, é evitar persistir uma correção não testada).
 
 Se o agente identificar um bug real no código do projeto (não um extrator
 de baixa qualidade, mas um problema na lógica do `har_reproducer/` em si),
