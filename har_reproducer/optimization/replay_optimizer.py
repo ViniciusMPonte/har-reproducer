@@ -197,21 +197,24 @@ class ReplayOptimizer:
             success_criteria: List[SuccessCriterion],
             required: Set[int] = set(),
     ) -> List[int]:
-        if self._attempt(left, right, [], backbone, kept_so_far, to_index, success_criteria):
-            return []
+        candidates_all: List[int] = self._candidates_between(left, right)
+        forced: List[int] = [c for c in candidates_all if c in required]
+        if self._attempt(left, right, forced, backbone, kept_so_far, to_index, success_criteria):
+            return forced
 
-        candidates: List[int] = self._candidates_between(left, right)
-        if not candidates or not self._attempt(left, right, candidates, backbone, kept_so_far, to_index, success_criteria):
+        optional: List[int] = [c for c in candidates_all if c not in required]
+        if not optional or not self._attempt(
+                left, right, candidates_all, backbone, kept_so_far, to_index, success_criteria):
             raise ReplayOptimizerAborted(
                 f"ReplayOptimizer: faixa ({left}, {right}) falhou mesmo com todos os candidatos incluídos."
             )
 
-        working: List[int] = list(candidates)
-        for candidate in reversed(candidates):
-            trial: List[int] = [c for c in working if c != candidate]
+        working: List[int] = list(optional)
+        for candidate in reversed(optional):
+            trial: List[int] = forced + [c for c in working if c != candidate]
             if self._attempt(left, right, trial, backbone, kept_so_far, to_index, success_criteria):
-                working = trial
-        return working
+                working = [c for c in working if c != candidate]
+        return forced + working
 
     def _attempt(
             self,

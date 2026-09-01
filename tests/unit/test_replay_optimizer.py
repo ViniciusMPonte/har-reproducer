@@ -187,6 +187,106 @@ def test_run_phase2_elimination_keeps_only_the_necessary_candidate_closest_to_le
         assert all(index > 6 for index in call.ordered_indexes)
 
 
+def test_resolve_range_with_empty_required_matches_existing_non_regression_scenario(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        responses_by_call=[
+            {9: _ok(404)},
+            {9: _ok(200)},
+            {9: _ok(200)},
+            {9: _ok(404)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    resolved: List[int] = optimizer._resolve_range(
+        6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required=set(),
+    )
+
+    assert resolved == [7]
+    assert len(executor.calls) == 4
+    assert executor.calls[0].ordered_indexes == [9]
+    assert executor.calls[1].ordered_indexes == [7, 8, 9]
+    assert executor.calls[2].ordered_indexes == [7, 9]
+    assert executor.calls[3].ordered_indexes == [9]
+
+
+def test_resolve_range_keeps_required_candidate_that_search_would_otherwise_remove(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    without_required: List[int] = optimizer._resolve_range(
+        6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required=set(),
+    )
+    assert without_required == [], "pré-condição do teste: sem required, a busca remove o candidato 7"
+
+    resolved: List[int] = optimizer._resolve_range(
+        6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required={7},
+    )
+
+    assert resolved == [7]
+
+
+def test_resolve_range_with_all_candidates_required_returns_them_all_without_aborting(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(200),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    resolved: List[int] = optimizer._resolve_range(
+        6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required={7, 8},
+    )
+
+    assert set(resolved) == {7, 8}
+    assert len(executor.calls) == 1
+    assert executor.calls[0].ordered_indexes == [7, 8, 9]
+
+
+def test_resolve_range_keeps_redundant_required_candidate_without_hiding_the_genuinely_necessary_one(
+        tmp_path: Path,
+) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        responses_by_call=[
+            {9: _ok(404)},
+            {9: _ok(200)},
+            {9: _ok(404)},
+        ],
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    resolved: List[int] = optimizer._resolve_range(
+        6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required={8},
+    )
+
+    assert set(resolved) == {7, 8}
+    assert executor.calls[0].ordered_indexes == [8, 9]
+    assert executor.calls[1].ordered_indexes == [7, 8, 9]
+    assert executor.calls[2].ordered_indexes == [8, 9]
+
+
+def test_resolve_range_still_aborts_when_even_all_candidates_fail(tmp_path: Path) -> None:
+    executor: FakeScheduleExecutor = FakeScheduleExecutor(
+        smart_schedule=([6, 9], {6, 9}),
+        existing_indexes=[6, 7, 8, 9],
+        default_response=_ok(404),
+    )
+    optimizer: ReplayOptimizer = _optimizer(tmp_path, executor)
+
+    with pytest.raises(ReplayOptimizerAborted):
+        optimizer._resolve_range(
+            6, 9, 9, backbone=[6], kept_so_far=[], success_criteria=SUCCESS_CRITERIA, required=set(),
+        )
+
+
 def test_run_phase2_carries_kept_from_target_facing_ranges_into_earlier_ranges(tmp_path: Path) -> None:
     executor: FakeScheduleExecutor = FakeScheduleExecutor(
         smart_schedule=([0, 3, 9], {0, 3, 9}),
