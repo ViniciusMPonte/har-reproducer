@@ -152,11 +152,29 @@ seção.
 | [extractor-crud-strategies.md](references/extractor-crud-strategies.md) | Uso do comando `extractor` para diagnosticar e corrigir extratores |
 | [navigation-on-medical-portals.md](references/navigation-on-medical-portals.md) | Padrões de fluxo de portais médicos (login, valores pagos, analítico) e seus requisitos |
 
-## Retro (auto-atualização)
+## Checkpoint — aprendizado generalizável (fim do diagnóstico ou do optimize)
 
-Assim como [[arquitetura-e-fundamentos]], esta skill é viva: se uma sessão
-descobrir uma estratégia de diagnóstico nova, um padrão de portal não coberto,
-ou uma etapa deste manual que não bateu com o comportamento real do
-`har_reproducer`, propor um diff para o texto de referência correspondente (ou
-para este arquivo, se for sobre a sequência operacional em si) — nunca editar
-sem mostrar o diff e esperar aprovação explícita do usuário antes de aplicar.
+Depois de resolver uma divergência (Passo 3) ou fechar uma minimização (Passo 5),
+parar e perguntar: **essa investigação revelou uma estratégia — de análise ou de
+uso das ferramentas do projeto — que valeria pra qualquer HAR futuro, não só pra
+este?** Não é obrigatório que a resposta seja sim; a maioria dos diagnósticos não
+gera atualização nenhuma aqui, e isso é esperado. É esse checkpoint que faz a
+skill ficar mais esperta com o tempo em vez de reaprender a mesma coisa em toda
+sessão nova — sem ele, é fácil o agente nunca parar pra registrar o que
+descobriu no meio de um diagnóstico.
+
+- **Vale** propor diff para a referência correspondente: um padrão de
+  investigação que funcionou (→ `analysis-strategies.md`), um uso não óbvio do
+  comando `extractor` que resolveu uma classe de problema (→
+  `extractor-crud-strategies.md`), um critério novo pra escolher entre
+  comandos/modos (→ `decision-flow.md`), um risco de guardrail não coberto (→
+  `guardrails.md`), um padrão de portal não descrito (→
+  `navigation-on-medical-portals.md`), ou uma etapa deste manual que não bateu
+  com o comportamento real do `har_reproducer` (→ este arquivo).
+- **Não vale**: um detalhe específico deste HAR/portal (nome de campo, formato
+  de token daquele site específico) — isso já tem lugar: o registro de
+  estratégias do próprio workspace ([references/diagnostics.md](references/diagnostics.md)
+  seção 7), não a skill.
+
+Nunca editar os textos de referência ou este arquivo sem mostrar o diff
+proposto e esperar aprovação explícita do usuário antes de aplicar.
