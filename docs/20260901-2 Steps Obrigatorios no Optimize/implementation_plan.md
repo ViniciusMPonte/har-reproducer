@@ -53,12 +53,12 @@ função livre reaproveitável tanto por `replay` (T02) quanto pelo novo
   wrapping novo só para `optimize`, spec seção 3.3/5).
 
 **Critérios de aceite:**
-- [ ] `parse_step_index_file(arquivo com "0\n3\n\n7\n")` retorna `[0, 3, 7]`.
-- [ ] `parse_step_index_file(arquivo vazio)` retorna `[]`.
-- [ ] `parse_step_index_file(arquivo só com linhas em branco)` retorna `[]`.
-- [ ] `parse_step_index_file(caminho inexistente)` levanta `FileNotFoundError`.
-- [ ] `parse_step_index_file(arquivo com linha "abc")` levanta `ValueError`.
-- [ ] `parse_step_index_file(arquivo com "3\n3\n1\n")` retorna `[3, 3, 1]` (preserva
+- [x] `parse_step_index_file(arquivo com "0\n3\n\n7\n")` retorna `[0, 3, 7]`.
+- [x] `parse_step_index_file(arquivo vazio)` retorna `[]`.
+- [x] `parse_step_index_file(arquivo só com linhas em branco)` retorna `[]`.
+- [x] `parse_step_index_file(caminho inexistente)` levanta `FileNotFoundError`.
+- [x] `parse_step_index_file(arquivo com linha "abc")` levanta `ValueError`.
+- [x] `parse_step_index_file(arquivo com "3\n3\n1\n")` retorna `[3, 3, 1]` (preserva
       ordem e duplicata — não deduplica, não ordena).
 
 ---
@@ -99,12 +99,12 @@ def _schedule_list(self, steps_file: Path) -> Tuple[List[int], Set[int]]:
   existentes de `replay --mode list` já cobrem o contrato.
 
 **Critérios de aceite:**
-- [ ] Toda a suíte de testes que já cobre `replay --mode list --steps-file` (ex.:
+- [x] Toda a suíte de testes que já cobre `replay --mode list --steps-file` (ex.:
       `tests/test_cli_optimize.py`, testes de `ReplayRunner` em
       `tests/unit/`) continua passando sem alteração — garantia de não-regressão.
-- [ ] `_schedule_list` de um `.txt` com "0\n2\n5\n" continua retornando
+- [x] `_schedule_list` de um `.txt` com "0\n2\n5\n" continua retornando
       `([0, 2, 5], {0, 2, 5})`.
-- [ ] `_schedule_list` com um índice que não existe no workspace continua
+- [x] `_schedule_list` com um índice que não existe no workspace continua
       levantando `ValueError` via `_require_all_existing` (mensagem inalterada).
 
 ---
@@ -220,15 +220,15 @@ def _run_phase2(
   neste caso (mesma justificativa da spec, seção 3.5).
 
 **Critérios de aceite:**
-- [ ] `optimize(...)` chamado sem `required_steps` (como todo teste hoje chama)
+- [x] `optimize(...)` chamado sem `required_steps` (como todo teste hoje chama)
       continua produzindo exatamente o mesmo resultado de antes — garantia de
       não-regressão (rodar toda a suíte `tests/unit/test_replay_optimizer.py`).
-- [ ] `optimize(..., required_steps={5})` não lança erro e chega até
+- [x] `optimize(..., required_steps={5})` não lança erro e chega até
       `_resolve_range`/`_reduce_anchors` sem quebrar (ainda sem efeito observável
       nesta task — efeito é validado em T04/T05).
-- [ ] `optimize(..., required_steps=None)` e `optimize(...)` (omitindo o parâmetro)
+- [x] `optimize(..., required_steps=None)` e `optimize(...)` (omitindo o parâmetro)
       produzem resultado idêntico entre si.
-- [ ] Toda chamada direta existente a `_run_phase2(...)` sem `required` em
+- [x] Toda chamada direta existente a `_run_phase2(...)` sem `required` em
       `tests/unit/test_replay_optimizer.py` (linhas 130, 145, 160, 178, 203, 282 no
       estado atual do arquivo) continua funcionando sem `TypeError` — garantia de
       não-regressão explícita para o default `set()` dos métodos privados.
@@ -308,23 +308,23 @@ def _resolve_range(
   aqui, em `_resolve_range`.
 
 **Critérios de aceite:**
-- [ ] Com `required=set()`: mesmo resultado do algoritmo atual num cenário já
+- [x] Com `required=set()`: mesmo resultado do algoritmo atual num cenário já
       coberto por teste existente (ex.: um cenário equivalente a
       `test_run_phase2_elimination_keeps_only_the_necessary_candidate_closest_to_left`
       ou `test_range_without_candidates_shortcut_failure_aborts`, em
       `tests/unit/test_replay_optimizer.py` — confirmar nome exato no arquivo antes
       de reutilizar, não assumir que existe literalmente) — não-regressão.
-- [ ] Com `required={c}` onde `c` é um candidato do range que a busca *removeria*
+- [x] Com `required={c}` onde `c` é um candidato do range que a busca *removeria*
       normalmente (i.e., o teste sem `required` já prova que `c` não é necessário):
       `_resolve_range(...)` inclui `c` no retorno mesmo assim.
-- [ ] Com `required` igual a todos os candidatos do range: `_resolve_range` retorna
+- [x] Com `required` igual a todos os candidatos do range: `_resolve_range` retorna
       exatamente esses candidatos (todos), sem levantar `ReplayOptimizerAborted`,
       desde que a tentativa com todos presentes passe.
-- [ ] Com um candidato obrigatório que sozinho não muda se a faixa passa ou não
+- [x] Com um candidato obrigatório que sozinho não muda se a faixa passa ou não
       (redundante): o resultado final ainda o inclui, e nenhum outro candidato
       necessário deixa de ser detectado (o laço guloso sobre `optional` continua
       funcionando igual).
-- [ ] `ReplayOptimizerAborted` continua sendo levantada quando nem com todos os
+- [x] `ReplayOptimizerAborted` continua sendo levantada quando nem com todos os
       candidatos (`candidates_all`) a faixa passa — comportamento de erro
       inalterado.
 
@@ -389,19 +389,19 @@ def _reduce_anchors(
   garantia de não-regressão, mesma lógica de T04.
 
 **Critérios de aceite:**
-- [ ] Com `required=set()`: mesmo resultado do algoritmo atual no teste existente
+- [x] Com `required=set()`: mesmo resultado do algoritmo atual no teste existente
       `test_reduce_anchors_removes_an_unnecessary_anchor` (ou nome equivalente já
       presente em `tests/unit/test_replay_optimizer.py`) — não-regressão.
-- [ ] Com um anchor `a` que o teste
+- [x] Com um anchor `a` que o teste
       `test_reduce_anchors_does_not_remove_an_anchor_whose_cookie_the_target_genuinely_needs`
       (`tests/unit/test_replay_optimizer.py`) já prova ser necessário: continua
       sendo mantido mesmo sem estar em `required` (não-regressão do mecanismo
       existente).
-- [ ] Com `required={a}` onde `a` é um anchor que a busca *removeria* normalmente
+- [x] Com `required={a}` onde `a` é um anchor que a busca *removeria* normalmente
       (cenário construído análogo ao teste de anchor desnecessário, mas com `a`
       declarado obrigatório): `_reduce_anchors` retorna `a` no resultado mesmo
       assim.
-- [ ] `from_index`/`to_index` continuam nunca aparecendo em `removable`/`forced`
+- [x] `from_index`/`to_index` continuam nunca aparecendo em `removable`/`forced`
       (já são sempre mantidos por fora, sem mudança nesta task).
 
 ---
@@ -458,9 +458,9 @@ Nova chamada `add_argument` antes de `set_defaults`:
   is None`, o que T07 trata como "nenhum step obrigatório declarado".
 
 **Critérios de aceite:**
-- [ ] `optimize --output X --to 5 --required-steps-file path.txt` parseia com
+- [x] `optimize --output X --to 5 --required-steps-file path.txt` parseia com
       `args.required_steps_file == "path.txt"`.
-- [ ] `optimize --output X --to 5` (sem a flag nova) parseia com
+- [x] `optimize --output X --to 5` (sem a flag nova) parseia com
       `args.required_steps_file is None` — não-regressão de toda invocação
       existente de `optimize` sem a flag nova.
 
@@ -579,21 +579,21 @@ def _validate_required_steps(
   `output_path`, que também é opcional.
 
 **Critérios de aceite:**
-- [ ] `optimize --required-steps-file <arquivo com "3\n">` (índice `3` existente e
+- [x] `optimize --required-steps-file <arquivo com "3\n">` (índice `3` existente e
       dentro de `[--from, --to]`) roda sem erro e o `.txt` final inclui `3`, mesmo
       num cenário onde `3` seria removido sem a flag (teste de integração/CLI,
       similar aos já existentes em `tests/test_cli_optimize.py`).
-- [ ] `optimize --required-steps-file <arquivo com índice inexistente no workspace>`
+- [x] `optimize --required-steps-file <arquivo com índice inexistente no workspace>`
       levanta `ValueError` mencionando o índice, antes de qualquer requisição de
       rede.
-- [ ] `optimize --required-steps-file <arquivo com índice fora de [--from, --to]>`
+- [x] `optimize --required-steps-file <arquivo com índice fora de [--from, --to]>`
       levanta `ValueError` mencionando `--from`/`--to`.
-- [ ] `optimize --required-steps-file <caminho inexistente>` levanta `ValueError`
+- [x] `optimize --required-steps-file <caminho inexistente>` levanta `ValueError`
       mencionando o caminho do arquivo (não deixa `FileNotFoundError` cru
       propagar).
-- [ ] `optimize --required-steps-file <arquivo com linha "abc">` levanta
+- [x] `optimize --required-steps-file <arquivo com linha "abc">` levanta
       `ValueError` mencionando o caminho do arquivo.
-- [ ] `optimize` sem `--required-steps-file` continua funcionando exatamente como
+- [x] `optimize` sem `--required-steps-file` continua funcionando exatamente como
       hoje — toda a suíte `tests/test_cli_optimize.py` existente passa sem
       alteração (não-regressão).
 
@@ -637,9 +637,9 @@ algo como:
   acionável (mesmo princípio de concisão das demais referências da skill).
 
 **Critérios de aceite:**
-- [ ] O bullet de contorno manual (`--from <índice do login>` como única opção)
+- [x] O bullet de contorno manual (`--from <índice do login>` como única opção)
       não existe mais como *única* recomendação — `--required-steps-file` aparece
       como forma preferencial.
-- [ ] O restante da seção "Fluxo de login" (diagnóstico do falso positivo,
+- [x] O restante da seção "Fluxo de login" (diagnóstico do falso positivo,
       checagem do `.txt` de saída, papel do step 0 como sanity check) permanece
       textualmente intacto.
