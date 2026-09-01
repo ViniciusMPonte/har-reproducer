@@ -138,6 +138,12 @@ Só depois que `replay --mode all` confirmou o fluxo de ponta a ponta. Ver
 (efeito colateral repetido, teto de `--max-requests`) — **rodar com supervisão
 explícita a cada execução**, nunca em loop autônomo sem o usuário sabendo.
 
+⚠️ Em fluxos de login, `optimize` pode remover o próprio passo de login (e o
+step 0) sem perceber, se o token de acesso parecer estático na amostra
+capturada — ver [references/navigation-on-medical-portals.md](references/navigation-on-medical-portals.md),
+seção "Fluxo de login", pra como detectar e evitar esse falso positivo
+específico.
+
 ## Passo 5 — validar que o schedule mínimo se sustenta sozinho
 
 Antes de considerar o `.txt` do `optimize` como entregável final: testá-lo
