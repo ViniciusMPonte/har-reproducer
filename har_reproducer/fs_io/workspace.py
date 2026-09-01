@@ -15,7 +15,7 @@ class Workspace:
         self.curls: Path = self._prepare_dir(WorkspaceDir.CURLS)
         self.real_responses: Path = self._prepare_dir(WorkspaceDir.REAL_RESPONSES)
         self.original_responses: Path = self._prepare_dir(WorkspaceDir.ORIGINAL_RESPONSES)
-        self.real_requests: Path = self._prepare_dir(WorkspaceDir.REAL_REQUESTS)
+        self.original_requests: Path = self._prepare_dir(WorkspaceDir.ORIGINAL_REQUESTS)
         self.extractors: Path = self._prepare_dir(WorkspaceDir.EXTRACTORS)
         self.temp_extractors: Path = self._prepare_dir(WorkspaceDir.TEMP_EXTRACTORS)
         self.mitm_capture: Path = self._prepare_dir(WorkspaceDir.MITM_CAPTURE)
@@ -44,7 +44,7 @@ class Workspace:
         return self.extractors / f"extract_{safe_token_id}.meta.json"
 
     def request_file(self, index: int) -> Path:
-        return self.real_requests / f"req_{index:0{self.STEP_INDEX_WIDTH}d}.json"
+        return self.original_requests / f"req_{index:0{self.STEP_INDEX_WIDTH}d}.json"
 
     def response_file(self, index: int) -> Path:
         return self.real_responses / f"res_{index:0{self.STEP_INDEX_WIDTH}d}.json"

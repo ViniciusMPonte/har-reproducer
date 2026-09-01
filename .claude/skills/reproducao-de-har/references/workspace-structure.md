@@ -23,7 +23,7 @@ algumas fiquem sem arquivo nenhum dependendo do modo.
 
 | Pasta | Conteúdo | Quem escreve | Quando fica vazia |
 |---|---|---|---|
-| `real_requests/` | `req_NNNN.json` — a requisição de cada passo, tal como estava no HAR (sem tokens resolvidos) | `run` | Nunca (um `run` sempre grava todas) |
+| `original_requests/` | `req_NNNN.json` — a requisição de cada passo, tal como estava no HAR (sem tokens resolvidos) | `run` | Nunca (um `run` sempre grava todas) |
 | `original_responses/` | `res_NNNN.json` — a resposta que **já estava gravada no HAR original**, sem nenhuma requisição nova | `run` | Nunca — grava em qualquer modo, mesmo `dry` |
 | `real_responses/` | `res_NNNN.json` — a resposta **real**, obtida de fato contra o servidor (via proxy `mitmproxy`) | `run --mode main` | Sempre vazia em `run --mode dry` (não há tráfego de rede) |
 | `curls/` | `req_NNNN.curl.sh` — um `curl` parametrizado por passo, com `{{extractor:<token_id>}}` no lugar de cada valor dinâmico e comentários `# Token <id> comes from response of step <n>` documentando a dependência | `run` | Nunca |

@@ -77,7 +77,7 @@ uv run python -m har_reproducer.main run --har caminho/para/arquivo.har [--mode 
 | `--output` | Diretório de saída (padrão: `<pasta-do-har>/output`) |
 | `--reset` | Apaga e recria o diretório de saída antes de rodar (padrão: preserva) |
 
-Gera em `<output>/`: `real_requests/` (requests tal como no HAR), `original_responses/` (respostas originais do HAR — sempre gravadas, em qualquer modo), `real_responses/` (respostas reais obtidas via HTTP — só populado em modo `main`; em modo `dry` fica vazio), `curls/` (um `.curl.sh` por passo) e `extractors/` (extratores gerados para os tokens dinâmicos). Esse workspace é o que o `replay` reutiliza depois.
+Gera em `<output>/`: `original_requests/` (requests tal como no HAR), `original_responses/` (respostas originais do HAR — sempre gravadas, em qualquer modo), `real_responses/` (respostas reais obtidas via HTTP — só populado em modo `main`; em modo `dry` fica vazio), `curls/` (um `.curl.sh` por passo) e `extractors/` (extratores gerados para os tokens dinâmicos). Esse workspace é o que o `replay` reutiliza depois.
 
 ### `replay` — reexecutar passos de um workspace já gerado
 
@@ -201,7 +201,7 @@ A suíte tem três camadas, todas em `tests/`:
 
 - **`tests/golden/`** (caracterização de ponta a ponta): para cada cenário de `parse`/`run`/`replay`, compara a árvore de arquivos gerada e o `stdout` contra uma referência gravada. Um bloco marcado `slow` sobe um servidor HTTP local e o `mitmproxy` de verdade para cobrir `run --mode main` e os 4 modos de `replay` — fica fora da rodada padrão. `optimize` tem sua própria camada de testes `slow` (sem comparação de árvore golden, ver `tests/test_cli_optimize.py`), cobrindo o caminho feliz de ponta a ponta e a validação de erros antes de qualquer requisição de rede.
 - **`tests/unit/`**: testes de unidade que isolam uma classe por vez com dublês (`tests/support/`), sem invocar `main()` nem comparar árvore de diretório.
-- **`tests/real/`**: testes que rodam os mecanismos de produção (`BaselineDiff`, `CandidateResolver`, etc., sem dublê) contra **capturas reais** de sites de produção — `real_requests/`/`real_responses/`/`original_responses/` de um workspace real, gerado por um `run --mode main` de verdade. Ver seção própria abaixo.
+- **`tests/real/`**: testes que rodam os mecanismos de produção (`BaselineDiff`, `CandidateResolver`, etc., sem dublê) contra **capturas reais** de sites de produção — `original_requests/`/`real_responses/`/`original_responses/` de um workspace real, gerado por um `run --mode main` de verdade. Ver seção própria abaixo.
 
 Toda a suíte é offline (sem rede) exceto o bloco `slow` de `tests/golden/` citado acima —
 `tests/real/` lê captura já gravada em disco, não faz requisição nenhuma.
@@ -253,7 +253,7 @@ CaptureImporter(Path('tests/real/captures')).import_capture(
 "
 ```
 
-Isso copia `real_requests/`, `real_responses/` e `original_responses/` do workspace de
+Isso copia `original_requests/`, `real_responses/` e `original_responses/` do workspace de
 origem para `tests/real/captures/exemplo.com.br__20260824/`. Rodar de novo com o mesmo
 domínio/data funde por cima (sobrescreve os arquivos em comum, preserva o resto).
 

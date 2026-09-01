@@ -6,7 +6,7 @@ from typing import ClassVar, Tuple
 
 class CaptureImporter:
 
-    SUBDIRECTORIES: ClassVar[Tuple[str, ...]] = ("real_requests", "real_responses", "original_responses")
+    SUBDIRECTORIES: ClassVar[Tuple[str, ...]] = ("original_requests", "real_responses", "original_responses")
 
     def __init__(self, captures_root: Path) -> None:
         self.captures_root: Path = captures_root
