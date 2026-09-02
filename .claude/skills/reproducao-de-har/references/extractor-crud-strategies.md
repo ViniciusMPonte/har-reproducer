@@ -20,6 +20,7 @@
 ## Ordem de investimento: eliminar ruído antes de investigar a fundo
 
 - **Descartar extratores inúteis (falso-positivo) antes de gastar tempo entendendo o resto do fluxo.** Um extrator inútil pode produzir avisos de fallback que parecem apontar pra um problema mais sério, desviando a investigação — vale resolver esses primeiro (são rápidos de confirmar e corrigir) e só depois voltar pra sintomas que continuam depois de eliminado o ruído.
+- **Sinal barato pra achar extrator órfão sem gastar nenhuma requisição**: depois de um `run --mode main` que logou `"Attempt 1 failed... Retrying"` pra vários tokens, rodar `extractor list` e procurar `referenced_by: []` — não vinculado a nenhum curl. Geralmente é sobra de uma primeira tentativa de resolução automática que falhou e caiu num extrator substituto (ex.: `LiteralFallbackAgent`), sem que o antigo tenha sido removido do diretório. Vale rodar essa checagem como rotina, antes de `replay`/`optimize` (ver `decision-flow.md`), não só quando já se suspeita de um problema — evita levar lixo pra dentro da busca do `optimize`, que reexecutaria caminhos que nunca importaram.
 - **Nunca criar um extrator "porque parece que devia existir".** Só criar depois de confirmar, por análise de conteúdo real (não por suposição sobre como o fluxo "deveria" funcionar), que o valor é de fato dinâmico, muda entre execuções, e vem de uma resposta específica identificável.
 
 ## Confirmar o efeito, não só a aplicação

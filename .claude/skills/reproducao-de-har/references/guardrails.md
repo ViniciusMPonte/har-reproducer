@@ -64,6 +64,22 @@ sabe distinguir isso sozinho**; ele só executa o que está no HAR.
   falhar de forma consistente (não só divergência de conteúdo, mas erro de
   conexão/timeout), o agente deve parar e reportar em vez de tentar de novo
   automaticamente.
+- **Se o usuário der mais liberdade ao agente para disparar requisições reais
+  em sequência sem confirmar cada uma** (ex: autorizar todo um `optimize` ou
+  uma sequência de `replay` de uma vez, em vez de aprovar passo a passo), isso
+  não elimina o cuidado com o ritmo — só desloca de "pedir confirmação a cada
+  requisição" para "espaçar as requisições sozinho". Intervalo de referência:
+  algo entre ~1 e ~10 minutos entre requisições reais, mais conservador (mais
+  perto de 10 min ou mais) quanto maior o volume de requisições, quanto mais
+  sensível o portal (produção real, sem indicação de ambiente de teste) e
+  quanto menos o agente souber sobre o comportamento esperado do fluxo. Não é
+  um número fixo — é uma calibração de risco, igual às outras desta seção.
+- **Latência crescente entre requisições é o sinal mais direto de que o
+  volume está afetando o portal** — se o tempo de resposta começar a aumentar
+  de forma consistente ao longo de uma sequência (não uma variação pontual),
+  tratar como sinal de estresse no servidor: espaçar ainda mais as próximas
+  requisições, ou parar e avisar o usuário, em vez de simplesmente continuar
+  no mesmo ritmo.
 
 ## 4. Escopo de exploração restrito ao HAR
 
