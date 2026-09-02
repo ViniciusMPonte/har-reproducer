@@ -24,6 +24,96 @@
     login (inclusive a própria requisição da tela inicial).
   - **Mesmo declarando de saída, continuar conferindo o `.txt` de saída de qualquer `optimize` sobre um fluxo de login** — como rede de segurança, não como único mecanismo: confirma que os dois índices realmente aparecem no resultado (proteção contra engano na identificação do índice certo, ou erro no `required-steps-file`). Se algum sumiu apesar do `required-steps-file`, é sinal de bug/config errada, não de que era dispensável.
 
+## Características das requisições de filtro (busca por protocolo, guia, lote, datas)
+
+Ponto comum aos fluxos de valores pagos e analítico: a requisição em que o
+portal recebe os critérios de busca e decide o que retornar. Reconhecer essas
+características ajuda tanto a ler o HAR quanto a decidir, no Passo 3, se um
+parâmetro precisa de extrator ou é literal fixo por sessão/execução.
+
+**Método HTTP e onde os parâmetros viajam**
+- `GET` com parâmetros na URL (`?dataInicio=01/01/2026&dataFim=31/01/2026&protocolo=12345`)
+  é comum em portais mais simples ou mais modernos (SPA com API REST atrás) —
+  aparece quando o filtro é "leve" (poucos campos, sem seleção múltipla) e
+  quando o portal permite favoritar/compartilhar a URL de uma busca.
+- `POST` com corpo `application/x-www-form-urlencoded` é o mais comum em
+  portais de formulário tradicional (postback): os mesmos campos de
+  `<input>`/`<select>` da tela viajam como pares chave-valor, geralmente junto
+  com uma porção grande de campos de estado da página sem relação com o filtro
+  em si — típico de JSF/ASP.NET, onde o formulário inteiro é reenviado a cada
+  submit, não só os campos de filtro.
+- `POST` com corpo JSON é o padrão em aplicações mais novas (Angular/React)
+  que falam com uma API JSON — o filtro é um objeto estruturado
+  (`{"dataInicio": "...", "protocolos": [...]}`), o que facilita filtros com
+  múltiplos valores (lista de protocolos, múltiplos lotes) sem inventar
+  convenção de query string.
+- Raro, mas existe: GET com parâmetros codificados de forma não trivial
+  (datas serializadas num formato próprio, ou um único parâmetro opaco que
+  representa o filtro inteiro montado numa tela anterior) — nesses casos a URL
+  sozinha não é legível, é preciso ter passado pela tela pra saber o que ela
+  significa.
+
+**Formato dos valores de data**
+Raramente é ISO 8601 puro — vale conferir caso a caso, não assumir:
+- `dd/MM/yyyy`: mais comum em portais brasileiros com tela de filtro
+  tradicional (reflete o formato de exibição).
+- `yyyy-MM-dd`: mais comum em APIs JSON.
+- Timestamp epoch (milissegundos): aparece em portais baseados em componentes
+  de calendário JS que serializam a data internamente antes de montar a
+  requisição.
+- Alguns portais exigem as duas pontas do intervalo mesmo em busca por uma
+  data só (repetindo o mesmo valor em "de" e "até"); outros aceitam um campo
+  único.
+
+**Identificadores (protocolo, guia, lote)**
+- Geralmente texto simples, mas a máscara/formatação importa: alguns portais
+  aceitam só dígitos, outros exigem os separadores exatamente como exibidos na
+  tela (`000123/2026-01`) — enviar sem a máscara correta costuma retornar
+  "não encontrado" em vez de um erro claro, o que pode ser confundido com
+  "filtro vazio" de verdade (ver abaixo).
+- Busca por múltiplos identificadores ao mesmo tempo tende a aparecer de duas
+  formas: um campo de texto com separador (vírgula, ponto-e-vírgula, quebra de
+  linha) que o servidor faz o parse, ou uma lista/array de fato quando o
+  backend é uma API JSON. Incomum mas existe: portais que só aceitam um
+  identificador por requisição — nesse caso a busca por vários vira várias
+  requisições sequenciais, uma por identificador.
+
+**Combinação com estado de contexto já estabelecido**
+A requisição de filtro raramente carrega todo o contexto necessário — depende
+de algo já selecionado em telas anteriores (a unidade, o convênio, às vezes a
+própria sessão) que o portal aplica do lado do servidor. O mesmo corpo de
+filtro (mesmas datas, mesmo protocolo) pode devolver resultados diferentes
+dependendo do que foi selecionado antes — a requisição de filtro não é "pura"
+no sentido de depender só dos parâmetros explícitos que ela carrega. Isso é o
+mesmo "estado de navegação no servidor" já descrito no fluxo de valores pagos
+abaixo, aplicado especificamente à requisição de filtro: pular ou reordenar
+uma etapa de contexto pode manter a requisição de filtro "funcionando" (sem
+erro), só que devolvendo o conjunto errado de dados — uma divergência
+silenciosa, mais difícil de notar que uma falha explícita.
+
+**Resposta: paginação e formato**
+- Quase sempre paginada, mesmo quando o filtro é estreito — os parâmetros de
+  paginação (número da página, tamanho da página) costumam viajar junto com os
+  próprios critérios de filtro na mesma requisição, não como uma chamada
+  separada. A resposta traz metadado de total de páginas/registros pra saber
+  quando parar.
+- Formato varia com a natureza do portal: HTML de uma tabela (portais
+  tradicionais, onde o filtro é um postback que redesenha a página inteira),
+  JSON estruturado (APIs), ou um XML/relatório (quando o filtro já dispara
+  diretamente a geração do arquivo de resultado, sem tela intermediária de
+  grid).
+
+**Validação e "filtro vazio" vs. erro**
+O portal geralmente responde com status HTTP de sucesso mesmo quando o filtro
+não encontra nada — a distinção entre "filtro aplicado corretamente, sem
+resultados" e "filtro rejeitado por parâmetro inválido" só aparece no conteúdo
+da resposta (uma mensagem, uma lista vazia com metadado específico, ou às
+vezes nenhuma diferença visível, o que exige inferir pelo padrão histórico do
+portal). Mesma advertência de `diagnostics.md` contra aceitar sucesso só pelo
+`status_code`: `success_criteria` para este tipo de requisição normalmente
+precisa de `body_contains` que distinga essas três situações (resultado real,
+lista vazia válida, parâmetro rejeitado), não só o código de status.
+
 ## Fluxo de valores pagos
 
 **Características HTTP**
