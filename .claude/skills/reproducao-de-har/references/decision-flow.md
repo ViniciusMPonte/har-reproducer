@@ -47,7 +47,20 @@ número de chamadas ao LLM que aconteceriam em tempo real durante o `main`.
 Se o fluxo não tiver esse risco de latência, pular direto para `main` é a
 opção padrão.
 
-## 3. De `run` para `replay`
+## 3. Revisar extratores antes de `replay`/`optimize`
+
+Depois de qualquer `run` (main ou dry) e **antes** de rodar `replay --mode all`
+ou `optimize`: rodar `extractor list` sobre o workspace. É leitura pura, sem
+rede, e pega uma classe de problema que não precisa de nenhuma requisição real
+pra ser confirmado ou corrigido — ver
+[extractor-crud-strategies.md](extractor-crud-strategies.md) para o sinal mais
+barato (extratores com `referenced_by: []`, tipicamente sintoma de
+"Attempt 1 failed... Retrying" no log do `run`) e os padrões de correção.
+Vale como hábito padrão, não só quando algo já deu errado: pegar um extrator
+órfão ou obviamente errado agora custa uma leitura; deixá-lo passar pra dentro
+do `optimize` custa dezenas de requisições reais gastas em cima de lixo.
+
+## 4. De `run` para `replay`
 
 `replay` exige um workspace já existente com `curls/` populado (de um `run`
 anterior). Não recria nada do zero — reaproveita o que já foi gerado.
@@ -72,7 +85,7 @@ agente está tentando responder:
 | `list` | Ferramenta para comprovar uma teoria específica formada durante a análise — ex: "concluí que os passos 2 e 5 precisam ser sequenciais entre si, e o resto só depende das dependências óbvias"; monta a lista exata e valida. |
 | `all` | Sempre o primeiro modo depois de um `run` — valida o resultado como um todo antes de qualquer análise mais fina. |
 
-## 4. De `replay` para `optimize`
+## 5. De `replay` para `optimize`
 
 `optimize` também exige workspace com `curls/` e referência de resposta já
 populados (idealmente `real_responses/` de um `run --mode main` anterior).
@@ -89,7 +102,7 @@ para conferir se o subconjunto encontrado ainda respeita as dependências
 produziu. Ver guardrails para os riscos de rodar `optimize` (efeito
 colateral repetido, `--max-requests`).
 
-## 5. Resumo visual
+## 6. Resumo visual
 
 ```
 HAR novo
@@ -100,6 +113,9 @@ risco de muita dependência de LLM fallback (timing sensível)?
   ├─ não ──────────────────────────────▶ run --mode main
   │
   └─ sim ──▶ run --mode dry (resolve tokens offline) ──▶ run --mode main
+  │
+  ▼
+extractor list   (revisão offline — sem rede — antes de qualquer replay/optimize)
   │
   ▼
 replay --mode all   (sempre o primeiro — valida o run, detecta falso positivo)
