@@ -1,0 +1,268 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" version="28.2.8">
+  <diagram name="Fluxo do run" id="q9rLvyMdNrYtmpkQDYIH">
+    <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-327" value="" style="group;fontSize=6;" connectable="0" vertex="1" parent="1">
+          <mxGeometry x="51" y="-1122" width="726" height="1076" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-257" value="Comando run da CLI (har_reproducer)" style="text;html=1;align=left;verticalAlign=middle;fontSize=10;fontStyle=1;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry y="10" width="222" height="8.46" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-259" value="&lt;font&gt;Usuário roda: har_reproducer run --har fluxo.har&lt;/font&gt;" style="rounded=1;arcSize=50;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#E9EDF2;strokeColor=#55606F;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="22.548788474132284" width="178.31578947368425" height="21.139489194499017" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-260" value="&lt;b&gt;CliHandlers&lt;/b&gt;&lt;br&gt;&lt;font&gt;Recebe o comando run e orquestra a preparação do ambiente&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="57.78127046496398" width="165.5789473684211" height="28.185985592665357" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-261" value="&lt;b&gt;Workspace&lt;/b&gt;&lt;br&gt;&lt;font&gt;Cria a estrutura de pastas onde os resultados desse fluxo vão ficar&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="100.06024885396201" width="165.5789473684211" height="28.185985592665357" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-262" value="&lt;b&gt;ProjectConfigLoader&lt;/b&gt;&lt;br&gt;&lt;font&gt;Carrega as regras específicas desse fluxo, definidas em config.json&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="142.33922724296008" width="165.5789473684211" height="28.185985592665357" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-263" value="&lt;font&gt;Esse modo (--mode) precisa de rede real?&lt;/font&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="184.6182056319581" width="178.31578947368425" height="35.232481990831694" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-264" value="&lt;b&gt;DryEngine&lt;/b&gt;&lt;br&gt;&lt;font&gt;Não faz requisição nenhuma: reaproveita a resposta já gravada no HAR em cada passo&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#F1EDF7;strokeColor=#7A6FA6;fontColor=#3D3560;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="38.21052631578947" y="239.22855271774722" width="165.5789473684211" height="35.232481990831694" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-265" value="&lt;b&gt;Engine&lt;/b&gt;&lt;br&gt;&lt;font&gt;Faz a requisição de verdade contra o servidor — um proxy (MitmProxyOrchestrator) intercepta e grava cada resposta real&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#EAF1FB;strokeColor=#5B7FA6;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="420.31578947368433" y="237.4669286182056" width="191.0526315789474" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-266" value="&lt;font&gt;Os dois modos repetem, na ordem do HAR, as mesmas etapas de descoberta abaixo — no dry, a descoberta se apoia só no que já foi capturado; no main, ela também é confrontada com a resposta real&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#F3F5F8;strokeColor=#8592A3;fontColor=#33404F;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="290.3156516044532" width="178.31578947368425" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-267" value="" style="rounded=1;arcSize=25;html=1;fillColor=#EAF1FB;strokeColor=#5B7FA6;fontSize=6;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="496.73684210526324" y="22.548788474132284" width="11.463157894736845" height="6.341846758349706" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-268" value="só no modo main" style="text;html=1;align=left;verticalAlign=middle;fontSize=8;fontColor=#5B7FA6;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="513.2947368421053" y="21.844138834315647" width="101.89473684210527" height="7.751146037982973" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-269" value="" style="rounded=1;arcSize=25;html=1;fillColor=#F1EDF7;strokeColor=#7A6FA6;fontSize=6;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="496.73684210526324" y="31.00458415193189" width="11.463157894736845" height="6.341846758349706" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-270" value="só no modo dry" style="text;html=1;align=left;verticalAlign=middle;fontSize=8;fontColor=#7A6FA6;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="513.2947368421053" y="30.29993451211526" width="101.89473684210527" height="7.751146037982973" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-271" value="&lt;b&gt;HARParser / Workspace&lt;/b&gt;&lt;br&gt;&lt;font&gt;Converte a entry crua do HAR num Step e grava o pedido e a resposta originais (original_requests/, original_responses/) — pra toda entry, mesmo as que serão puladas&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="343.16437459070073" width="178.31578947368425" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-272" value="&lt;b&gt;StepSkipEvaluator&lt;/b&gt;&lt;br&gt;&lt;font&gt;Esse passo deve ser ignorado? (método sem&lt;/font&gt;&lt;div&gt;&lt;font&gt;&amp;nbsp;suporte,&amp;nbsp;&lt;/font&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(91, 58, 14), rgb(209, 181, 143));&quot;&gt;regra do projeto)&lt;/span&gt;&lt;/div&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="393.0030975769483" width="165.5789473684211" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-273" value="&lt;font&gt;Marca como pulado e segue pro próximo&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="25.47368421052632" y="452.38506876227893" width="165.5789473684211" height="24.66273739358219" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-275" value="&lt;b&gt;BaselineDiff&lt;/b&gt;&lt;br&gt;&lt;font&gt;Compara essa requisição com a primeira do fluxo inteiro, pra achar o que mudou (candidato a dado dinâmico)&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="452.3815651604453" width="178.31578947368425" height="31.709233791748524" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-276" value="&lt;b&gt;CandidateResolver / OriginFinder&lt;/b&gt;&lt;br&gt;&lt;font&gt;Acha, em alguma resposta de passo anterior,&amp;nbsp;&lt;/font&gt;&lt;div&gt;&lt;font&gt;de onde esse valor veio&lt;/font&gt;&lt;/div&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63" y="495" width="165.58" height="43.28" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-277" value="&lt;b&gt;CandidateResolver&lt;/b&gt;&lt;br&gt;&lt;font&gt;Não achou a origem (ou não achou o valor dentro dela, ou toda extração falhou): cria extrator literal do HAR — não inventa uma regra&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="25.47368421052632" y="554.5592665356909" width="178.31578947368425" height="42.278978388998034" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-278" value="&lt;b&gt;&lt;font style=&quot;font-size: 5px;&quot;&gt;Agent&amp;nbsp;&lt;/font&gt;&lt;/b&gt;&lt;div&gt;&lt;font style=&quot;font-size: 5px;&quot;&gt;&lt;b&gt;(Cookie/Header/JSONPath/CSS/Regex)&lt;/b&gt;&lt;br&gt;&lt;font&gt;Um padrão estrutural determinístico&lt;/font&gt;&lt;/font&gt;&lt;div&gt;&lt;font style=&quot;font-size: 5px;&quot;&gt;&amp;nbsp;dá conta de extrair o valor?&lt;/font&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;font style=&quot;font-size: 5px;&quot;&gt;&lt;br&gt;&lt;/font&gt;&lt;/div&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="554.5592665356909" width="165.5789473684211" height="42.278978388998034" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-279" value="&lt;b&gt;LLM (BaseChatModel)&lt;/b&gt;&lt;br&gt;&lt;font&gt;Só então pede pro modelo de linguagem sugerir o código de extração — é o último recurso, não o padrão&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="471.26315789473693" y="556.3208906352324" width="178.31578947368425" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-280" value="&lt;b&gt;BaseAgent&lt;/b&gt;&lt;br&gt;&lt;font&gt;Executa de verdade o código gerado contra a resposta gravada do passo de origem — só aceita se bater com o valor esperado (vale pro padrão determinístico também, não só pro LLM)&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="614.4544859201047" width="178.31578947368425" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-281" value="&lt;b&gt;TokenResolver / SessionStore&lt;/b&gt;&lt;br&gt;&lt;font&gt;Executa o extrator de cada dado dinâmico — se falhar, usa o valor literal do HAR&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="663.7799607072692" width="178.31578947368425" height="28.185985592665357" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-282" value="&lt;b&gt;HttpTransport / StepRetryPolicy&lt;/b&gt;&lt;br&gt;&lt;font&gt;Envia a requisição de verdade; se a sessão expirou, renova os dados e tenta de novo&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#EAF1FB;strokeColor=#5B7FA6;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="713.9989390962672" width="178.31578947368425" height="35.232481990831694" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-283" value="&lt;b&gt;DryEngine&lt;/b&gt;&lt;br&gt;&lt;font&gt;Reaproveita a resposta já gravada no HAR — nenhuma requisição é enviada&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#F1EDF7;strokeColor=#7A6FA6;fontColor=#3D3560;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="482.7263157894738" y="751.8611656843483" width="178.31578947368425" height="35.232481990831694" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-284" value="&lt;b&gt;CookieJar&lt;/b&gt;&lt;br&gt;&lt;font&gt;Guarda os cookies recebidos, como um navegador faria, pra usar nos próximos passos&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#EAF1FB;strokeColor=#5B7FA6;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="761.0044138834315" width="178.31578947368425" height="28.185985592665357" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-285" value="&lt;b&gt;Workspace&lt;/b&gt;&lt;br&gt;&lt;font&gt;Grava a resposta real dessa execução em disco (real_responses/res_XXXX.json)&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#EAF1FB;strokeColor=#5B7FA6;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="801.1866404715128" width="178.31578947368425" height="31.709233791748524" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-286" value="&lt;font&gt;Essa requisição teve uma resposta&amp;nbsp;&lt;/font&gt;&lt;div&gt;&lt;font&gt;válida (status ≠ 0)?&lt;/font&gt;&lt;/div&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="850.5121152586772" width="165.5789473684211" height="35.232481990831694" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-287" value="&lt;b&gt;Workspace / ExtractorTemplate&lt;/b&gt;&lt;br&gt;&lt;font&gt;Grava o passo parametrizado em disco (req_XXXX.curl.sh) — é esse arquivo que o replay/optimize vão reexecutar depois&lt;/font&gt;" style="rounded=0;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FFFFFF;strokeColor=#8592A3;fontColor=#1A2233;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="229.26315789473688" y="899.8375900458416" width="178.31578947368425" height="31.709233791748524" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-288" value="&lt;font&gt;Ainda faltam passos desse fluxo?&lt;/font&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="945.6398166339227" width="165.5789473684211" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-289" value="&lt;b&gt;Validator&lt;/b&gt;&lt;br&gt;&lt;font&gt;O resultado final bate com o que esse fluxo deveria alcançar?&lt;/font&gt;" style="rhombus;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FDF1DE;strokeColor=#C1720F;fontColor=#5B3A0E;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="235.63157894736847" y="1016.1085396201702" width="165.5789473684211" height="38.75573018991487" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-290" value="&lt;font&gt;Reprodução bem-sucedida&lt;/font&gt;" style="rounded=1;arcSize=50;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#E4F3E9;strokeColor=#2F9E56;fontColor=#1B6B39;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="101.89473684210527" y="1054.860510805501" width="146.47368421052636" height="21.139489194499017" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-291" value="&lt;font&gt;Reprodução falhou&lt;/font&gt;" style="rounded=1;arcSize=50;html=1;whiteSpace=wrap;fontSize=6;align=center;verticalAlign=middle;fillColor=#FBE9E7;strokeColor=#B8402F;fontColor=#8A2E22;" vertex="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry x="401.21052631578954" y="1054.860510805501" width="146.47368421052636" height="21.139489194499017" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-292" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-259" target="RpUPCfWA7lsIz7qij2xy-260">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-293" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-260" target="RpUPCfWA7lsIz7qij2xy-261">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-294" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-261" target="RpUPCfWA7lsIz7qij2xy-262">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-295" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-262" target="RpUPCfWA7lsIz7qij2xy-263">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-296" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-263" target="RpUPCfWA7lsIz7qij2xy-264">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-297" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-263" target="RpUPCfWA7lsIz7qij2xy-265">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-298" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-264" target="RpUPCfWA7lsIz7qij2xy-266">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-299" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-265" target="RpUPCfWA7lsIz7qij2xy-266">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-300" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-266" target="RpUPCfWA7lsIz7qij2xy-271">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-301" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="318.3877611940298" y="381.9201047806156" as="sourcePoint" />
+            <mxPoint x="318.3429850746268" y="393.007326504439" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-302" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-272" target="RpUPCfWA7lsIz7qij2xy-273">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-303" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-272" target="RpUPCfWA7lsIz7qij2xy-275">
+          <mxGeometry x="-0.5206" relative="1" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-304" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-275" target="RpUPCfWA7lsIz7qij2xy-276">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-305" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-276" target="RpUPCfWA7lsIz7qij2xy-277">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-306" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-276" target="RpUPCfWA7lsIz7qij2xy-278">
+          <mxGeometry x="-0.6012" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-307" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-278" target="RpUPCfWA7lsIz7qij2xy-280">
+          <mxGeometry x="-0.5283" relative="1" as="geometry">
+            <mxPoint y="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-308" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-278" target="RpUPCfWA7lsIz7qij2xy-279">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-309" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-279" target="RpUPCfWA7lsIz7qij2xy-280">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-310" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-280" target="RpUPCfWA7lsIz7qij2xy-281">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-311" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=0.5;exitY=1;entryX=0;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-277" target="RpUPCfWA7lsIz7qij2xy-281">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="114.63157894736844" y="677.8729535036019" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-312" value="modo main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-281" target="RpUPCfWA7lsIz7qij2xy-282">
+          <mxGeometry x="-0.4523" relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-313" value="modo dry" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=1;exitY=0.25;entryX=0.5;entryY=0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-281" target="RpUPCfWA7lsIz7qij2xy-283">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="571.8842105263158" y="670.8264571054355" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-314" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-282" target="RpUPCfWA7lsIz7qij2xy-284">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-315" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-284" target="RpUPCfWA7lsIz7qij2xy-285">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-316" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-285" target="RpUPCfWA7lsIz7qij2xy-286">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-317" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=0.5;exitY=1;entryX=1;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-283" target="RpUPCfWA7lsIz7qij2xy-286">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="571.8842105263158" y="868.1283562540931" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-318" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-286" target="RpUPCfWA7lsIz7qij2xy-287">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-319" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-287" target="RpUPCfWA7lsIz7qij2xy-288">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-320" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=0;exitY=0.5;entryX=0;entryY=0;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-286" target="RpUPCfWA7lsIz7qij2xy-288">
+          <mxGeometry x="-0.9189" relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="82.78947368421055" y="868.1283562540931" />
+              <mxPoint x="82.78947368421055" y="955.5049115913557" />
+              <mxPoint x="277.02631578947376" y="955.5049115913557" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-321" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=0;exitY=0.5;entryX=0;entryY=1;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-273" target="RpUPCfWA7lsIz7qij2xy-288">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint y="464.71643745907016" />
+              <mxPoint y="974.882776686313" />
+              <mxPoint x="254.7368421052632" y="974.882776686313" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-322" value="sim, ainda tem" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=1;exitY=0.5;entryX=1;entryY=0.5;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-288" target="RpUPCfWA7lsIz7qij2xy-272">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="726" y="965" />
+              <mxPoint x="726" y="412" />
+              <mxPoint x="401" y="412" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-323" value="não, acabou" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-288" target="RpUPCfWA7lsIz7qij2xy-289">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-324" value="sim" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.495;entryY=-0.087;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-289" target="RpUPCfWA7lsIz7qij2xy-290">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="175" y="1053" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-325" value="não" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;strokeColor=#55606F;fontColor=#33404F;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-289" target="RpUPCfWA7lsIz7qij2xy-291">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="474.42857142857133" y="1061.3705108055008" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RpUPCfWA7lsIz7qij2xy-326" value="sessão expirou: renova e tenta de novo (≤2x)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;fontSize=6;dashed=1;strokeColor=#8592A3;fontColor=#55606F;exitX=1;exitY=0.3;entryX=1;entryY=0.7;exitDx=0;exitDy=0;entryDx=0;entryDy=0;" edge="1" parent="RpUPCfWA7lsIz7qij2xy-327" source="RpUPCfWA7lsIz7qij2xy-282" target="RpUPCfWA7lsIz7qij2xy-281">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="433.0526315789475" y="716.6286836935168" />
+              <mxPoint x="433.0526315789475" y="683.5101506221349" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
