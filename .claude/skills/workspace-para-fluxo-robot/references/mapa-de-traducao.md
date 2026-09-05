@@ -15,11 +15,46 @@ outra.
 | `config.json` → `success_criteria` do passo alvo | Um ou mais Validadores na `Tarefa` correspondente — ver tabela 3 |
 | `real_responses/res_NNNN.json` de cada passo | Fonte dos valores reais para os asserts do replay spec (`references/testes-de-eficacia.md`) — não precisa reconsultar o portal para saber o que uma resposta contém |
 
+### 1a. Login: sempre o trio, nunca inline
+
 Índice de login (se houver, identificado no `--required-steps-file` do
-`optimize` ou perguntado ao usuário): vira `TarefaLogin` num fluxo
-`_login_cache.groovy` separado, nunca inline no fluxo principal — regra
-normal de `oficina-de-fluxos` (`references/autenticacao.md`), sem
-particularidade aqui.
+`optimize` ou perguntado ao usuário) **nunca** vira tarefas inline no fluxo
+principal, nem quando o valor extraído (token/cookie) parecer estático numa
+amostra só — regra normal de `oficina-de-fluxos`
+(`references/autenticacao.md` §2), sem particularidade aqui, mas fácil de
+violar sob pressão de "são só duas tarefas a mais". O entregável correto tem
+até três arquivos, dependendo do que o workspace representa:
+
+| Tipo do workspace (Fase 1) | O que a tradução produz |
+|---|---|
+| **login** (fluxo pedido isoladamente) | O trio completo, seguindo o padrão `{Convenio}LoginAbstrato` + `{Convenio}Login` + `{Convenio}LoginCache` (ver exemplo real: `convenio/abertta_saude/AberttaSaudeLoginAbstrato.groovy` + `AberttaSaudeLogin.groovy` + `AberttaSaudeLoginCache.groovy`) — **mesmo que o pedido do usuário mencione só "fluxo de login"**. A abstrata concentra tela inicial + tarefa de login + validações de sucesso/falha; as duas concretas só diferem na tarefa final (`{Convenio}Login` → `marcaLoginComoValido`, registrado como `nomeArquivoFluxoLogin` em `Sites.json`; `{Convenio}LoginCache` → tarefa que expõe o resultado do login em `fluxo.saidas` para consumo por `TarefaLogin` de outros fluxos). Entregar só a metade "`Login`" deixa qualquer fluxo de valores pagos/analítico futuro do mesmo convênio sem peça nenhuma pra reaproveitar. |
+| **valores pagos** / **analítico** (sempre pressupõe login já capturado no HAR — `navigation-on-medical-portals.md`) | A tarefa de login vira `paraTarefaLogin(idTarefa, '{convenio}_login_cache', dadosCacheLoginKeyClosure) { posExtrair = helper.&posExtrairLogin }`, referenciando o `{convenio}_login_cache` — **nunca** duplicando tela inicial/login como tarefas próprias do fluxo. Antes de escrever essa tarefa: `grep`/busque se `{convenio}_login_cache` já existe no repo (pode ter vindo de um ticket de login anterior do mesmo convênio, inclusive numa branch local ainda não mergeada). <br>— **Se existir**: só referenciar, sem tocar nele. <br>— **Se não existir**: criar agora, como parte deste ticket — extraindo a abstrata compartilhada se já existir um `{Convenio}Login` solo (refatoração: mover as tarefas comuns pra `{Convenio}LoginAbstrato`, ver padrão acima), ou criando o trio inteiro do zero se nem o `_login` existir ainda. Sinalizar essa criação extra no relatório final — não é um detalhe silencioso, é escopo adicional do ticket. |
+
+**Não é aceitável** interpretar "o token pareceu igual em duas execuções
+reais" (achado legítimo do `har_reproducer`, ver `extractor-crud-strategies.md`
+daquela skill) como justificativa para pular o `_login_cache` e hardcodear
+ou duplicar — essas são duas decisões independentes: uma é sobre o mecanismo
+de *extractors* do `har_reproducer` (Fase 2, não recria nada), a outra é
+sobre a *estrutura* do fluxo do robô (Fase 3, sempre usa `_login_cache`
+quando login está envolvido, token estável ou não).
+
+### 1b. Valores pagos → analítico: nunca acoplamento direto entre classes
+
+Quando o workspace de um fluxo de valores pagos e o de um fluxo analítico
+são do mesmo convênio, **não existe chamada de uma classe Groovy pra outra**
+— nem `TarefaSubFluxo`, nem leitura direta de `saidas` de uma classe pela
+outra. A ponte é `nova-arquitetura-pagamentos.md`: o fluxo de geração
+(valores pagos/espelhamentos) persiste os DTOs no Banco de Arquivos e expõe
+só `valoresPagosFilesIds`/`espelhamentosFilesIds` (CSV de IDs) nas saídas; o
+fluxo de download (analítico/recurso/estorno) lê
+`variaveisWrapped.listaValoresPagosFilesIds`, baixa os JSONs do BA, converte
+em DTO e consulta o Núcleo (`obtenhaProtocolosComDivergenciaParaDownload`)
+pra saber o que falta baixar. Ao traduzir um workspace de analítico cujo
+"valores pagos" irmão já foi entregue: **não** tente ligar as duas classes
+diretamente — verifique que a de valores pagos já implementa
+`OtimizadorFluxosPagamento` e persiste via `persistirValoresRecebidosNoBancoArquivos`
+(se sim, a ponte já existe, do lado do Núcleo); se não, isso é lacuna a
+sinalizar, não algo pra resolver com acoplamento de código.
 
 ## 2. `agent_type` → extrator da DSL
 
